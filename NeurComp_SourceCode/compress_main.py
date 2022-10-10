@@ -1,8 +1,8 @@
 """ Created: 18.07.2022  \\  Updated: 18.07.2022  \\   Author: Robert Sales """
 
-#=# IMPORT LIBRARIES #========================================================#
+trip_error
 
-error_flag
+#=# IMPORT LIBRARIES #========================================================#
 
 from callback_functions import *
 from data_management import *
