@@ -15,7 +15,7 @@ def LoadNPY(filename,size_x,size_y,size_z):
     x_points = data[:,0].reshape(size_x,size_y,size_z)
     y_points = data[:,1].reshape(size_x,size_y,size_z)
     z_points = data[:,2].reshape(size_x,size_y,size_z)
-    volume   = data[:,3].reshape(size_x,size_y,size_z)
+    values   = data[:,3].reshape(size_x,size_y,size_z)
     
-    return x_points,y_points,z_points,volume  
+    return x_points,y_points,z_points,values  
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
