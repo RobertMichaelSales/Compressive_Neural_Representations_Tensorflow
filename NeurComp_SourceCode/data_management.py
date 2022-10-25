@@ -1,6 +1,7 @@
 """ Created: 18.07.2022  \\  Updated: 25.10.2022  \\   Author: Robert Sales """
 
-#=# IMPORT LIBRARIES #========================================================#
+#==============================================================================
+# Import libraries and set flags
 
 import os 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -8,15 +9,13 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
 import tensorflow as tf
 
-#=# DEFINE FUNCTIONS #========================================================#
-
-    
-#=# DEFINE CLASSES #==========================================================#
+#==============================================================================
+# Define a class for managing datasets: i.e. loading, handling and storing data  
 
 class DataClass():
 
     #==========================================================================
-    # Define the initialisation constructor function for the 'DataClass' class   
+    # Define the initialisation constructor function for 'DataClass'   
 
     def __init__(self):
         
@@ -34,9 +33,13 @@ class DataClass():
         self.values_avg = 0.0
         self.values_rng = 0.0
         
-        # Initialise internal variables for the input shape and dimension
-        self.resolution = np.array      
-        self.dimensions = 3             
+        # Initialise internal variables for the input shape, size and dimension
+        self.input_resolution = np.array      
+        self.input_dimensions = 3     
+        self.input_size = 0
+
+        # Initialise internal variables for the output dimension
+        self.output_dimensions = 1        
         
         return None
     
@@ -62,13 +65,17 @@ class DataClass():
         volume = data[...,:-1]                 
         values = data[...,-1:]                 
         
-        # Determine the input resolution and number of coordinate dimensions
-        self.resolution = volume.shape[:-1]    
-        self.dimensions = volume.shape[ -1]     
+        # Determine the input resolution, number of dimensions and input size
+        self.input_resolution = volume.shape[:-1]    
+        self.input_dimensions = volume.shape[ -1] 
+        self.input_size = values.size
+        
+        # Determine the output dimension
+        self.output_dimensions = values.shape[-1]
         
         # Determine the maximum, minimum, average and range values of 'volume'
-        self.volume_max = np.amax(volume,axis=tuple(np.arange(self.dimensions)))
-        self.volume_min = np.amin(volume,axis=tuple(np.arange(self.dimensions)))
+        self.volume_max = np.amax(volume,axis=tuple(np.arange(self.input_dimensions)))
+        self.volume_min = np.amin(volume,axis=tuple(np.arange(self.input_dimensions)))
         self.volume_avg = (self.volume_max + self.volume_min) / 2.0
         self.volume_rng = abs(self.volume_max - self.volume_min)
         
