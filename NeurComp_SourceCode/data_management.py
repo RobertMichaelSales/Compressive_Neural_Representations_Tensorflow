@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 18.07.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 25.10.2022  \\   Author: Robert Sales """
 
 #=# IMPORT LIBRARIES #========================================================#
 
@@ -10,105 +10,6 @@ import tensorflow as tf
 
 #=# DEFINE FUNCTIONS #========================================================#
 
-
-# def LoadNPY(filepath):
-
-#     combined_data = np.load(filepath).astype(np.float32)
-      
-#     x_points = combined_data[:,0]
-#     y_points = combined_data[:,1]
-#     z_points = combined_data[:,2]
-#     values   = combined_data[:,3]
-    
-#     volume = np.array(list(zip(x_points,y_points,z_points)),dtype=np.float32)
-#     values = np.array(values,dtype=np.float32)
-    
-#     return volume,values
-
-
-# def LoadBIN(filepath):
-
-#     data_vector = np.fromfile(filepath,count=-1,sep='').astype(np.float32)
-#     combined_data = np.reshape(data_vector,(int(data_vector.size/4),4))
-    
-#     x_points = combined_data[:,0]
-#     y_points = combined_data[:,1]
-#     z_points = combined_data[:,2]
-#     values   = combined_data[:,3]
-    
-#     volume = np.array(list(zip(x_points,y_points,z_points)),dtype=np.float32)
-#     values = np.array(values,dtype=np.float32)
-    
-#     return volume,values
-
-
-# def SaveNPY(volume,values,filename):
-    
-#     from numpy import save
-    
-#     x_points = volume[:,0].flatten()
-#     y_points = volume[:,1].flatten()
-#     z_points = volume[:,2].flatten()
-#     values   = values.flatten()
-    
-#     data = np.array([x_points,y_points,z_points,values]).transpose()
-    
-#     save(filename, data)
-    
-#     return None   
-
-
-# def SaveTXT(volume,values,filename):
-        
-#     from numpy import savetxt
-    
-#     x_points = volume[:,0].flatten()
-#     y_points = volume[:,1].flatten()
-#     z_points = volume[:,2].flatten()
-#     values   = values.flatten()
-    
-#     data = np.array([x_points,y_points,z_points,values]).transpose()
-    
-#     fmt = '%16.15e', '%16.15e', '%16.15e', '%+16.15e'
-
-#     savetxt(filename,data,delimiter=',',fmt=fmt)
-    
-#     return None   
-
-
-# def SaveBIN(volume,values,filename):
-        
-#     from numpy import savetxt
-    
-#     x_points = volume[:,0].flatten()
-#     y_points = volume[:,1].flatten()
-#     z_points = volume[:,2].flatten()
-#     values   = values.flatten()
-    
-#     data = np.array([x_points,y_points,z_points,values],dtype=np.float32).transpose()
-    
-#     data.tofile(filename,sep='',format='%s')
-    
-#     return None   
-
-
-# def MakeDataset(input_data,hyperparameters):
-    
-#     values = input_data.values
-#     volume = input_data.volume
-        
-#     if hyperparameters.normalise: 
-#         values = 2.0*(((values-values.min())/(values.max()-values.min()))-0.5)
-        
-#     dataset = tf.data.Dataset.from_tensor_slices((volume,values))
-    
-#     dataset = dataset.shuffle(buffer_size=values.size,
-#                               seed=12345,
-#                               reshuffle_each_iteration=True)
-    
-#     dataset = dataset.batch(batch_size=hyperparameters.batch_size)
-    
-#     return dataset 
     
 #=# DEFINE CLASSES #==========================================================#
 
