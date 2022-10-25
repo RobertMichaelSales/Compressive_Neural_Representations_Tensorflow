@@ -1,13 +1,12 @@
-""" Created: 18.07.2022  \\  Updated: 18.07.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 25.10.2022  \\   Author: Robert Sales """
 
 trip_error
 
-#=# IMPORT LIBRARIES #========================================================#
+#==============================================================================
+# Import libraries 
 
 from callback_functions import *
-from data_management import *
 from error_functions import *
-from network_network_config import *
 from network_load import *
 from network_make import *
 from network_save import *
@@ -15,7 +14,11 @@ from predict_volumes import *
 from file_management import *
 from utility_functions import *
 
-#=# SET RUNTIME FLAGS #=======================================================#
+from data_management import DataClass
+from network_configuration import NetworkConfigClass
+
+#==============================================================================
+# Set flags
 
 import os,sys
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -33,15 +36,16 @@ times=[]
 from utility_functions import LoggerClass
 sys.stdout = LoggerClass()
 
-#=# SET FILEPATHS #===========================================================#
+#==============================================================================
+# Set filepaths
 
-parent_dir_filepath = ("C:\\"
+parent_directory    = ("C:\\"
                        "Users\\"
                        "sales\\"
                        "Documents\\"
-                       "Cambridge University\\"
-                       "PPD - Project Proposal Dissertation\\"
-                       "NeurComp Files")
+                       "GitHub\\"
+                       "Compressive_Neural_Representations_Tensorflow\\"
+                       "NeurComp_AuxFiles")
 
 input_data_filepath = ("C:\\"
                        "Users\\"
@@ -53,7 +57,8 @@ input_data_filepath = ("C:\\"
                        "volumes\\"
                        "test_vol.npy")
 
-#=# MAIN SCRIPT #=============================================================#
+#==============================================================================
+# Main script
 
 print("="*80,"\n")
 print("NEURCOMP COMPRESSION: IMPLICIT NEURAL REPRESENTATIONS (Version 1.0) \n")
@@ -80,7 +85,7 @@ dataset=input_data.MakeDataset(network_config)
 
 # Declare filepaths, create the training folders, create filepaths ------------
 
-filepaths=FilepathClass(parent_dir_filepath,network_config)
+filepaths=FileStructureClass(parent_directory,network_config.network_save_name)
 
 # Build NeurComp, select the error function, compile the network --------------
 
