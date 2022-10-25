@@ -7,7 +7,7 @@ trip_error
 from callback_functions import *
 from data_management import *
 from error_functions import *
-from network_hyperparameters import *
+from network_network_config import *
 from network_load import *
 from network_make import *
 from network_save import *
@@ -69,27 +69,27 @@ print("INITIALISING FILES AND MODEL:\n")
 input_data=DataClass()
 input_data.LoadValues(input_data_filepath)
 
-# Declare hyperparameters, set all hyperparameters ----------------------------
+# Declare network_config, set all network_config ----------------------------
 
-hyperparameters=HyperparameterClass()
-hyperparameters.NetworkDetails(input_data)
+network_config=NetworkConfigClass()
+network_config.NetworkStructure(input_data)
 
 # Create a Tensorflow dataset for training ------------------------------------
 
-dataset=input_data.MakeDataset(hyperparameters)
+dataset=input_data.MakeDataset(network_config)
 
 # Declare filepaths, create the training folders, create filepaths ------------
 
-filepaths=FilepathClass(parent_dir_filepath,hyperparameters)
+filepaths=FilepathClass(parent_dir_filepath,network_config)
 
 # Build NeurComp, select the error function, compile the network --------------
 
-NeurComp = BuildNeurComp(hyperparameters)
+NeurComp = BuildNeurComp(network_config)
 
 NeurComp.compile(
-    loss=GetErrorFunction(hyperparameters),
+    loss=GetErrorFunction(network_config),
     optimizer=tf.keras.optimizers.Adam(
-        learning_rate=hyperparameters.learn_rate),
+        learning_rate=network_config.learn_rate),
     metrics=[tf.keras.metrics.MeanSquaredError(name='mse',dtype=None)]
 )
 
@@ -103,10 +103,10 @@ print("COMPRESSING DATA:")
 # Retrieve training callbacks, commence training ------------------------------
 
 NeurComp.fit(dataset,
-             batch_size=hyperparameters.batch_size,
-             epochs=hyperparameters.max_epochs,
+             batch_size=network_config.batch_size,
+             epochs=network_config.max_epochs,
              verbose=2,
-             callbacks=TrainingCallbacks(hyperparameters,filepaths),
+             callbacks=TrainingCallbacks(network_config,filepaths),
              initial_epoch=0)
 
 #------------------------------------------------------------------------------
@@ -116,10 +116,10 @@ ElapsedTime(times)
 print("="*80,"\n")
 print("SAVING MODEL:\n")
 
-# Save the trained model, save hyperparameters to CSV -------------------------
+# Save the trained model, save network_config to CSV -------------------------
 
 SaveTrainedModel(NeurComp,filepaths,overwrite=True,save_format="tf")
-hyperparameters.SaveHyperparameters(filepaths)
+network_config.Savenetwork_config(filepaths)
 
 #------------------------------------------------------------------------------
 
@@ -141,7 +141,7 @@ print("="*80,"\n")
 print("EVALUATING:\n")
 
 # Predict the volume using the normal, tflite and quantised models.............
-predicted_volume_normal = PredictNormal(NeurComp,input_data,hyperparameters)
+predicted_volume_normal = PredictNormal(NeurComp,input_data,network_config)
 predicted_volume_tflite = PredictTFLite(filepaths,input_data)
 predicted_volume_quantd = PredictQuantd(filepaths,input_data)
 
