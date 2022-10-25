@@ -9,9 +9,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
 import tensorflow as tf
 
-from tensorflow import keras 
-from tensorflow.keras import layers
-
 #==============================================================================
 # Define a 'Sine Layer Block' using TensorFlow's functional API and Keras
 
@@ -67,7 +64,7 @@ def BuildNeurComp(network_config):
         # Obtain the input dimensions for that particular layer
         units = network_config.layer_dimensions[layer]
           
-        # Add the input layer
+        # Add the input layer and the first sine layer
         if (layer == 0):                  
           
             name = "l0_input"
@@ -76,14 +73,14 @@ def BuildNeurComp(network_config):
             name = "l0_sineblock"
             x = SineLayerBlock(input_layer,network_config.layer_dimensions[layer+1],name=name)
           
-        # Add the output layer
+        # Add the final dense output layer
         elif (layer == network_config.total_layers - 1):
           
             name = "l{}_output".format(layer)
             
             output_layer =  tf.keras.layers.Dense(units=units,name=name)(x)
           
-        # Add residual block layers
+        # Add intermediate residual block layers
         else:
           
             name = "l{}_res".format(layer)
