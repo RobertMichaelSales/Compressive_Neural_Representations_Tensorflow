@@ -47,12 +47,11 @@ input_data_filepath = ("C:\\"
                        "Users\\"
                        "sales\\"
                        "Documents\\"
-                       "Cambridge University\\"
-                       "PPD - Project Proposal Dissertation\\"
-                       "NeurComp Files\\"
-                       "Inputs\\"
-                       "Generic\\"
-                       "data_orig.npy")
+                       "GitHub\\"
+                       "Compressive_Neural_Representations_Tensorflow\\"
+                       "NeurComp_AuxFiles\\"
+                       "volumes\\"
+                       "test_vol.npy")
 
 #=# MAIN SCRIPT #=============================================================#
 
@@ -77,7 +76,7 @@ hyperparameters.NetworkDetails(input_data)
 
 # Create a Tensorflow dataset for training ------------------------------------
 
-dataset=MakeDataset(input_data,hyperparameters)
+dataset=input_data.MakeDataset(hyperparameters)
 
 # Declare filepaths, create the training folders, create filepaths ------------
 

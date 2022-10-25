@@ -19,7 +19,7 @@ class HyperparameterClass():
    
         # Set network hyperparameters (USER SPECIFIED)
         
-        self.save_name              = "NeurComp_V6"
+        self.save_name              = "NeurComp_V1"
         self.compression_ratio      = 400        
         self.hidden_layers          = 10
         self.min_neurons_per_layer  = 10
@@ -27,7 +27,7 @@ class HyperparameterClass():
         # Set training hyperparameters (USER SPECIFIED)
         
         self.learn_rate             = 1.0e-4
-        self.batch_size             = 16000
+        self.batch_size             = 10
         self.max_epochs             = 48
         self.error_function         = "Squared"
         self.error_power            = None
