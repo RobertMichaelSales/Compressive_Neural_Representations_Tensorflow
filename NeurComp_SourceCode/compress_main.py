@@ -3,22 +3,22 @@
 trip_error
 
 #==============================================================================
-# Import libraries 
+# Import user-defined libraries 
 
-from callback_functions import *
-from error_functions import *
-from network_load import *
-from network_make import *
-from network_save import *
-from predict_volumes import *
-from file_management import *
-from utility_functions import *
+from callback_functions      import *
+from error_functions         import *
+from network_load            import *
+from network_make            import *
+from network_save            import *
+from predict_volumes         import *
+from utility_functions       import *
 
-from data_management import DataClass
-from network_configuration import NetworkConfigClass
+from data_management         import DataClass
+from network_configuration   import NetworkConfigClass
+from file_management         import FileStructureClass
 
 #==============================================================================
-# Set flags
+# Import libraries and set flags
 
 import os,sys
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -54,6 +54,7 @@ input_data_filepath = ("C:\\"
                        "GitHub\\"
                        "Compressive_Neural_Representations_Tensorflow\\"
                        "NeurComp_AuxFiles\\"
+                       "inputs\\"
                        "volumes\\"
                        "test_vol.npy")
 
