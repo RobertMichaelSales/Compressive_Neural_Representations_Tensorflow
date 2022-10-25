@@ -26,9 +26,9 @@ class FileStructureClass():
     
         # Make TensorBoard folder + path
         self.tensorboard_path = os.path.join(self.parent_directory,
-                                             "Training",
-                                             "Logs",
-                                             "TensorBoard",
+                                             "training",
+                                             "logs",
+                                             "tensorboard",
                                              network_save_name)  
         
         if not os.path.exists(self.tensorboard_path):
@@ -37,9 +37,9 @@ class FileStructureClass():
           
         # Make CSV summary folder + path
         self.csv_summary_path = os.path.join(self.parent_directory,
-                                             "Training",
-                                             "Logs",
-                                             "CSV Summary",
+                                             "training",
+                                             "logs",
+                                             "csv_summary",
                                              network_save_name)
         
         if not os.path.exists(self.csv_summary_path):
@@ -48,8 +48,8 @@ class FileStructureClass():
     
         # Make checkpoints folder + path
         self.checkpoints_path = os.path.join(self.parent_directory,
-                                             "Training",
-                                             "Checkpoints",
+                                             "training",
+                                             "checkpoints",
                                              network_save_name)
         
         if not os.path.exists(self.checkpoints_path):
@@ -58,8 +58,8 @@ class FileStructureClass():
             
         # Make trained model folder + path
         self.trained_model_path = os.path.join(self.parent_directory,
-                                               "Training",
-                                               "Trained Models",
+                                               "training",
+                                               "trained_models",
                                                network_save_name)
         
         if not os.path.exists(self.trained_model_path):
@@ -68,8 +68,8 @@ class FileStructureClass():
 
         # Make output volume folder + path
         self.output_volume_path = os.path.join(self.parent_directory,
-                                               "Outputs",
-                                               "Volumes",
+                                               "outputs",
+                                               "volumes",
                                                network_save_name)
         
         if not os.path.exists(self.output_volume_path):
@@ -95,9 +95,9 @@ class FileStructureClass():
                                               quantd_model_name)
         
         # Make hyperparameters save filepath
-        hyperparameters_name = network_save_name + "_parameters.txt"
-        self.hyperparameters_path = os.path.join(self.csv_summary_path,
-                                                 hyperparameters_name)
+        configuration_name = network_save_name + "_parameters.txt"
+        self.configuration_path = os.path.join(self.csv_summary_path,
+                                               configuration_name)
 
         return None
 #=============================================================================#
