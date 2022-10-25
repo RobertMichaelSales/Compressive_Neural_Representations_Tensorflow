@@ -23,7 +23,7 @@ class NetworkConfigClass():
     def __init__(self):
    
         # Set network hyperparameters
-        self.network_save_name                  = "NeurComp_V1"
+        self.network_save_name                  = "neurcomp_v1"
         self.target_compression_ratio           = 50        
         self.hidden_layers                      = 8
         self.min_neurons_per_layer              = 10
