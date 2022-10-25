@@ -10,243 +10,231 @@ import tensorflow as tf
 
 #=# DEFINE FUNCTIONS #========================================================#
 
-def LoadTXT(filepath):
-    
-    from numpy import loadtxt
-    combined_data = loadtxt(filepath,delimiter=',')
-    
-    x_points = combined_data[:,0]
-    y_points = combined_data[:,1]
-    z_points = combined_data[:,2]
-    values   = combined_data[:,3]
+
+# def LoadNPY(filepath):
+
+#     combined_data = np.load(filepath).astype(np.float32)
       
-    volume = np.array(list(zip(x_points,y_points,z_points)),dtype=np.float32)
-    values = np.array(values,dtype=np.float32)
-      
-    return volume,values
-
-
-def LoadNPY(filepath):
-
-    from numpy import load
-    combined_data = load(filepath)
-      
-    x_points = combined_data[:,0]
-    y_points = combined_data[:,1]
-    z_points = combined_data[:,2]
-    values   = combined_data[:,3]
+#     x_points = combined_data[:,0]
+#     y_points = combined_data[:,1]
+#     z_points = combined_data[:,2]
+#     values   = combined_data[:,3]
     
-    volume = np.array(list(zip(x_points,y_points,z_points)),dtype=np.float32)
-    values = np.array(values,dtype=np.float32)
+#     volume = np.array(list(zip(x_points,y_points,z_points)),dtype=np.float32)
+#     values = np.array(values,dtype=np.float32)
     
-    return volume,values
+#     return volume,values
 
 
-def LoadBIN(filepath):
+# def LoadBIN(filepath):
 
-    import numpy as np
+#     data_vector = np.fromfile(filepath,count=-1,sep='').astype(np.float32)
+#     combined_data = np.reshape(data_vector,(int(data_vector.size/4),4))
     
-    data_vector = np.fromfile(filepath,dtype=np.float32,count=-1,sep='')
-    combined_data = np.reshape(data_vector,(int(data_vector.size/4),4))
+#     x_points = combined_data[:,0]
+#     y_points = combined_data[:,1]
+#     z_points = combined_data[:,2]
+#     values   = combined_data[:,3]
     
-    x_points = combined_data[:,0]
-    y_points = combined_data[:,1]
-    z_points = combined_data[:,2]
-    values   = combined_data[:,3]
+#     volume = np.array(list(zip(x_points,y_points,z_points)),dtype=np.float32)
+#     values = np.array(values,dtype=np.float32)
     
-    volume = np.array(list(zip(x_points,y_points,z_points)),dtype=np.float32)
-    values = np.array(values,dtype=np.float32)
-    
-    return volume,values
+#     return volume,values
 
 
-def LoadEXT(filepath):
+# def SaveNPY(volume,values,filename):
+    
+#     from numpy import save
+    
+#     x_points = volume[:,0].flatten()
+#     y_points = volume[:,1].flatten()
+#     z_points = volume[:,2].flatten()
+#     values   = values.flatten()
+    
+#     data = np.array([x_points,y_points,z_points,values]).transpose()
+    
+#     save(filename, data)
+    
+#     return None   
 
-    ### Insert code here for any other file extension.
-    volume,values = None,None 
-    ### Insert code here for any other file extension.
-    
-    return volume,values
 
-
-def LoadData(filepath):
-    
-    extension = filepath.split(".")[-1].lower()
-    volume,values = None,None
-    
-    if extension not in ["npy","txt"]:
-        print("Error: Data file extension is not accepted.")
-    
-    elif extension == "npy":
-        volume,values = LoadNPY(filepath)    
+# def SaveTXT(volume,values,filename):
         
-    elif extension == "txt":
-        volume,values = LoadTXT(filepath)
+#     from numpy import savetxt
+    
+#     x_points = volume[:,0].flatten()
+#     y_points = volume[:,1].flatten()
+#     z_points = volume[:,2].flatten()
+#     values   = values.flatten()
+    
+#     data = np.array([x_points,y_points,z_points,values]).transpose()
+    
+#     fmt = '%16.15e', '%16.15e', '%16.15e', '%+16.15e'
+
+#     savetxt(filename,data,delimiter=',',fmt=fmt)
+    
+#     return None   
+
+
+# def SaveBIN(volume,values,filename):
         
-    return volume,values
+#     from numpy import savetxt
+    
+#     x_points = volume[:,0].flatten()
+#     y_points = volume[:,1].flatten()
+#     z_points = volume[:,2].flatten()
+#     values   = values.flatten()
+    
+#     data = np.array([x_points,y_points,z_points,values],dtype=np.float32).transpose()
+    
+#     data.tofile(filename,sep='',format='%s')
+    
+#     return None   
 
 
-def SaveNPY(volume,values,filename):
+# def MakeDataset(input_data,hyperparameters):
     
-    from numpy import save
-    
-    x_points = volume[:,0].flatten()
-    y_points = volume[:,1].flatten()
-    z_points = volume[:,2].flatten()
-    values   = values.flatten()
-    
-    data = np.array([x_points,y_points,z_points,values]).transpose()
-    
-    save(filename, data)
-    
-    return None   
-
-
-def SaveTXT(volume,values,filename):
+#     values = input_data.values
+#     volume = input_data.volume
         
-    from numpy import savetxt
-    
-    x_points = volume[:,0].flatten()
-    y_points = volume[:,1].flatten()
-    z_points = volume[:,2].flatten()
-    values   = values.flatten()
-    
-    data = np.array([x_points,y_points,z_points,values]).transpose()
-    
-    fmt = '%16.15e', '%16.15e', '%16.15e', '%+16.15e'
-
-    savetxt(filename,data,delimiter=',',fmt=fmt)
-    
-    return None   
-
-
-def SaveBIN(volume,values,filename):
+#     if hyperparameters.normalise: 
+#         values = 2.0*(((values-values.min())/(values.max()-values.min()))-0.5)
         
-    from numpy import savetxt
+#     dataset = tf.data.Dataset.from_tensor_slices((volume,values))
     
-    x_points = volume[:,0].flatten()
-    y_points = volume[:,1].flatten()
-    z_points = volume[:,2].flatten()
-    values   = values.flatten()
+#     dataset = dataset.shuffle(buffer_size=values.size,
+#                               seed=12345,
+#                               reshuffle_each_iteration=True)
     
-    data = np.array([x_points,y_points,z_points,values],dtype=np.float32).transpose()
+#     dataset = dataset.batch(batch_size=hyperparameters.batch_size)
     
-    data.tofile(filename,sep='',format='%s')
-    
-    return None   
-
-
-def SaveEXT(volume,values,filename):
-        
-    from numpy import savetxt
-    
-    x_points = volume[:,0].flatten()
-    y_points = volume[:,1].flatten()
-    z_points = volume[:,2].flatten()
-    values   = values.flatten()
-    
-    data = np.array([x_points,y_points,z_points,values]).transpose()
-    
-    ### Insert code here for any other file extension.
-    
-    return None   
-
-
-def MakeDataset(input_data,hyperparameters):
-    
-    values = input_data.values
-    volume = input_data.volume
-        
-    if hyperparameters.normalise: 
-        values = 2.0*(((values-values.min())/(values.max()-values.min()))-0.5)
-        
-    dataset = tf.data.Dataset.from_tensor_slices((volume,values))
-    
-    dataset = dataset.shuffle(buffer_size=values.size,
-                              seed=12345,
-                              reshuffle_each_iteration=True)
-    
-    dataset = dataset.batch(batch_size=hyperparameters.batch_size)
-    
-    return dataset
-
-
-# def GetPrimeFactors(n):
-    
-#     prime_factors = []
-    
-#     i = 2
-    
-#     while i <= n:
-        
-#         if (n%i == 0):
-#             n = n / i
-#             prime_factors.append(i)
-            
-#         else:
-#             i = i + 1
-        
-#     return prime_factors   
-    
+#     return dataset 
     
 #=# DEFINE CLASSES #==========================================================#
 
 class DataClass():
 
+    #==========================================================================
+    # Define the initialisation constructor function for the 'DataClass' class   
+
     def __init__(self):
         
-        self.volume = np.array
-        self.values = np.array
-        self.volume_max = None
-        self.volume_min = None
+        # Initialise internal variables for n-dimensional positional data 
+        self.volume = np.array          
+        self.volume_max = np.array     
+        self.volume_min = np.array     
+        self.volume_avg = np.array
+        self.volume_rng = np.array
+        
+        # Initialise internal variables for one-dimensional scalar values
+        self.values = np.array          
+        self.values_max = 0.0           
+        self.values_min = 0.0  
+        self.values_avg = 0.0
+        self.values_rng = 0.0
+        
+        # Initialise internal variables for the input shape and dimension
+        self.resolution = np.array      
+        self.dimensions = 3             
         
         return None
+    
+    #==========================================================================
+    # Define a function to load an arbitrary dimension scalar field and extract 
+    # useful meta-data. Note: 'filepath' must point to a file ending in '*.npy' 
     
     def LoadValues(self,filepath):
         
         print("Loading Data: '{}'.\n".format(filepath))
         
+        # Determine the file extension (type) from the provided file path
         extension = filepath.split(".")[-1].lower()
-        volume,values = None,None
         
-        if extension not in ["npy","txt"]:
-            print("Extension Not Supported: '{}'. ".format(extension),end='')
-            print("Cannot Load: '{}'.\n".format(filepath))
+        # If the extension matches ".npy" then load it, else throw an error
+        if extension == "npy":  
+            data = np.load(filepath)            
+        else:
+            print("Error: File Type Not Supported: '{}'. ".format(extension))
             return None
-    
-        elif extension == "npy":
-            volume,values = LoadNPY(filepath)    
-            
-        elif extension == "txt":
-            volume,values = LoadTXT(filepath)
         
-        self.volume = volume
-        self.values = values
-        self.volume_max = self.volume.max()
-        self.volume_min = self.volume.min()
+        # Extract the positional data (i.e. volume) and scalars (i.e. values)
+        volume = data[...,:-1]                 
+        values = data[...,-1:]                 
+        
+        # Determine the input resolution and number of coordinate dimensions
+        self.resolution = volume.shape[:-1]    
+        self.dimensions = volume.shape[ -1]     
+        
+        # Determine the maximum, minimum, average and range values of 'volume'
+        self.volume_max = np.amax(volume,axis=tuple(np.arange(self.dimensions)))
+        self.volume_min = np.amin(volume,axis=tuple(np.arange(self.dimensions)))
+        self.volume_avg = (self.volume_max + self.volume_min) / 2.0
+        self.volume_rng = abs(self.volume_max - self.volume_min)
+        
+        # Determine the maximum, minimum, average and range values of 'values'
+        self.values_max = values.max()
+        self.values_min = values.min()
+        self.values_avg = (self.values_max + self.values_min) / 2.0
+        self.values_rng = abs(self.values_max - self.values_min)
+        
+        # Normalise 'volume' and 'values' to the range [-1,+1]
+        self.volume = 2.0 * ((volume - self.volume_avg) / (self.volume_rng))        
+        self.values = 2.0 * ((values - self.values_avg) / (self.values_rng))
         
         return None
     
-    def SaveValues(self,filepath,name,extension):
-        
-        filename = os.path.join(filepath,name+extension)
-        
-        if extension not in [".npy",".txt",".bin"]:
-            print("Extension Not Supported: '{}'. ".format(extension),end='')
-            print("Cannot Save: '{}'.\n".format(filename))
-            return None            
+    #==========================================================================
+    # Define a function to concatenate and save a scalar field to a '.npy' file
     
-        if extension == ".npy": 
-            SaveNPY(self.volume,self.values,filename)
-            
-        if extension == ".txt": 
-            SaveTXT(self.volume,self.values,filename)
-            
-        if extension == ".bin": 
-            SaveBIN(self.volume,self.values,filename)
+    # -> Note: 'self.volume' and 'self.values' should be appropriately reshaped
+    # -> such that they have the same shape as the input scalar field.
+    
+    def SaveValues(self,filepath):
         
-        print("Saving Data: '{}'.\n".format(filename))
+        print("Saving Data: '{}'.\n".format(filepath))
+        
+        # Determine the file extension (type) from the provided file path
+        extension = filepath.split(".")[-1].lower()
+        
+        # If the extension matches ".npy" then save it else throw an error
+        if extension == "npy":  
+            data = np.concatenate((self.volume,self.values),axis=-1)
+            np.save(filepath,data)
+        else:
+            print("Error: File Type Not Supported: '{}'. ".format(extension))
+            return None
 
         return None
-
+    
+    #==========================================================================
+    # Define a function to create and return a 'tf.data.Dataset' dataset object     
+    
+    # -> Note: 'AUTOTUNE' prompts 'tf.data' to tune the value  of 'buffer_size'
+    # -> dynamically at runtime.
+    
+    def MakeDataset(self,hyperparameters):
+          
+        # Reshape 'volume' and 'values' into lists of vectors and scalars
+        flat_volume = self.volume.reshape(-1,self.volume.shape[-1]) 
+        flat_values = self.values.reshape(-1,self.values.shape[-1])
+        
+        # Create a dataset whose elements are slices of the given tensors
+        dataset = tf.data.Dataset.from_tensor_slices((flat_volume,flat_values))
+        
+        # Cache the elements of the dataset to increase runtime performance
+        dataset = dataset.cache()
+        
+        # Randomly shuffle the elements of the cached dataset 
+        dataset = dataset.shuffle(buffer_size=flat_values.size,
+                                  reshuffle_each_iteration=True)
+        
+        # Concatenate elements of the dataset into mini-batches
+        dataset = dataset.batch(batch_size=hyperparameters.batch_size,
+                                drop_remainder=False)
+        
+        # Pre-fetch elements from the dataset to increase throughput
+        dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
+                
+        return dataset 
+        
 #=============================================================================#
