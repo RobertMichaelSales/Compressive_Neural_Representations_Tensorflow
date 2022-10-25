@@ -1,6 +1,7 @@
-""" Created: 18.07.2022  \\  Updated: 18.07.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 25.10.2022  \\   Author: Robert Sales """
 
-#=# IMPORT LIBRARIES #========================================================#
+#==============================================================================
+# Import libraries and set flags
 
 import os 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -11,7 +12,8 @@ import tensorflow as tf
 from tensorflow import keras 
 from tensorflow.keras import layers
 
-#=# DEFINE FUNCTIONS #========================================================#
+#==============================================================================
+# Define a 'Sine Layer Block' using TensorFlow's functional API and Keras
 
 def SineLayerBlock(inputs,units,name):
 
@@ -30,6 +32,8 @@ def SineLayerBlock(inputs,units,name):
     
     return x
     
+#==============================================================================
+# Define a 'Residual Block' using TensorFlow's functional API and Keras
 
 def ResidualBlock(inputs,units,name,avg_1=False,avg_2=False):
 
@@ -49,39 +53,35 @@ def ResidualBlock(inputs,units,name,avg_1=False,avg_2=False):
     
     return x
 
+#==============================================================================
+# Define a function that constructs the 'SIREN' network from a specific network
+# configuration using the TensorFlow functional API and Keras (called NeurComp)
 
-def BuildNeurComp(hyperparameters):
+def BuildNeurComp(network_config):
     
-    print("Building Network: '{}'\n".format(hyperparameters.save_name))
+    print("Building Network: '{}'\n".format(network_config.network_save_name))
 
-    # Iterate through each layer in the network
-    for layer in np.arange(hyperparameters.total_num_layers):
+    # Iterate through each layer in the 'SIREN' network
+    for layer in np.arange(network_config.total_layers):
     
         # Obtain the input dimensions for that particular layer
-        units = hyperparameters.layer_dimensions[layer]
+        units = network_config.layer_dimensions[layer]
           
-        # Add the input layers
+        # Add the input layer
         if (layer == 0):                  
           
             name = "l0_input"
-            
-            input = tf.keras.layers.Input(shape=(units,),name=name)
+            input_layer = tf.keras.layers.Input(shape=(units,),name=name)
             
             name = "l0_sineblock"
-            
-            x = SineLayerBlock(input,hyperparameters.layer_dimensions[layer+1],name=name)
+            x = SineLayerBlock(input_layer,network_config.layer_dimensions[layer+1],name=name)
           
         # Add the output layer
-        elif (layer == hyperparameters.total_num_layers - 1):
+        elif (layer == network_config.total_layers - 1):
           
             name = "l{}_output".format(layer)
             
-            output =  tf.keras.layers.Dense(units=units,
-                                            activation=None,
-                                            use_bias=True,
-                                            kernel_initializer="glorot_uniform",
-                                            bias_initializer="zeros",
-                                            name=name)(x)
+            output_layer =  tf.keras.layers.Dense(units=units,name=name)(x)
           
         # Add residual block layers
         else:
@@ -89,72 +89,13 @@ def BuildNeurComp(hyperparameters):
             name = "l{}_res".format(layer)
             
             avg_1 = (layer > 1)
-            avg_2 = (layer == (hyperparameters.total_num_layers - 3))
+            avg_2 = (layer == (network_config.total_layers - 3))
             
             x = ResidualBlock(x,units,name,avg_1=avg_1,avg_2=avg_2)
     
     # Declare the network model
-    NeurComp = tf.keras.Model(inputs=input,outputs=output)
+    NeurComp = tf.keras.Model(inputs=input_layer,outputs=output_layer)
     
     return NeurComp
 
-
-def ComputeTotalParameters(hyperparameters,neurons_per_layer):
- 
-    # Determine the number of inter-layer operations
-    num_of_operations = hyperparameters.total_num_layers     
-    
-    # [input -> dense] + [dense / residual -> residual] + [residual -> output]                        
-      
-    # Set the total number of network parameters to zero
-    num_of_parameters = 0                                                         
-      
-    # Iterate through each of the temporary layers
-    for layer in range(0,num_of_operations):
-      
-        if (layer==0):                             # [input -> dense]
-    
-            # Determine the input and output dimensions of each layer
-            dim_input  = hyperparameters.input_dimension              
-            dim_output = neurons_per_layer
-              
-            # Add parameters from the weight matrix and bias vector
-            num_of_parameters += (dim_input * dim_output) + dim_output
-      
-        elif (layer==num_of_operations-1):     # [residual -> output]
-      
-            # Determine the input and output dimensions of each layer
-            dim_input  = neurons_per_layer
-            dim_output = hyperparameters.yield_dimension
-              
-            # Add parameters from the weight matrix and bias vector
-            num_of_parameters += (dim_input * dim_output) + dim_output 
-      
-        else:                         # [dense / residual -> residual]
-      
-            # Add parameters from the weight matrix and bias vector
-            num_of_parameters += (neurons_per_layer * neurons_per_layer) + neurons_per_layer
-            num_of_parameters += (neurons_per_layer * neurons_per_layer) + neurons_per_layer        
-              
-    return num_of_parameters
-
-
-def ComputeNeuronsPerLayer(hyperparameters):
-  
-    # Set the minimum neurons per layer
-    neurons_per_layer = hyperparameters.min_neurons_per_layer
-      
-    # Keep adding neurons until the network size exceeds the target size
-    while (ComputeTotalParameters(hyperparameters,neurons_per_layer) < hyperparameters.target_size):
-        neurons_per_layer = neurons_per_layer + 1
-      
-    # Return the first neuron count to exceed the compression target
-    neurons_per_layer = neurons_per_layer - 1
-    
-    return neurons_per_layer
-
-
-#=# DEFINE CLASSES #==========================================================#
-
-
-#=============================================================================#
+#=============================================================================
