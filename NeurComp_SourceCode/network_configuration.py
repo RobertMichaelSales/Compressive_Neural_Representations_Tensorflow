@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 25.10.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 26.10.2022  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -23,15 +23,15 @@ class NetworkConfigClass():
     def __init__(self):
    
         # Set network hyperparameters
-        self.network_save_name                  = "neurcomp_v1"
+        self.network_name                       = "neurcomp_v1"
         self.target_compression_ratio           = 50        
         self.hidden_layers                      = 8
         self.min_neurons_per_layer              = 10
         
         # Set training hyperparameters
-        self.initial_learn_rate                 = 5e-5
+        self.learn_rate                         = 5e-5
         self.batch_size                         = 1024
-        self.max_training_epochs                = 75
+        self.num_training_epochs                = 75
         self.learning_decay_rate                = 20
        
         return None
@@ -135,17 +135,26 @@ class NetworkConfigClass():
         
         print("Saving network configuration: {}".configuration_filepath)
         
-        # Obtain a dictionary with the network configuration (i.e. config)
-        configuration_dictionary = vars(self)
+        # Determine the file extension (type) from the provided file path
+        extension = configuration_filepath.split(".")[-1].lower()
         
-        # Obtain date and time data, then add it to the config dictionary
-        now = datetime.now()
-        date_and_time_string = now.strftime("%d %b %Y, %H:%M:%S").upper()
-        configuration_dictionary["date_time"] = date_and_time_string
-        
-        # Write all entries in 'configuration_dictionary' to a .JSON file
-        with open(configuration_filepath, 'w') as configuration_file:
-            json.dump(configuration_dictionary,configuration_file,indent=4)
+        # If the extension matches ".npy" then load it, else throw an error
+        if extension == "json":  
+            
+            # Obtain a dictionary with the network configuration (i.e. config)
+            configuration_dictionary = vars(self)
+            
+            # Obtain date and time data, then add it to the config dictionary
+            now = datetime.now()
+            date_and_time_string = now.strftime("%d %b %Y, %H:%M:%S").upper()
+            configuration_dictionary["date_time"] = date_and_time_string
+            
+            # Write all entries in 'configuration_dictionary' to a .JSON file
+            with open(configuration_filepath, 'w') as configuration_file:
+                json.dump(configuration_dictionary,configuration_file,indent=4)
+              
+        else:
+            print("Error: File Type Not Supported: '{}'. ".format(extension))    
     
         return None
     
