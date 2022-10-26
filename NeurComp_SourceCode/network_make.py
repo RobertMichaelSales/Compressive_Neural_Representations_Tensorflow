@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 25.10.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 26.10.2022  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -56,7 +56,7 @@ def ResidualBlock(inputs,units,name,avg_1=False,avg_2=False):
 
 def BuildNeurComp(network_config):
     
-    print("Building Network: '{}'\n".format(network_config.network_save_name))
+    print("Building Network: '{}'\n".format(network_config.network_name))
 
     # Iterate through each layer in the 'SIREN' network
     for layer in np.arange(network_config.total_layers):
