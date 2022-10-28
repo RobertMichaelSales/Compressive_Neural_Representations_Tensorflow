@@ -1,4 +1,4 @@
-""" Created: 11.08.2022  \\  Updated: 11.08.2022  \\   Author: Robert Sales """
+""" Created: 11.08.2022  \\  Updated: 27.10.2022  \\   Author: Robert Sales """
 
 #=# IMPORT LIBRARIES #========================================================#
 
@@ -11,19 +11,20 @@ from datetime import datetime
 
 #=# DEFINE FUNCTIONS #========================================================#
 
-def LoadingBar(current_count,final_count,bar_length):
+
+def LoadingBar(string,current_count,final_count,bar_length):
         
     # Calculate percentage complete
-    percentage = (100*(current_count+1)/final_count)
+    percent = (100*(current_count+1)/final_count)
     
     # Calculate number of symbols for loading bar
-    num_symbols = round(percentage *(bar_length/100))
+    num_symbols = round(percent *(bar_length/100))
     
     # Compile string for animated progress bar
-    bar_string = ("["+"="*(num_symbols-1)+">"+"."*(bar_length-num_symbols)+"]")
+    bar = ("["+"="*(num_symbols-1)+">"+"."*(bar_length-num_symbols)+"]")
     
     # Compile the progress message 
-    message = ("\rINFO: "+bar_string+" {:3.0f}% Complete.".format(percentage))
+    message = ("\r"+ string + ": "+ bar +" {:3.0f}%.".format(percent))
     
     print(message,end="")
     

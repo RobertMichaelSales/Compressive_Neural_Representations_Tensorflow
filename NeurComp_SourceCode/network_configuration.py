@@ -29,10 +29,10 @@ class NetworkConfigClass():
         self.min_neurons_per_layer              = 10
         
         # Set training hyperparameters
-        self.learn_rate                         = 5e-5
-        self.batch_size                         = 1024
-        self.num_training_epochs                = 75
-        self.learning_decay_rate                = 20
+        self.initial_learning_rate              = 5e-5
+        self.batch_size                         = 16000
+        self.num_epochs                         = 2
+        self.decay_rate                         = 20
        
         return None
     
