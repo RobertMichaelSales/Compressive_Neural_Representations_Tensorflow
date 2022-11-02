@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 26.10.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 02.11.2022  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -30,9 +30,9 @@ class NetworkConfigClass():
         
         # Set training hyperparameters
         self.initial_learning_rate              = 5e-5
-        self.batch_size                         = 16000
-        self.num_epochs                         = 2
-        self.decay_rate                         = 20
+        self.batch_size                         = 4096
+        self.num_epochs                         = 50
+        self.decay_rate                         = 10
        
         return None
     
