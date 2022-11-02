@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 26.10.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 02.11.2022  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -51,7 +51,9 @@ class DataClass():
     # Note: The '*' in the definition of 'self.indices' treats lists and tuples
     # as consecutive arguments so 'print(*[1,2,3])' gives '1 2 3' not '[1,2,3]'
     
-    def LoadValues(self,filepath):
+    # Note: Do not swap the order of the flattening to before the normalisation
+    
+    def LoadData(self,filepath,normalise=True):
         
         print("Loading Data: '{}'.\n".format(filepath))
         
@@ -67,38 +69,67 @@ class DataClass():
         
         # Extract the positional data (i.e. volume) and scalars (i.e. values)
         self.volume = data[...,:-1]                 
-        self.values = data[...,-1:]      
-        self.flat_volume = self.volume.reshape(-1,self.volume.shape[-1])    
-        self.flat_values = self.values.reshape(-1,self.values.shape[-1])        
+        self.values = data[...,-1:]
         
-        # Determine the input and output meta-data
-        self.input_resolution = self.volume.shape[:-1]    
-        self.input_dimensions = self.volume.shape[ -1] 
-        self.input_size = self.values.size
-        self.output_dimensions = self.values.shape[-1]
+        # Determine the input/output meta-data 
+        self.input_resolution = self.volume.shape[:-1]  # (i.e. [150,150,150])
+        self.input_dimensions = self.volume.shape[ -1]  # (i.e. [3])
+        self.input_size = self.values.size              # (i.e. 3375000)
+        self.output_dimensions = self.values.shape[-1]  # (i.e. [1])
+        
+        # Form an array of indices where 'coords[x,y,...,z]' = '[x,y,...,z]'
+        self.coords = np.stack(np.meshgrid(*[np.arange(x) for x in self.input_resolution],indexing="ij"),axis=-1)
         
         # Determine the maximum, minimum, average and range values of 'volume'
         self.volume_max = np.amax(self.volume,axis=tuple(np.arange(self.input_dimensions)))
         self.volume_min = np.amin(self.volume,axis=tuple(np.arange(self.input_dimensions)))
-        self.volume_avg = (self.volume_max + self.volume_min) / 2.0
-        self.volume_rng = abs(self.volume_max - self.volume_min)
+        self.volume_avg = (self.volume_max+self.volume_min)/2.0
+        self.volume_rng = abs(self.volume_max-self.volume_min)
         
         # Determine the maximum, minimum, average and range values of 'values'
         self.values_max = self.values.max()
         self.values_min = self.values.min()
-        self.values_avg = (self.values_max + self.values_min) / 2.0
-        self.values_rng = abs(self.values_max - self.values_min)
+        self.values_avg = (self.values_max+self.values_min)/2.0
+        self.values_rng = abs(self.values_max-self.values_min)
         
         # Normalise 'volume' and 'values' to the range [-1,+1]
-        self.volume = 2.0 * ((self.volume - self.volume_avg) / (self.volume_rng))        
-        self.values = 2.0 * ((self.values - self.values_avg) / (self.values_rng))
-        
-        # Form an array of indices where '*.indices[x,y,...,z]' = '[x,y,...,z]'
-        self.indices = np.stack(np.meshgrid(*[np.arange(x) for x in self.input_resolution],indexing="ij"),axis=-1)
-        self.flat_indices = self.indices.reshape(-1,self.indices.shape[-1])
-        
+        if normalise:
+            self.volume = 2.0*((self.volume-self.volume_avg)/(self.volume_rng))        
+            self.values = 2.0*((self.values-self.values_avg)/(self.values_rng))
+        else:
+            pass
+                
+        # Flatten 'volume', 'values' and 'coords' before creating the dataset
+        self.flat_volume = np.reshape(np.ravel(self.volume,order="C"),(-1,self.volume.shape[-1]))
+        self.flat_values = np.reshape(np.ravel(self.values,order="C"),(-1,self.values.shape[-1]))   
+        self.flat_coords = np.reshape(np.ravel(self.coords,order="C"),(-1,self.coords.shape[-1]))
+                
         return None
     
+    #==========================================================================
+    # Define a function to copy attributes from 'DataClassObject' to 'self' but
+    # without referencing 'DataClassObject' itself (so attributes in 'self' can 
+    # be safely changed without changing those in 'DataClassObject')
+    
+    # -> 'getattr' and 'setattr' can be used to copy values without referencing
+    
+    def CopyData(self,DataClassObject):
+        
+        # Extract attribute keys from 'DataObject' and define exceptions
+        exception_keys = ["values","flat_values"]
+        attribute_keys = DataClassObject.__dict__.keys()
+        
+        # Iterate through the list of attribute keys
+        for key in attribute_keys:
+            
+            # Copy the attribute if the key is not in 'exception_keys'
+            if key not in exception_keys:
+                setattr(self,key,getattr(DataClassObject,key))
+            else:
+                pass
+            
+        return None
+
     #==========================================================================
     # Define a function to compute the gradient of 'values' with respect to the
     # mesh (spacings) described by the elements of 'volume'
@@ -111,17 +142,6 @@ class DataClass():
         # self.volume_gradient = np.gradient(self.values,self.volume)
         
         return None
-    
-    #==========================================================================
-    # Define a function to un-normalise both 'volume' and 'values' 
-    
-    def UnNormalise(self):
-        
-        # Reverse normalise 'volume' and 'values' to the initial range
-        self.volume = ((self.volume_rng * (self.volume / 2.0)) + self.volume_avg)
-        self.values = ((self.values_rng * (self.values / 2.0)) + self.values_avg)
-        
-        return None
         
     #==========================================================================
     # Define a function to create and return a 'tf.data.Dataset' dataset object     
@@ -132,7 +152,7 @@ class DataClass():
     def MakeDataset(self,network_config):
         
         # Create a dataset whose elements are slices of the given tensors
-        dataset = tf.data.Dataset.from_tensor_slices((self.flat_volume,self.flat_values,self.flat_indices))
+        dataset = tf.data.Dataset.from_tensor_slices((self.flat_volume,self.flat_values,self.flat_coords))
         
         # Cache the elements of the dataset to increase runtime performance
         dataset = dataset.cache()
@@ -154,15 +174,23 @@ class DataClass():
     # -> Note: 'self.volume' and 'self.values' should be appropriately reshaped
     # -> such that they have the same shape as the input scalar field.
     
-    def SaveValues(self,filepath):
+    def SaveData(self,filepath,normalise=True):
         
         print("Saving Data: '{}'.\n".format(filepath))
         
         # Determine the file extension (type) from the provided file path
         extension = filepath.split(".")[-1].lower()
+            
+        # Reverse normalise 'volume' and 'values' to the initial range
+        if normalise:
+            self.volume = ((self.volume_rng*(self.volume/2.0))+self.volume_avg)
+            self.values = ((self.values_rng*(self.values/2.0))+self.values_avg)
+        else:
+            pass
         
         # If the extension matches ".npy" then save it else throw an error
         if extension == "npy":  
+            
             data = np.concatenate((self.volume,self.values),axis=-1)
             np.save(filepath,data)
         else:
