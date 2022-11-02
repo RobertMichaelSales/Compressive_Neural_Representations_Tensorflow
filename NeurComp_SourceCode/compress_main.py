@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 28.10.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 02.11.2022  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import user-defined libraries 
@@ -11,14 +11,14 @@
 
 from data_management         import DataClass
 from file_management         import FileStructureClass
-from loss_functions          import LossPred, LossGrad
+from loss_functions          import LossPred,LossGrad,LossPSNR
 from network_configuration   import NetworkConfigClass
 from network_make            import BuildNeurComp
 
 #==============================================================================
 # Import libraries and set flags
 
-import os,time
+import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
 
@@ -27,6 +27,9 @@ tf.get_logger().setLevel('ERROR')
 
 gpus = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(gpus[0],True)
+
+import numpy as np
+import time
 
 #==============================================================================
 # Set filepaths
@@ -52,16 +55,19 @@ input_data_filepath = ("C:\\"
 
 #==============================================================================
 # Enter the main script
-
-print("="*80,"\nNEURCOMP: IMPLICIT NEURAL REPRESENTATIONS (Version 2.0)\n")
+print("-"*60,"\nNEURCOMP: IMPLICIT NEURAL REPRESENTATIONS (Version 2.0)\n")
 
 #==============================================================================
 # Start initialising files and model
-print("="*80,"\nINITIALISING FILES AND MODEL:\n")
+print("-"*60,"\nINITIALISING FILES AND MODEL:\n")
 
 # Create a 'DataClass' object to store input data and load input data from file
 input_data = DataClass()
-input_data.LoadValues(filepath=input_data_filepath)
+input_data.LoadData(filepath=input_data_filepath,normalise=True)
+
+# Create a 'DataClass' object to store output data and copy important meta-data
+output_data = DataClass()
+output_data.CopyData(DataClassObject=input_data)
 
 # Create a 'NetworkConfigClass' object to store the network hyperparameters and
 # generate the network structure based on the input dimensions
@@ -84,7 +90,7 @@ training_metric = tf.keras.metrics.MeanSquaredError()
 
 #==============================================================================
 # Start compressing data
-print("="*80,"\nCOMPRESSING DATA:")
+print("-"*60,"\nCOMPRESSING DATA:")
 
 # Create a dictionary of lists for storing training data
 training_data = {"epoch": [],"loss": [],"time": [],"learning_rate": []}
@@ -93,7 +99,7 @@ training_data = {"epoch": [],"loss": [],"time": [],"learning_rate": []}
 for epoch in range(network_config.num_epochs):
     
     # Print Epoch information
-    print("\nEpoch: {}/{}".format(epoch,network_config.num_epochs))
+    print("\nEpoch: {}/{}".format(epoch+1,network_config.num_epochs))
     training_data["epoch"].append(epoch)
       
     # Calculate, set, store and print the current optimiser learning rate
@@ -108,7 +114,9 @@ for epoch in range(network_config.num_epochs):
     #==========================================================================
     # Enter the inner training loop: batches:
     for batch, (volume_batch,values_batch,indices_batch) in enumerate(dataset):
-            
+        
+        print("\rBatch: {}/{}".format(batch+1,len(dataset)),end="")
+        
         #======================================================================
         # Open a 'GradientTape' to record the operations run during the forward
         # pass, which enables auto-differentiation
@@ -134,7 +142,7 @@ for epoch in range(network_config.num_epochs):
         # Update the training metric for the current mini-batch results
         training_metric.update_state(values_batch,values_predicted)
             
-    #==========================================================================
+    #==========================================================================  
     # Fetch, store, reset and print the training metric
     training_data["loss"].append(training_metric.result().numpy())
     training_metric.reset_states()
@@ -146,17 +154,29 @@ for epoch in range(network_config.num_epochs):
     print("Training Time: {:.1f} secs".format(training_data["time"][epoch]))
     
 #==============================================================================
-
-output_data = input_data
-output_data.values = neur_comp.predict(input_data.flat_volume,batch_size=network_config.batch_size)
-output_data.values.reshape(input_data.values.shape)
-output_data.UnNormalise()
-output_data.SaveValues(filepath = "test_vol_out.npy")
+# Save training data
 
 
-YOU_GOT_HERE_YOU_GOT_HERE_YOU_GOT_HERE_YOU_GOT_HERE_YOU_GOT_HERE_YOU_GOT_HERE_YOU_GOT_HERE_YOU_GOT_HERE_YOU_GOT_HERE_YOU_GOT_HERE_YOU_GOT_HERE_YOU_GOT_HERE_YOU_GOT_HERE_YOU_GOT_HERE_YOU_GOT_HERE_
 
-# input_data.values.shape changes somewhere -> it need to stay the same
+#==============================================================================
+# Start predicting data
+print("-"*60,"\nPREDICTING")
+
+# Predict 'flat_values' using the Neurcomp's learned weights and biases
+output_data.flat_values = neur_comp.predict(input_data.flat_volume,batch_size=network_config.batch_size,verbose="0")
+
+# Reshape 'flat_values' into the shape of the original input dimensions
+output_data.values = np.reshape(output_data.flat_values,input_data.values.shape,order="C")
+
+# Compute the peak signal-to-noise ratio of the predicted volume
+psnr = LossPSNR(true=input_data.values,pred=output_data.values)
+print("Compression PSNR: {:.4f}".format(psnr))
+
+# Save the predicted values to a '.npy' volume rescaling as appropriate
+output_data.SaveData(filepath="test_vol_out.npy",normalise=True)
+
+#==============================================================================
+print("-"*60)
 
 
 
