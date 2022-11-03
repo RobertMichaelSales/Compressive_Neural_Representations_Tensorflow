@@ -1,3 +1,3 @@
 # Folders to ignore
 NeurComp_SourceCode/__pycache__/
-NeurComp_AuxFiles
+# NeurComp_AuxFiles

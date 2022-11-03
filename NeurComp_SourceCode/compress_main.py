@@ -72,6 +72,13 @@ filepaths = FileStructureClass(parent_directory=parent_directory,network_name=ne
 # Build NeurComp from the config information stored in 'network_config', select
 # an optimiser for training, and select a training metric to track the progress
 neur_comp = BuildNeurComp(network_config=network_config)
+
+
+#================================================================================================================== DEBUGGING v
+tf.keras.utils.plot_model(neur_comp,to_file="net.png",show_shapes=True)
+np.sum([np.prod(x.shape) for x in neur_comp.trainable_variables])
+#================================================================================================================== DEBUGGING ^
+
 optimiser = tf.keras.optimizers.Adam(learning_rate=network_config.initial_learning_rate)
 training_metric = tf.keras.metrics.MeanSquaredError()
 
