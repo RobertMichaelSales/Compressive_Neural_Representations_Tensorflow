@@ -34,24 +34,11 @@ import time
 #==============================================================================
 # Set filepaths
 
-parent_directory    = ("C:\\"
-                       "Users\\"
-                       "sales\\"
-                       "Documents\\"
-                       "GitHub\\"
-                       "Compressive_Neural_Representations_Tensorflow\\"
-                       "NeurComp_AuxFiles")
+errrr
 
-input_data_filepath = ("C:\\"
-                       "Users\\"
-                       "sales\\"
-                       "Documents\\"
-                       "GitHub\\"
-                       "Compressive_Neural_Representations_Tensorflow\\"
-                       "NeurComp_AuxFiles\\"
-                       "inputs\\"
-                       "volumes\\"
-                       "test_vol.npy")
+parent_directory = os.path.join(*os.getcwd().split("/")[0:-1],"NeurComp_Auxfiles")
+
+input_data_filepath = os.path.join(parent_directory,"inputs","volumes","test_vol.npy")
 
 #==============================================================================
 # Enter the main script
