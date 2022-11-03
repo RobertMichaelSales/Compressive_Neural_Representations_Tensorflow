@@ -36,6 +36,8 @@ def SineBlock(inputs,units,scale,name,avg_1=False,avg_2=False):
     
     x = tf.math.add(tf.math.multiply(inputs,weight_2),sine_2)
     
+    # x = tf.math.multiply(tf.math.add(inputs,sine_2),weight_2)
+    
     # init=tf.random_uniform_initializer(minval=(-1/(scale*units)),maxval=(+1/(scale*units)))
     # replace kernel_initializer with the above
 
@@ -47,7 +49,7 @@ def SineBlock(inputs,units,scale,name,avg_1=False,avg_2=False):
 
 def BuildNeurComp(network_config):
     
-    print("Building Network: '{}'\n".format(network_config.network_name))
+    print("Constructing Network Model: {}".format(network_config.network_name))
     
     scale = tf.constant(1.0)
 

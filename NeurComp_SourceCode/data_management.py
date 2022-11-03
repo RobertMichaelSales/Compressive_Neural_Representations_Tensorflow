@@ -17,7 +17,11 @@ class DataClass():
     #==========================================================================
     # Define the initialisation constructor function for 'DataClass'   
 
-    def __init__(self):
+    def __init__(self,name):
+        
+        # Initialise the name of the 'DataClass' instance
+        self.name = name
+        print("Creating DataClass Object: {}".format(self.name))
         
         # Initialise internal variables for n-dimensional positional data 
         self.volume,self.flat_volume = np.array,np.array    
@@ -55,7 +59,7 @@ class DataClass():
     
     def LoadData(self,filepath,normalise=True):
         
-        print("Loading Data: '{}'.\n".format(filepath))
+        print("Loading Data: {} > {}\n".format(filepath.split("/")[-1],self.name))
         
         # Determine the file extension (type) from the provided file path
         extension = filepath.split(".")[-1].lower()
@@ -115,6 +119,8 @@ class DataClass():
     
     def CopyData(self,DataClassObject):
         
+        print("Copying Data: {} > {}\n".format(DataClassObject.name,self.name))
+        
         # Extract attribute keys from 'DataObject' and define exceptions
         exception_keys = ["values","flat_values"]
         attribute_keys = DataClassObject.__dict__.keys()
@@ -151,6 +157,8 @@ class DataClass():
     
     def MakeDataset(self,network_config):
         
+        print("Creating Tensorflow Training Dataset\n")
+        
         # Create a dataset whose elements are slices of the given tensors
         dataset = tf.data.Dataset.from_tensor_slices((self.flat_volume,self.flat_values,self.flat_coords))
         
@@ -176,7 +184,7 @@ class DataClass():
     
     def SaveData(self,filepath,normalise=True):
         
-        print("Saving Data: '{}'.\n".format(filepath))
+        print("Saving Data: {}.\n".format(filepath.split("/")[-1]))
         
         # Determine the file extension (type) from the provided file path
         extension = filepath.split(".")[-1].lower()

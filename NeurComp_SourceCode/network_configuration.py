@@ -20,7 +20,11 @@ class NetworkConfigClass():
     # Define the initialisation constructor function for 'NetworkConfigClass'
     # Note: These are the only user-configurable hyperparameters
 
-    def __init__(self):
+    def __init__(self,name):
+        
+        # Initialise the name of the 'NetworkConfigClass' object
+        self.name = name
+        print("Creating NetworkConfigClass Object: {}".format(self.name))
    
         # Set network hyperparameters
         self.network_name                       = "neurcomp_v1"
@@ -29,11 +33,11 @@ class NetworkConfigClass():
         self.min_neurons_per_layer              = 10
         
         # Set training hyperparameters
-        self.initial_learning_rate              = 5e-4
-        self.batch_size                         = 8174
-        self.num_epochs                         = 50
+        self.initial_learning_rate              = 5e-3
+        self.batch_size                         = 16384
+        self.num_epochs                         = 1
         self.decay_rate                         = 5
-       
+           
         return None
     
     #==========================================================================
@@ -42,7 +46,7 @@ class NetworkConfigClass():
     # has dimensions for each layer as its elements
     
     def NetworkStructure(self,input_data):
-        
+                
         # Extract the useful internal parameters from the 'input_data' object
         self.input_dimensions = input_data.input_dimensions
         self.output_dimensions = input_data.output_dimensions
@@ -58,7 +62,9 @@ class NetworkConfigClass():
         self.layer_dimensions.extend([self.input_dimensions])  
         self.layer_dimensions.extend([self.neurons_per_layer]*self.hidden_layers)  
         self.layer_dimensions.extend([self.output_dimensions]) 
-                
+        
+        print("Calculating Network Dimensions: {}\n".format(self.layer_dimensions))
+
         return None
 
     #==========================================================================
