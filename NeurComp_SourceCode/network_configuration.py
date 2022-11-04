@@ -34,9 +34,9 @@ class NetworkConfigClass():
         
         # Set training hyperparameters
         self.initial_learning_rate              = 5e-3
-        self.batch_size                         = 16384
-        self.num_epochs                         = 1
-        self.decay_rate                         = 5
+        self.batch_size                         = 1024
+        self.num_epochs                         = 30
+        self.decay_rate                         = 3
            
         return None
     

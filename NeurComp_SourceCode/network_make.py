@@ -31,8 +31,8 @@ def SineBlock(inputs,units,scale,name,avg_1=False,avg_2=False):
     weight_1 = tf.constant(0.5) if avg_1 else tf.constant(1.0)  # Weight 1
     weight_2 = tf.constant(0.5) if avg_2 else tf.constant(1.0)  # Weight 2
         
-    sine_1 = tf.math.sin(tf.math.multiply(tf.keras.layers.Dense(units=units,name=name+"_dense_a")(inputs*weight_1),scale))
-    sine_2 = tf.math.sin(tf.math.multiply(tf.keras.layers.Dense(units=units,name=name+"_dense_b")(sine_1)         ,scale))
+    sine_1 = tf.math.sin(tf.math.multiply(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer="glorot_uniform",bias_initializer="zeros",name=name+"_dense_a")(inputs*weight_1),scale))
+    sine_2 = tf.math.sin(tf.math.multiply(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer="glorot_uniform",bias_initializer="zeros",name=name+"_dense_b")(sine_1)         ,scale))
     
     x = tf.math.add(tf.math.multiply(inputs,weight_2),sine_2)
     

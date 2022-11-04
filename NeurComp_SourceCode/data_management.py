@@ -155,6 +155,9 @@ class DataClass():
     # -> Note: 'AUTOTUNE' prompts 'tf.data' to tune the value  of 'buffer_size'
     # -> dynamically at runtime.
     
+    # -> Note: Moving 'dataset.cache()' up/down will reduce runtime performance
+    # -> significantly.
+    
     def MakeDataset(self,network_config):
         
         print("Creating Tensorflow Training Dataset\n")
@@ -167,7 +170,7 @@ class DataClass():
         
         # Randomly shuffle the elements of the cached dataset 
         dataset = dataset.shuffle(buffer_size=self.input_size,reshuffle_each_iteration=True)
-        
+                    
         # Concatenate elements of the dataset into mini-batches
         dataset = dataset.batch(batch_size=network_config.batch_size,drop_remainder=False)
         
