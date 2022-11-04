@@ -58,7 +58,7 @@ class NetworkConfigClass():
         self.num_of_parameters = self.TotalParameters()
         
         # Specify the network architecture as a list of layer dimensions
-        self.layer_dimensions       = []   
+        self.layer_dimensions = []   
         self.layer_dimensions.extend([self.input_dimensions])  
         self.layer_dimensions.extend([self.neurons_per_layer]*self.hidden_layers)  
         self.layer_dimensions.extend([self.output_dimensions]) 

@@ -17,9 +17,6 @@ def SineLayer(inputs,units,scale,name):
     x = tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer="glorot_uniform",bias_initializer="zeros",name=name+"_dense")(inputs)
     
     x = tf.math.sin(tf.math.multiply(x,scale))
-        
-    # init=tf.random_uniform_initializer(minval=(-1/(scale*units)),maxval=(+1/(scale*units)))
-    # replace kernel_initializer with the above
     
     return x
     
@@ -35,11 +32,6 @@ def SineBlock(inputs,units,scale,name,avg_1=False,avg_2=False):
     sine_2 = tf.math.sin(tf.math.multiply(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer="glorot_uniform",bias_initializer="zeros",name=name+"_dense_b")(sine_1)         ,scale))
     
     x = tf.math.add(tf.math.multiply(inputs,weight_2),sine_2)
-    
-    # x = tf.math.multiply(tf.math.add(inputs,sine_2),weight_2)
-    
-    # init=tf.random_uniform_initializer(minval=(-1/(scale*units)),maxval=(+1/(scale*units)))
-    # replace kernel_initializer with the above
 
     return x
 

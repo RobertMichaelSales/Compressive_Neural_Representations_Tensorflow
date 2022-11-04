@@ -3,13 +3,6 @@
 #==============================================================================
 # Import user-defined libraries 
 
-# from callback_functions      import *
-# from network_load            import *
-# from network_save            import *
-# from predict_volumes         import *
-# from utility_functions       import *
-# from file_management         import FileStructureClass
-
 from data_management         import DataClass
 from training_functions      import TrainStep,LRScheduler,LossPSNR
 from network_configuration   import NetworkConfigClass
@@ -18,16 +11,12 @@ from network_make            import BuildNeurComp
 #==============================================================================
 # Import libraries and set flags
 
-import os
-
+import os,time,json
 import tensorflow as tf
-#tf.get_logger().setLevel('ERROR')
+import numpy as np
 
 gpus = tf.config.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(gpus[0],True)
-
-import numpy as np
-import time
+if not (len(gpus) == 0): tf.config.experimental.set_memory_growth(gpus[0],True)
 
 #==============================================================================
 # Set filepaths
@@ -84,12 +73,12 @@ training_data = {"epoch": [],"loss": [],"time": [],"learning_rate": []}
 for epoch in range(network_config.num_epochs):
     
     # Store the current epoch number
-    training_data["epoch"].append(epoch)
+    training_data["epoch"].append(float(epoch))
       
     # Update and store the current learning rate
     learning_rate = LRScheduler(network_config,epoch)
     optimiser.lr.assign(learning_rate)
-    training_data["learning_rate"].append(learning_rate)
+    training_data["learning_rate"].append(float(learning_rate))
     
     # Print the current epoch number and learning rate
     print("\n",end="")
@@ -106,19 +95,20 @@ for epoch in range(network_config.num_epochs):
         # Print the batch progress
         print("\rBatch Number \t\t\t{}/{}".format(batch+1,len(training_dataset)),end="")
         
+        # Run a training step with the current batch
         TrainStep(neur_comp,optimiser,training_metric,volume_batch,values_batch,indices_batch)
             
     #==========================================================================  
     print("\n",end="")
 
     # Fetch, store, reset and print the training metric
-    training_data["loss"].append(training_metric.result().numpy())
+    training_data["loss"].append(float(training_metric.result().numpy()))
     training_metric.reset_states()
     print("Mean Squared Loss\t\t{:.5f}".format(training_data["loss"][epoch]))
     
     # Stop timing epoch and print the elapsed time
     epoch_end_time = time.time()
-    training_data["time"].append((epoch_end_time-epoch_start_time))
+    training_data["time"].append(float(epoch_end_time-epoch_start_time))
     print("Epoch Time\t\t\t\t{:.2f} seconds".format(training_data["time"][epoch]))
     
 # Stop timing training
@@ -128,13 +118,19 @@ print("\nTotal Training Time\t{:.2f} seconds".format(train_end_time-train_start_
 # Save training data
 print("-"*80,"\nSAVING RESULTS:")
 
+training_data_filepath = os.path.join(base_directory,"outputs","training_data.json")                            # <------------------ WORK FROM HERE
 
+with open(training_data_filepath,"w") as file: json.dump(training_data,file,indent=4,sort_keys=True)
 
+config_data_filepath = os.path.join(base_directory,"outputs","configuration_data.json")         
+
+network_config.SaveConfigToJson(configuration_filepath=config_data_filepath)
 
 #==============================================================================
 # Start predicting data
 print("-"*80,"\nPREDICTING")
 
+data_file_path_output = os.path.join(base_directory,"outputs","test_vol_output.json")
 
 # Predict 'flat_values' using the Neurcomp's learned weights and biases
 output_data.flat_values = neur_comp.predict(input_data.flat_volume,batch_size=network_config.batch_size,verbose="0")
@@ -147,65 +143,7 @@ psnr = LossPSNR(true=input_data.values,pred=output_data.values)
 print("Compression Peak Signal-to-Noise Ratio: {:.2f}".format(psnr))
 
 # Save the predicted values to a '.npy' volume rescaling as appropriate
-output_data.SaveData(filepath="test_vol_out.npy",normalise=True)
+output_data.SaveData(filepath=data_file_path_output,normalise=True)
 
 #==============================================================================
-print("-"*60)
-
-
-
-# print("="*80,"\n")
-# print("SAVING MODEL:\n")
-
-# # Save the trained model, save network_config to CSV -------------------------
-
-# SaveTrainedModel(NeurComp,filepaths,overwrite=True,save_format="tf")
-# network_config.Savenetwork_config(filepaths)
-
-# #------------------------------------------------------------------------------
-
-# times.append(datetime.now())
-# ElapsedTime(times)
-# print("="*80,"\n")
-# print("QUANTISATION:\n")
-
-# # Make TFLite model, make quantised model, save both --------------------------
-
-# NeurComp_tflite = MakeTFLiteModel(filepaths,overwrite=True)
-# NeurComp_quantd = MakeQuantdModel(filepaths,overwrite=True)
-
-# #------------------------------------------------------------------------------
-
-# times.append(datetime.now())
-# ElapsedTime(times)
-# print("="*80,"\n")
-# print("EVALUATING:\n")
-
-# # Predict the volume using the normal, tflite and quantised models.............
-# predicted_volume_normal = PredictNormal(NeurComp,input_data,network_config)
-# predicted_volume_tflite = PredictTFLite(filepaths,input_data)
-# predicted_volume_quantd = PredictQuantd(filepaths,input_data)
-
-# #------------------------------------------------------------------------------
-
-# times.append(datetime.now())
-# ElapsedTime(times)
-# print("="*80,"\n")
-# print("SAVING FILES:\n")
-
-# # Obtain the save filepath, save the predicted volumes for evaluation..........
-# save_filepath = filepaths.output_volume_path
-
-# for extension in [".npy",".txt",".bin"]:
-#     input_data.SaveValues(save_filepath,"original",extension)
-#     predicted_volume_normal.SaveValues(save_filepath,"normal",extension)
-#     predicted_volume_tflite.SaveValues(save_filepath,"tflite",extension)
-#     predicted_volume_quantd.SaveValues(save_filepath,"quantd",extension)
-
-# #------------------------------------------------------------------------------
-
-# times.append(datetime.now())
-# ElapsedTime(times)
-# print("="*80,"\n")
-
-#=============================================================================#
+print("-"*80)
