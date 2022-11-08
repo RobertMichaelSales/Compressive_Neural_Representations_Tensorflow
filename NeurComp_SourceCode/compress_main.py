@@ -13,7 +13,7 @@ from training_functions      import TrainStep,LRScheduler,LossPSNR
 # Import libraries and set flags
 
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 import time,json
 import tensorflow as tf
@@ -72,7 +72,8 @@ optimiser = tf.keras.optimizers.Adam(learning_rate=network_config.initial_learni
 training_metric = tf.keras.metrics.MeanSquaredError()
 
 # Plot and save an image of the network architecture
-tf.keras.utils.plot_model(neur_comp,to_file="neurcomp.png",show_shapes=True)
+print("Saving Model Architecture As PNG")
+tf.keras.utils.plot_model(neur_comp,to_file=filepaths.network_image_path,show_shapes=True)
 
 #==============================================================================
 # Start compressing data

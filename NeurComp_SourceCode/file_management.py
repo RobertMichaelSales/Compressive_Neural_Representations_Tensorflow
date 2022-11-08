@@ -45,6 +45,9 @@ class FileClass():
         # Make the network architecture .json filepath
         self.network_architecture_path = os.path.join(self.output_dir,"network_architecture.json")
         
+        # Make the network architecture .json filepath
+        self.network_image_path = os.path.join(self.output_dir,"network.png")
+        
         # Make the training data .json filepath
         self.training_data_path = os.path.join(self.output_dir,"training_data.json")
         

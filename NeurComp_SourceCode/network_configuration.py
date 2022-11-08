@@ -24,7 +24,7 @@ class NetworkConfigClass():
         print("\nCreating NetworkConfigClass Object: {}".format(self.name))
    
         # Set network hyperparameters
-        self.network_name                       = "neurcomp_v1"
+        self.network_name                       = "neurcomp_1"
         self.target_compression_ratio           = 50        
         self.hidden_layers                      = 8
         self.min_neurons_per_layer              = 10
@@ -32,7 +32,7 @@ class NetworkConfigClass():
         # Set training hyperparameters
         self.initial_learning_rate              = 5e-3
         self.batch_size                         = 1024
-        self.num_epochs                         = 5
+        self.num_epochs                         = 30
         self.decay_rate                         = 3
            
         return None
