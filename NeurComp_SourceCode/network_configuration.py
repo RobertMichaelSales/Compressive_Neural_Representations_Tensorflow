@@ -1,12 +1,9 @@
-""" Created: 18.07.2022  \\  Updated: 02.11.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 08.11.2022  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
 
-import os 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-import json
+import os, json
 import numpy as np
 
 from datetime import datetime
@@ -24,7 +21,7 @@ class NetworkConfigClass():
         
         # Initialise the name of the 'NetworkConfigClass' object
         self.name = name
-        print("Creating NetworkConfigClass Object: {}".format(self.name))
+        print("\nCreating NetworkConfigClass Object: {}".format(self.name))
    
         # Set network hyperparameters
         self.network_name                       = "neurcomp_v1"
@@ -35,7 +32,7 @@ class NetworkConfigClass():
         # Set training hyperparameters
         self.initial_learning_rate              = 5e-3
         self.batch_size                         = 1024
-        self.num_epochs                         = 30
+        self.num_epochs                         = 5
         self.decay_rate                         = 3
            
         return None
@@ -63,7 +60,7 @@ class NetworkConfigClass():
         self.layer_dimensions.extend([self.neurons_per_layer]*self.hidden_layers)  
         self.layer_dimensions.extend([self.output_dimensions]) 
         
-        print("Calculating Network Dimensions: {}\n".format(self.layer_dimensions))
+        print("Calculating Network Dimensions: {}".format(self.layer_dimensions))
 
         return None
 
@@ -137,9 +134,9 @@ class NetworkConfigClass():
     #==========================================================================
     # Define a function to save the network configuration to a '.json' filetype
     
-    def SaveConfigToJson(self,configuration_filepath):
+    def SaveAsJson(self,configuration_filepath):
         
-        print("Saving network configuration: {}".configuration_filepath)
+        print("\nSaving network configuration To: {}".format(configuration_filepath.split("/")[-1]))
         
         # Determine the file extension (type) from the provided file path
         extension = configuration_filepath.split(".")[-1].lower()

@@ -1,10 +1,9 @@
-""" Created: 18.07.2022  \\  Updated: 02.11.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 08.11.2022  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
 
 import os 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
 import tensorflow as tf
@@ -21,7 +20,7 @@ class DataClass():
         
         # Initialise the name of the 'DataClass' instance
         self.name = name
-        print("Creating DataClass Object: {}".format(self.name))
+        print("\nCreating DataClass Object: {}".format(self.name))
         
         # Initialise internal variables for n-dimensional positional data 
         self.volume,self.flat_volume = np.array,np.array    
@@ -59,7 +58,7 @@ class DataClass():
     
     def LoadData(self,filepath,normalise=True):
         
-        print("Loading Data: {} > {}\n".format(filepath.split("/")[-1],self.name))
+        print("Loading Data: {} > {}".format(filepath.split("/")[-1],self.name))
         
         # Determine the file extension (type) from the provided file path
         extension = filepath.split(".")[-1].lower()
@@ -119,7 +118,7 @@ class DataClass():
     
     def CopyData(self,DataClassObject):
         
-        print("Copying Data: {} > {}\n".format(DataClassObject.name,self.name))
+        print("Copying Data: {} > {}".format(DataClassObject.name,self.name))
         
         # Extract attribute keys from 'DataObject' and define exceptions
         exception_keys = ["values","flat_values"]
@@ -160,7 +159,7 @@ class DataClass():
     
     def MakeDataset(self,network_config):
         
-        print("Creating Tensorflow Training Dataset\n")
+        print("\nCreating Tensorflow Training Dataset: batch_size = {}".format(network_config.batch_size))
         
         # Create a dataset whose elements are slices of the given tensors
         dataset = tf.data.Dataset.from_tensor_slices((self.flat_volume,self.flat_values,self.flat_coords))
@@ -187,7 +186,7 @@ class DataClass():
     
     def SaveData(self,filepath,normalise=True):
         
-        print("Saving Data: {}.\n".format(filepath.split("/")[-1]))
+        print("\nSaving Data: {}.".format(filepath.split("/")[-1]))
         
         # Determine the file extension (type) from the provided file path
         extension = filepath.split(".")[-1].lower()
@@ -205,7 +204,7 @@ class DataClass():
             data = np.concatenate((self.volume,self.values),axis=-1)
             np.save(filepath,data)
         else:
-            print("Error: File Type Not Supported: '{}'. ".format(extension))
+            print("\nError: File Type Not Supported: '{}'. ".format(extension))
             return None
 
         return None

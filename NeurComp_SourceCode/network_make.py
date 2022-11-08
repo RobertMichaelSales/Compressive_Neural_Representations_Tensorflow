@@ -1,10 +1,9 @@
-""" Created: 18.07.2022  \\  Updated: 26.10.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 08.11.2022  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
 
 import os 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
 import tensorflow as tf
@@ -41,7 +40,7 @@ def SineBlock(inputs,units,scale,name,avg_1=False,avg_2=False):
 
 def BuildNeurComp(network_config):
     
-    print("Constructing Network Model: {}".format(network_config.network_name))
+    print("\nConstructing Network Model: {}".format(network_config.network_name))
     
     scale = tf.constant(1.0)
 
