@@ -193,7 +193,7 @@ class DataClass():
         
         # Reshape 'flat_values' into the shape of the original input dimensions
         self.values = np.reshape(self.flat_values,(self.resolution+(self.output_dimensions,)),order="C")
-        
+
         return None        
     
     #==========================================================================

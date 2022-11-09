@@ -81,7 +81,7 @@ filepaths = FileClass(base_directory=base_directory,network_config=network_confi
 
 # Plot and save an image of the network architecture
 print("Saving Model Architecture As PNG Image")
-tf.keras.utils.plot_model(neur_comp,to_file=filepaths.network_image_path,show_shapes=True)
+#tf.keras.utils.plot_model(neur_comp,to_file=filepaths.network_image_path,show_shapes=True)
 
 #==============================================================================
 # Start compressing data
@@ -164,12 +164,15 @@ print("-"*80,"\nPREDICTING/RECONSTRUCTING INPUTS")
 # Predict values using the Neurcomp's learned weights and biases
 output_data.PredictValues(network=neur_comp,network_config=network_config)
 
+# Compute the peak signal-to-noise ratio of the predicted volume
+psnr1 = LossPSNR(true=input_data.flat_values,pred=output_data.flat_values)
+print("\nOutput Peak Signal-to-Noise Ratio: {:.3f}".format(psnr1))
+
+psnr2 = LossPSNR(true=input_data.values,pred=output_data.values)
+print("\nOutput Peak Signal-to-Noise Ratio: {:.3f}".format(psnr2))
+
 # Save the predicted values to a '.npy' volume rescaling as appropriate
 output_data.SaveData(output_volume_path=filepaths.output_volume_path,reverse_normalise=True)
-
-# Compute the peak signal-to-noise ratio of the predicted volume
-psnr = LossPSNR(true=input_data.values,pred=output_data.values)
-print("\nOutput Peak Signal-to-Noise Ratio: {:.3f}".format(psnr))
 
 #==============================================================================
 print("-"*80)

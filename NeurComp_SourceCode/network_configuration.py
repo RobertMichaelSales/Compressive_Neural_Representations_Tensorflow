@@ -28,7 +28,7 @@ class NetworkConfigClass():
    
         # Set network hyperparameters
         self.network_name                       = "neurcomp_1"
-        self.target_compression_ratio           = 50        
+        self.target_compression_ratio           = 100        
         self.hidden_layers                      = 8
         self.min_neurons_per_layer              = 10
         
