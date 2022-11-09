@@ -3,7 +3,10 @@
 #==============================================================================
 # Import libraries and set flags
 
-import os, json
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+import json
 import numpy as np
 
 from datetime import datetime
@@ -17,11 +20,11 @@ class NetworkConfigClass():
     # Define the initialisation constructor function for 'NetworkConfigClass'
     # Note: These are the only user-configurable hyperparameters
 
-    def __init__(self,name):
+    def __init__(self,config_filepath):
         
-        # Initialise the name of the 'NetworkConfigClass' object
-        self.name = name
-        print("\nCreating NetworkConfigClass Object: {}".format(self.name))
+        self.config_filepath = config_filepath
+        
+        print("\nCreating NetworkConfigClass Object")
    
         # Set network hyperparameters
         self.network_name                       = "neurcomp_1"
@@ -32,7 +35,7 @@ class NetworkConfigClass():
         # Set training hyperparameters
         self.initial_learning_rate              = 5e-3
         self.batch_size                         = 1024
-        self.num_epochs                         = 30
+        self.num_epochs                         = 2
         self.decay_rate                         = 3
            
         return None
@@ -47,7 +50,7 @@ class NetworkConfigClass():
         # Extract the useful internal parameters from the 'input_data' object
         self.input_dimensions = input_data.input_dimensions
         self.output_dimensions = input_data.output_dimensions
-        input_size = input_data.input_size
+        input_size = input_data.size
         
         # Compute the neurons per layer as well as the overall network capacity
         self.target_size = int(input_size / self.target_compression_ratio)
@@ -60,7 +63,7 @@ class NetworkConfigClass():
         self.layer_dimensions.extend([self.neurons_per_layer]*self.hidden_layers)  
         self.layer_dimensions.extend([self.output_dimensions]) 
         
-        print("Calculating Network Dimensions: {}".format(self.layer_dimensions))
+        print("Network Block Dimensions: {}".format(tuple(self.layer_dimensions)))
 
         return None
 
@@ -134,9 +137,9 @@ class NetworkConfigClass():
     #==========================================================================
     # Define a function to save the network configuration to a '.json' filetype
     
-    def SaveAsJson(self,configuration_filepath):
+    def Save(self,configuration_filepath):
         
-        print("\nSaving network configuration To: {}".format(configuration_filepath.split("/")[-1]))
+        print("\nSaving Network Configuration To: '{}'".format(configuration_filepath.split("/")[-1]))
         
         # Determine the file extension (type) from the provided file path
         extension = configuration_filepath.split(".")[-1].lower()

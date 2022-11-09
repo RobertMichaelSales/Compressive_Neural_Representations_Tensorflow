@@ -40,7 +40,7 @@ def SineBlock(inputs,units,scale,name,avg_1=False,avg_2=False):
 
 def BuildNeurComp(network_config):
     
-    print("\nConstructing Network Model: {}".format(network_config.network_name))
+    print("\nConstructing Network Model: '{}'".format(network_config.network_name))
     
     scale = tf.constant(1.0)
 

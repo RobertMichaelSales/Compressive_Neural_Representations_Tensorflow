@@ -13,11 +13,10 @@ from training_functions      import TrainStep,LRScheduler,LossPSNR
 # Import libraries and set flags
 
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import time,json
 import tensorflow as tf
-import numpy as np
 
 #==============================================================================
 # Set major filepaths
@@ -25,6 +24,8 @@ import numpy as np
 base_directory = os.path.join(os.path.dirname(os.getcwd()),"NeurComp_AuxFiles")
 
 data_file_path = os.path.join(base_directory,"inputs","volumes","test_vol.npy")
+
+config_file_path = ""
 
 #==============================================================================
 # Enter the main script and check for hardware acceleration
@@ -34,15 +35,15 @@ gpus = tf.config.list_physical_devices('GPU')
 
 if (len(gpus) == 0): 
     cuda_hardware_acceleration = False    
-    print("\n0 CUDA Enabled GPU(s) Detected: Hardware Acceleration Is Disabled")
+    print("\nCUDA Enabled GPU(s) Detected: {} - Hardware Acceleration Is Disabled".format(len(gpus)))
 else:        
     tf.config.experimental.set_memory_growth(gpus[0],True)
     cuda_hardware_acceleration = True
-    print("\n{} CUDA Enabled GPU(s) Detected: Hardware Acceleration Is Enabled".format(len(gpus)))
+    print("\nCUDA Enabled GPU(s) Detected: {} - Hardware Acceleration Is Enabled".format(len(gpus)))
     
 #==============================================================================
-# Start initialising files and model
-print("-"*80,"\nINITIALISING FILES AND MODEL:\n")
+# Start initialising data files
+print("-"*80,"\nINITIALISING DATA FILES:")
 
 # Create a 'DataClass' object to store input data and load input data from file
 input_data = DataClass(name="input_data")
@@ -52,18 +53,14 @@ input_data.LoadData(filepath=data_file_path,normalise=True)
 output_data = DataClass(name="output_data")
 output_data.CopyData(DataClassObject=input_data)
 
+#==============================================================================
+# Configure network model and build
+print("-"*80,"\nCONFIGURING NETWORK BUILD:")
+
 # Create a 'NetworkConfigClass' object to store the network hyperparameters and
 # generate the network structure based on the input dimensions
-network_config = NetworkConfigClass(name="network_config")
+network_config = NetworkConfigClass(config_file_path)
 network_config.NetworkStructure(input_data=input_data)
-
-# Use the '.MakeDataset' method to generate a Tensorflow '.data' dataset to use
-# for supplying volume and values batches during training and evaluation 
-training_dataset = input_data.MakeDataset(network_config=network_config)
-
-# Create a 'FileClass'object to store output directory and filepath data
-filepaths = FileClass(base_directory=base_directory,network_config=network_config)
-filepaths.MakeDirectoriesAndFilepaths()
 
 # Build NeurComp from the config information stored in 'network_config', select
 # an optimiser for training, and select a training metric to track the progress
@@ -71,8 +68,19 @@ neur_comp = BuildNeurComp(network_config=network_config)
 optimiser = tf.keras.optimizers.Adam(learning_rate=network_config.initial_learning_rate)
 training_metric = tf.keras.metrics.MeanSquaredError()
 
+#==============================================================================
+# Configure network model and build
+print("-"*80,"\nCONFIGURING DATASET AND FILEPATHS:")
+
+# Use the '.MakeDataset' method to generate a Tensorflow '.data' dataset to use
+# for supplying volume and values batches during training and evaluation 
+training_dataset = input_data.MakeDataset(network_config=network_config)
+
+# Create a 'FileClass'object to store output directory and filepath data
+filepaths = FileClass(base_directory=base_directory,network_config=network_config)
+
 # Plot and save an image of the network architecture
-print("Saving Model Architecture As PNG")
+print("Saving Model Architecture As PNG Image")
 tf.keras.utils.plot_model(neur_comp,to_file=filepaths.network_image_path,show_shapes=True)
 
 #==============================================================================
@@ -98,8 +106,8 @@ for epoch in range(network_config.num_epochs):
     
     # Print the current epoch number and learning rate
     print("\n",end="")
-    print("Epoch Number \t\t\t{}/{}".format(epoch+1,network_config.num_epochs))
-    print("Learning Rate\t\t\t{:.2E}".format(training_data["learning_rate"][epoch]))
+    print("{:25}{:02}/{:02}".format("Epoch Number:",(epoch+1),network_config.num_epochs))
+    print("{:25}{:.3E}".format("Learning Rate:",training_data["learning_rate"][epoch]))
     
     # Start timing epoch
     epoch_start_time = time.time()
@@ -109,7 +117,7 @@ for epoch in range(network_config.num_epochs):
     for batch, (volume_batch,values_batch,indices_batch) in enumerate(training_dataset):
         
         # Print the batch progress
-        print("\rBatch Number \t\t\t{}/{}".format(batch+1,len(training_dataset)),end="")
+        print("\r{:25}{:04}/{:04}".format("Batch Number:",(batch+1),len(training_dataset)),end="")
         
         # Run a training step with the current batch
         TrainStep(neur_comp,optimiser,training_metric,volume_batch,values_batch,indices_batch)
@@ -120,44 +128,48 @@ for epoch in range(network_config.num_epochs):
     # Fetch, store, reset and print the training metric
     training_data["loss"].append(float(training_metric.result().numpy()))
     training_metric.reset_states()
-    print("Mean Squared Loss\t\t{:.5f}".format(training_data["loss"][epoch]))
+    print("{:25}{:.7f}".format("Mean Squared Loss:",training_data["loss"][epoch]))
     
     # Stop timing epoch and print the elapsed time
     epoch_end_time = time.time()
     training_data["time"].append(float(epoch_end_time-epoch_start_time))
-    print("Epoch Time\t\t\t\t{:.2f} seconds".format(training_data["time"][epoch]))
+    print("{:25}{:.2f} seconds".format("Epoch Time:",training_data["time"][epoch]))
     
 # Stop timing training
 train_end_time = time.time()
-print("\nTotal Training Time\t{:.2f} seconds".format(train_end_time-train_start_time))
+print("\n{:25}{:.2f} seconds".format("Training Duration:",train_end_time-train_start_time))
 
 #==============================================================================
 # Save training data
-print("-"*80,"\nSAVING RESULTS:")
+print("-"*80,"\nSAVING NETWORK AND RESULTS:")
+
+# Save the network configuration to .json
+print("\nSaving Network Configuration To: '{}'".format(filepaths.network_configuration_path.split("/")[-1]))
+network_config.Save(configuration_filepath=filepaths.network_configuration_path)
+
+# Save the network architecture to .json
+print("\nSaving Network Architecture To: '{}'".format(filepaths.network_architecture_path.split("/")[-1]))
+with open(filepaths.network_architecture_path,"w") as file: json.dump(neur_comp.get_config(),file,indent=4)
 
 # Save the training data to .json
-print("\nSaving Training Data To: {}".format(filepaths.training_data_path.split("/")[-1]))
+print("\nSaving Training Data To: '{}'".format(filepaths.training_data_path.split("/")[-1]))
 with open(filepaths.training_data_path,"w") as file: json.dump(training_data,file,indent=4,sort_keys=True)
 
-# save the network configuration to .json
-network_config.SaveAsJson(configuration_filepath=filepaths.network_configuration_path)
+# Weights can be copied between different objects by using get_weights and set_weights <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,
 
 #==============================================================================
 # Start predicting data
-print("-"*80,"\nPREDICTING")
+print("-"*80,"\nPREDICTING/RECONSTRUCTING INPUTS")
 
-# Predict 'flat_values' using the Neurcomp's learned weights and biases
-output_data.flat_values = neur_comp.predict(input_data.flat_volume,batch_size=network_config.batch_size,verbose="0")
+# Predict values using the Neurcomp's learned weights and biases
+output_data.PredictValues(network=neur_comp,network_config=network_config)
 
-# Reshape 'flat_values' into the shape of the original input dimensions
-output_data.values = np.reshape(output_data.flat_values,input_data.values.shape,order="C")
+# Save the predicted values to a '.npy' volume rescaling as appropriate
+output_data.SaveData(output_volume_path=filepaths.output_volume_path,reverse_normalise=True)
 
 # Compute the peak signal-to-noise ratio of the predicted volume
 psnr = LossPSNR(true=input_data.values,pred=output_data.values)
-print("\nCompression Peak Signal-to-Noise Ratio: {:.2f}".format(psnr))
-
-# Save the predicted values to a '.npy' volume rescaling as appropriate
-output_data.SaveData(filepath=filepaths.output_volume_path,normalise=True)
+print("\nOutput Peak Signal-to-Noise Ratio: {:.3f}".format(psnr))
 
 #==============================================================================
 print("-"*80)

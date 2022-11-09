@@ -4,9 +4,12 @@
 # Import libraries and set flags
 
 import os 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
 import tensorflow as tf
+
+from pyevtk.hl import gridToVTK
 
 #==============================================================================
 # Define a class for managing datasets: i.e. loading, handling and storing data  
@@ -20,7 +23,7 @@ class DataClass():
         
         # Initialise the name of the 'DataClass' instance
         self.name = name
-        print("\nCreating DataClass Object: {}".format(self.name))
+        print("\nCreating DataClass Object: '{}'".format(self.name))
         
         # Initialise internal variables for n-dimensional positional data 
         self.volume,self.flat_volume = np.array,np.array    
@@ -37,9 +40,9 @@ class DataClass():
         self.values_rng = 0.0
         
         # Initialise internal variables for input and output meta-data
-        self.input_resolution = np.array      
+        self.resolution = np.array      
         self.input_dimensions = 3     
-        self.input_size = 0
+        self.size = 0
         self.output_dimensions = 1  
         
         # Initialise the array of index positions for the positional data
@@ -58,7 +61,7 @@ class DataClass():
     
     def LoadData(self,filepath,normalise=True):
         
-        print("Loading Data: {} > {}".format(filepath.split("/")[-1],self.name))
+        print("Loading Data: '{}' -> '{}'".format(filepath.split("/")[-1],self.name))
         
         # Determine the file extension (type) from the provided file path
         extension = filepath.split(".")[-1].lower()
@@ -71,36 +74,37 @@ class DataClass():
             return None
         
         # Extract the positional data (i.e. volume) and scalars (i.e. values)
-        self.volume = data[...,:-1]                 
-        self.values = data[...,-1:]
+        volume = data[...,:-1]                 
+        values = data[...,-1:]
         
-        # Determine the input/output meta-data 
-        self.input_resolution = self.volume.shape[:-1]  # (i.e. [150,150,150])
-        self.input_dimensions = self.volume.shape[ -1]  # (i.e. [3])
-        self.input_size = self.values.size              # (i.e. 3375000)
-        self.output_dimensions = self.values.shape[-1]  # (i.e. [1])
-        
-        # Form an array of indices where 'coords[x,y,...,z]' = '[x,y,...,z]'
-        self.coords = np.stack(np.meshgrid(*[np.arange(x) for x in self.input_resolution],indexing="ij"),axis=-1)
+        # Determine the input/output size and dimension meta-data 
+        self.resolution = volume.shape[:-1]  # (i.e. [150,150,150])
+        self.input_dimensions = volume.shape[ -1]  # (i.e. [3])
+        self.size = values.size              # (i.e. 3375000)
+        self.output_dimensions = values.shape[-1]  # (i.e. [1])
         
         # Determine the maximum, minimum, average and range values of 'volume'
-        self.volume_max = np.amax(self.volume,axis=tuple(np.arange(self.input_dimensions)))
-        self.volume_min = np.amin(self.volume,axis=tuple(np.arange(self.input_dimensions)))
+        self.volume_max = np.amax(volume,axis=tuple(np.arange(self.input_dimensions)))
+        self.volume_min = np.amin(volume,axis=tuple(np.arange(self.input_dimensions)))
         self.volume_avg = (self.volume_max+self.volume_min)/2.0
         self.volume_rng = abs(self.volume_max-self.volume_min)
         
         # Determine the maximum, minimum, average and range values of 'values'
-        self.values_max = self.values.max()
-        self.values_min = self.values.min()
+        self.values_max = values.max()
+        self.values_min = values.min()
         self.values_avg = (self.values_max+self.values_min)/2.0
         self.values_rng = abs(self.values_max-self.values_min)
         
         # Normalise 'volume' and 'values' to the range [-1,+1]
         if normalise:
-            self.volume = 2.0*((self.volume-self.volume_avg)/(self.volume_rng))        
-            self.values = 2.0*((self.values-self.values_avg)/(self.values_rng))
+            self.volume = 2.0*((volume-self.volume_avg)/(self.volume_rng))        
+            self.values = 2.0*((values-self.values_avg)/(self.values_rng))
         else:
-            pass
+            self.volume = volume
+            self.volume = values
+            
+        # Form an array of indices where 'coords[x,y,...,z]' = '[x,y,...,z]'
+        self.coords = np.stack(np.meshgrid(*[np.arange(x) for x in self.resolution],indexing="ij"),axis=-1)
                 
         # Flatten 'volume', 'values' and 'coords' before creating the dataset
         self.flat_volume = np.reshape(np.ravel(self.volume,order="C"),(-1,self.volume.shape[-1]))
@@ -118,7 +122,7 @@ class DataClass():
     
     def CopyData(self,DataClassObject):
         
-        print("Copying Data: {} > {}".format(DataClassObject.name,self.name))
+        print("Copying Data: '{}' -> '{}'".format(DataClassObject.name,self.name))
         
         # Extract attribute keys from 'DataObject' and define exceptions
         exception_keys = ["values","flat_values"]
@@ -159,7 +163,7 @@ class DataClass():
     
     def MakeDataset(self,network_config):
         
-        print("\nCreating Tensorflow Training Dataset: batch_size = {}".format(network_config.batch_size))
+        print("\nCreating Tensorflow Training Dataset")
         
         # Create a dataset whose elements are slices of the given tensors
         dataset = tf.data.Dataset.from_tensor_slices((self.flat_volume,self.flat_values,self.flat_coords))
@@ -168,7 +172,7 @@ class DataClass():
         dataset = dataset.cache()
         
         # Randomly shuffle the elements of the cached dataset 
-        dataset = dataset.shuffle(buffer_size=self.input_size,reshuffle_each_iteration=True)
+        dataset = dataset.shuffle(buffer_size=self.size,reshuffle_each_iteration=True)
                     
         # Concatenate elements of the dataset into mini-batches
         dataset = dataset.batch(batch_size=network_config.batch_size,drop_remainder=False)
@@ -179,34 +183,52 @@ class DataClass():
         return dataset 
     
     #==========================================================================
+        
+    def PredictValues(self,network,network_config):
+        
+        print("\nPredicting Input From Learned Parameters")
+        
+        # Predict 'flat_values' using the Neurcomp's learned weights and biases
+        self.flat_values = network.predict(self.flat_volume,batch_size=network_config.batch_size,verbose="0")
+        
+        # Reshape 'flat_values' into the shape of the original input dimensions
+        self.values = np.reshape(self.flat_values,(self.resolution+(self.output_dimensions,)),order="C")
+        
+        return None        
+    
+    #==========================================================================
     # Define a function to concatenate and save a scalar field to a '.npy' file
     
     # -> Note: 'self.volume' and 'self.values' should be appropriately reshaped
     # -> such that they have the same shape as the input scalar field.
     
-    def SaveData(self,filepath,normalise=True):
-        
-        print("\nSaving Data: {}.".format(filepath.split("/")[-1]))
-        
-        # Determine the file extension (type) from the provided file path
-        extension = filepath.split(".")[-1].lower()
-            
+    def SaveData(self,output_volume_path,reverse_normalise=True):
+                    
         # Reverse normalise 'volume' and 'values' to the initial range
-        if normalise:
+        if reverse_normalise:
             self.volume = ((self.volume_rng*(self.volume/2.0))+self.volume_avg)
             self.values = ((self.values_rng*(self.values/2.0))+self.values_avg)
         else:
-            pass
+            self.volume = self.volume
+            self.values = self.values 
         
-        # If the extension matches ".npy" then save it else throw an error
-        if extension == "npy":  
-            
-            data = np.concatenate((self.volume,self.values),axis=-1)
-            np.save(filepath,data)
-        else:
-            print("\nError: File Type Not Supported: '{}'. ".format(extension))
-            return None
+        # Save as Numpy file 
+        np.save(output_volume_path,np.concatenate((self.volume,self.values),axis=-1))
+        
+        # Save as VTK file
+        volume_list = [np.ascontiguousarray(self.volume[...,x]) for x in range(self.input_dimensions)]
+        values_dict = {"values":np.ascontiguousarray(self.values[...,0])}
+        gridToVTK(output_volume_path,*volume_list,pointData=values_dict)
 
         return None
         
 #=============================================================================#
+# Potential class for storing training data
+
+class TrainingDataClass():
+    
+    def __init__(self):
+        
+        pass
+    
+    
