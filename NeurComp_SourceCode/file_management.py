@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 08.11.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 10.11.2022  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -20,7 +20,7 @@ class FileClass():
         self.base_directory = base_directory
         self.network_name = network_config.network_name
         
-        print("\nCreating FileClass Object For: '{}'".format(self.network_name))
+        print("\n{:30}{}".format("Created filepaths at:",base_directory.split("/")[-1]))
         
         #======================================================================
         # Make the outputs path and create directory folder
@@ -33,8 +33,7 @@ class FileClass():
         
         # Make the network architecture, weights and biases .json filepaths
         self.network_architecture_path = os.path.join(self.output_directory,"network_architecture.json")
-        self.network_ws_path = os.path.join(self.output_directory,"network_ws.json")
-        self.network_bs_path = os.path.join(self.output_directory,"network_bs.json")
+        self.network_weights_path = os.path.join(self.output_directory,"network_weights.json")
         
         # Set the network configuration .json filepath
         self.network_configuration_path = os.path.join(self.output_directory,"network_configuration.json")

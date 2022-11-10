@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 08.11.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 10.11.2022  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -8,8 +8,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import json
 import numpy as np
-
-from datetime import datetime
 
 #==============================================================================
 # Define a class for generating, managing and storing the network configuration
@@ -22,21 +20,37 @@ class NetworkConfigClass():
 
     def __init__(self,config_filepath):
         
-        self.config_filepath = config_filepath
+        # If config file IS provided: 
+        if os.path.exists(config_filepath):
+            
+            print("\n{:30}{}".format("Loaded network config:",config_filepath.split("/")[-1]))
+            
+            # Load config data from config file
+            config_file = open(config_filepath)
+            config_dict = json.load(config_file)
         
-        print("\nCreating NetworkConfigClass Object")
-   
-        # Set network hyperparameters
-        self.network_name                       = "neurcomp_1"
-        self.target_compression_ratio           = 100        
-        self.hidden_layers                      = 8
-        self.min_neurons_per_layer              = 10
+            # Set attributes from 'config_dict'
+            for key in config_dict.keys():
+                setattr(self,key,config_dict[key])
         
-        # Set training hyperparameters
-        self.initial_learning_rate              = 5e-3
-        self.batch_size                         = 1024
-        self.num_epochs                         = 30
-        self.decay_rate                         = 3
+        # If config file IS NOT provided: 
+        else:
+            
+            print("\n{:30}{}".format("Loaded network config:","default"))
+               
+            # Set network hyperparameters (default)
+            self.network_name                       = "neurcomp_default"
+            self.target_compression_ratio           = 50        
+            self.hidden_layers                      = 8
+            self.min_neurons_per_layer              = 10
+            
+            # Set training hyperparameters (default)
+            self.initial_learning_rate              = 5e-3
+            self.batch_size                         = 1024
+            self.num_epochs                         = 1
+            self.decay_rate                         = 3
+            
+        print("\n{:30}{}".format("Target compression ratio:",self.target_compression_ratio))
            
         return None
     
@@ -50,12 +64,13 @@ class NetworkConfigClass():
         # Extract the useful internal parameters from the 'input_data' object
         self.input_dimensions = input_data.input_dimensions
         self.output_dimensions = input_data.output_dimensions
-        input_size = input_data.size
+        size = input_data.size
         
         # Compute the neurons per layer as well as the overall network capacity
-        self.target_size = int(input_size / self.target_compression_ratio)
+        self.target_size = int(size/self.target_compression_ratio)
         self.neurons_per_layer = self.NeuronsPerLayer() 
         self.num_of_parameters = self.TotalParameters()
+        self.actual_compression_ratio = size/self.num_of_parameters
         
         # Specify the network architecture as a list of layer dimensions
         self.layer_dimensions = []   
@@ -63,7 +78,7 @@ class NetworkConfigClass():
         self.layer_dimensions.extend([self.neurons_per_layer]*self.hidden_layers)  
         self.layer_dimensions.extend([self.output_dimensions]) 
         
-        print("Network Block Dimensions: {}".format(tuple(self.layer_dimensions)))
+        print("\n{:30}{}".format("Network dimensions:",self.layer_dimensions))
 
         return None
 
@@ -134,34 +149,4 @@ class NetworkConfigClass():
                   
         return self.num_of_parameters
 
-    #==========================================================================
-    # Define a function to save the network configuration to a '.json' filetype
-    
-    def Save(self,configuration_filepath):
-        
-        print("\nSaving Network Configuration To: '{}'".format(configuration_filepath.split("/")[-1]))
-        
-        # Determine the file extension (type) from the provided file path
-        extension = configuration_filepath.split(".")[-1].lower()
-        
-        # If the extension matches ".npy" then load it, else throw an error
-        if extension == "json":  
-            
-            # Obtain a dictionary with the network configuration (i.e. config)
-            configuration_dictionary = vars(self)
-            
-            # Obtain date and time data, then add it to the config dictionary
-            now = datetime.now()
-            date_and_time_string = now.strftime("%d %b %Y, %H:%M:%S").upper()
-            configuration_dictionary["date_time"] = date_and_time_string
-            
-            # Write all entries in 'configuration_dictionary' to a .JSON file
-            with open(configuration_filepath, 'w') as configuration_file:
-                json.dump(configuration_dictionary,configuration_file,indent=4)
-              
-        else:
-            print("Error: File Type Not Supported: '{}'. ".format(extension))    
-    
-        return None
-    
 #=============================================================================#

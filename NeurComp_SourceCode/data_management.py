@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 08.11.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 10.11.2022  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -19,12 +19,8 @@ class DataClass():
     #==========================================================================
     # Define the initialisation constructor function for 'DataClass'   
 
-    def __init__(self,name):
-        
-        # Initialise the name of the 'DataClass' instance
-        self.name = name
-        print("\nCreating DataClass Object: '{}'".format(self.name))
-        
+    def __init__(self):
+                
         # Initialise internal variables for n-dimensional positional data 
         self.volume,self.flat_volume = np.array,np.array    
         self.volume_max = np.array     
@@ -60,8 +56,8 @@ class DataClass():
     # Note: Do not swap the order of the flattening to before the normalisation
     
     def LoadData(self,filepath,normalise=True):
-        
-        print("Loading Data: '{}' -> '{}'".format(filepath.split("/")[-1],self.name))
+                
+        print("\n{:30}{}".format("Loaded data:",filepath.split("/")[-1]))
         
         # Determine the file extension (type) from the provided file path
         extension = filepath.split(".")[-1].lower()
@@ -70,7 +66,7 @@ class DataClass():
         if extension == "npy":  
             data = np.load(filepath)            
         else:
-            print("Error: File Type Not Supported: '{}'. ".format(extension))
+            print("File Type Not Supported: {}. ".format(extension))
             return None
         
         # Extract the positional data (i.e. volume) and scalars (i.e. values)
@@ -122,8 +118,6 @@ class DataClass():
     
     def CopyData(self,DataClassObject):
         
-        print("Copying Data: '{}' -> '{}'".format(DataClassObject.name,self.name))
-        
         # Extract attribute keys from 'DataObject' and define exceptions
         exception_keys = ["values","flat_values"]
         attribute_keys = DataClassObject.__dict__.keys()
@@ -163,8 +157,8 @@ class DataClass():
     
     def MakeDataset(self,network_config):
         
-        print("\nCreating Tensorflow Training Dataset")
-        
+        print("\n{:30}{}{}".format("Made TF dataset:","batch_size = ",network_config.batch_size))
+
         # Create a dataset whose elements are slices of the given tensors
         dataset = tf.data.Dataset.from_tensor_slices((self.flat_volume,self.flat_values,self.flat_coords))
         
@@ -185,8 +179,6 @@ class DataClass():
     #==========================================================================
         
     def PredictValues(self,network,network_config):
-        
-        print("\nPredicting Input From Learned Parameters")
         
         # Predict 'flat_values' using the Neurcomp's learned weights and biases
         self.flat_values = network.predict(self.flat_volume,batch_size=network_config.batch_size,verbose="0")
