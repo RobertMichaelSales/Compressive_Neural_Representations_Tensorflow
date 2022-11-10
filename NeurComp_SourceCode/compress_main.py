@@ -3,11 +3,11 @@
 #==============================================================================
 # Import user-defined libraries 
 
-from NeurComp_SourceCode.data_management         import DataClass
-from NeurComp_SourceCode.file_management         import FileClass
-from NeurComp_SourceCode.network_configuration   import NetworkConfigClass
-from NeurComp_SourceCode.network_make            import BuildNeurComp
-from NeurComp_SourceCode.training_functions      import TrainStep,LRScheduler,LossPSNR
+from data_management         import DataClass
+from file_management         import FileClass
+from network_configuration   import NetworkConfigClass
+from network_make            import BuildNeurComp
+from training_functions      import TrainStep,LRScheduler,LossPSNR
 
 #==============================================================================
 # Import libraries and set flags
@@ -20,7 +20,7 @@ import tensorflow as tf
 
 #==============================================================================
     
-def main(base_directory,input_filepath,config_filepath):
+def compress(base_directory,input_filepath,config_filepath):
         
     #==========================================================================
     # Enter the main script and check for hardware acceleration
@@ -174,5 +174,25 @@ def main(base_directory,input_filepath,config_filepath):
     print("-"*80,"\n"*2)
     
     return None
+    
+#==============================================================================
+# Define the script to run when envoked from the terminal
+
+if __name__=="__main__":
+
+    # Set config filepath
+    config_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config.json"
+    
+    # Set base directory
+    base_directory = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles"
+    
+    # Set input filepath
+    input_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/test_vol.npy"
+ 
+    compress(base_directory=base_directory,input_filepath=input_filepath,config_filepath=config_filepath)   
+
+else:
+    
+    print("Must invoke 'compress_main.py' from the terminal!")
     
 #==============================================================================
