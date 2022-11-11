@@ -9,19 +9,22 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 #==============================================================================
 
 if __name__=="__main__":
+    
+    # Set config filepath
+    config_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config.json"
+    
+    # Set base directory
+    base_directory = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles"
+
+    # Set input filepath
+    input_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/test_vol.npy"
        
     # Iterate through all input pairs
     for task_id,target_compression_ratio in enumerate([10,25,50,75,100,150,200,300,400,500,750,1000]):
         
-        # Set config filepath
-        config_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config.json"
-        
-        # Set base directory
-        base_directory = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles"
-    
-        # Set input filepath
-        input_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/test_vol.npy"
-               
+        # Offset the task id 
+        task_id = task_id + 12
+                       
         # Define the network config
         config_dictionary = {
             "network_name"               : "neurcomp_"+str(task_id),
