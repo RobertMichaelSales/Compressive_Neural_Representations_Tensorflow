@@ -142,18 +142,18 @@ def compress(base_directory,input_filepath,config_filepath):
     print("\n{:30}{}".format("Saved configuration to:",filepaths.network_configuration_path.split("/")[-1]))
     with open(filepaths.network_configuration_path,"w") as file: json.dump(vars(network_config),file,indent=4)
     
-    # Save the architecture
-    print("{:30}{}".format("Saved architecture to:",filepaths.network_architecture_path.split("/")[-1]))
-    with open(filepaths.network_architecture_path,"w") as file: json.dump(neur_comp.get_config(),file,indent=4)
-    
-    # Save the trained weights 
-    print("{:30}{}".format("Saved weights to:",filepaths.network_weights_path.split("/")[-1]))
-    # weights = {name:weights for (name,weights) in zip(list(neur_comp.get_weight_paths().keys()),neur_comp.get_weights())}
-    # with open(filepaths.network_weights_and_biases_path,"w") as file: json.dump(weights,file,indent=4)    
-    
     # Save the training data
     print("{:30}{}".format("Saved training data to:",filepaths.training_data_path.split("/")[-1]))
     with open(filepaths.training_data_path,"w") as file: json.dump(training_data,file,indent=4,sort_keys=True)
+    
+    # Save the net architecture
+    print("{:30}{}".format("Saved architecture to:",filepaths.network_architecture_path.split("/")[-1]))
+    # with open(filepaths.network_architecture_path,"w") as file: json.dump(neur_comp.get_config(),file,indent=4)
+    
+    # Save the trained weights
+    print("{:30}{}".format("Saved weights to:",filepaths.network_weights_path.split("/")[-1]))
+    # weights = {name:weights for (name,weights) in zip(list(neur_comp.get_weight_paths().keys()),neur_comp.get_weights())}
+    # with open(filepaths.network_weights_and_biases_path,"w") as file: json.dump(weights,file,indent=4)    
     
     #==========================================================================
     # Start predicting data
@@ -189,7 +189,7 @@ if __name__=="__main__":
     # Set input filepath
     input_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/test_vol.npy"
  
-    compress(base_directory=base_directory,input_filepath=input_filepath,config_filepath=config_filepath)   
+    #compress(base_directory=base_directory,input_filepath=input_filepath,config_filepath=config_filepath)   
 
 else:
     
