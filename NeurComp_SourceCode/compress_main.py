@@ -181,7 +181,7 @@ def compress(base_directory,input_filepath,config_filepath):
 if __name__=="__main__":
 
     # Set config filepath
-    config_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config.json"
+    config_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config_test.json"
     
     # Set base directory
     base_directory = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles"
@@ -193,6 +193,6 @@ if __name__=="__main__":
 
 else:
     
-    print("Must invoke 'compress_main.py' from the terminal!")
+    print("Please invoke 'compress_main.py' correctly from the terminal!")
     
 #==============================================================================
