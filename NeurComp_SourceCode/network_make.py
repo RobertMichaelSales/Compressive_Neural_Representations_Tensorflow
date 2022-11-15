@@ -1,6 +1,7 @@
-""" Created: 18.07.2022  \\  Updated: 18.07.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 10.11.2022  \\   Author: Robert Sales """
 
-#=# IMPORT LIBRARIES #========================================================#
+#==============================================================================
+# Import libraries and set flags
 
 import os 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -8,153 +9,74 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
 import tensorflow as tf
 
-from tensorflow import keras 
-from tensorflow.keras import layers
+#==============================================================================
+# Define a 'Sine Layer Block' using TensorFlow's functional API and Keras
 
-#=# DEFINE FUNCTIONS #========================================================#
-
-def SineLayerBlock(inputs,units,name):
-
-    name_dense = name + "_dense"
+def SineLayer(inputs,units,scale,name):
     
-    x = tf.keras.layers.Dense(units=units,
-                              activation=None,
-                              use_bias=True,
-                              kernel_initializer="glorot_uniform",
-                              bias_initializer="zeros",
-                              name=name_dense)(inputs)
+    x = tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer="glorot_uniform",bias_initializer="zeros",name=name+"_dense")(inputs)
     
-    name_sine = name + "_sine"
-    
-    x = tf.math.sin(x,name=name_sine)
+    x = tf.math.sin(tf.math.multiply(x,scale))
     
     return x
     
+#==============================================================================
+# Define a 'Residual Block' using TensorFlow's functional API and Keras
 
-def ResidualBlock(inputs,units,name,avg_1=False,avg_2=False):
+def SineBlock(inputs,units,scale,name,avg_1=False,avg_2=False):
 
-    w1 = 0.5 if avg_1 else 1.0  # Weight 1
-    w2 = 0.5 if avg_2 else 1.0  # Weight 2
+    weight_1 = tf.constant(0.5) if avg_1 else tf.constant(1.0)  # Weight 1
+    weight_2 = tf.constant(0.5) if avg_2 else tf.constant(1.0)  # Weight 2
+        
+    sine_1 = tf.math.sin(tf.math.multiply(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer="glorot_uniform",bias_initializer="zeros",name=name+"_dense_a")(inputs*weight_1),scale))
+    sine_2 = tf.math.sin(tf.math.multiply(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer="glorot_uniform",bias_initializer="zeros",name=name+"_dense_b")(sine_1)         ,scale))
     
-    name_sine_1 = name + "_sineblock_a"
-    name_sine_2 = name + "_sineblock_b"
-    
-    sine_1 = SineLayerBlock(inputs*w1,units,name=name_sine_1)
-    sine_2 = SineLayerBlock(sine_1   ,units,name=name_sine_2)
-    
-    name_add = name + "_add"
-    name_mul = name + "_mul"
-    
-    x = tf.math.multiply((tf.math.add(inputs,sine_2,name=name_add)),w2,name=name_mul)
-    
+    x = tf.math.add(tf.math.multiply(inputs,weight_2),sine_2)
+
     return x
 
+#==============================================================================
+# Define a function that constructs the 'SIREN' network from a specific network
+# configuration using the TensorFlow functional API and Keras (called NeurComp)
 
-def BuildNeurComp(hyperparameters):
+def BuildNeurComp(network_config):
     
-    print("Building Network: '{}'\n".format(hyperparameters.save_name))
+    print("\n{:30}{}".format("Constructed network:",network_config.network_name))
+    
+    scale = tf.constant(1.0)
 
-    # Iterate through each layer in the network
-    for layer in np.arange(hyperparameters.total_num_layers):
-    
-        # Obtain the input dimensions for that particular layer
-        units = hyperparameters.layer_dimensions[layer]
+    # Iterate through each layer in the 'SIREN' network
+    for layer in np.arange(network_config.total_layers):
           
-        # Add the input layers
+        # Add the input layer and the first sine layer
         if (layer == 0):                  
           
             name = "l0_input"
+            input_layer = tf.keras.layers.Input(shape=(network_config.layer_dimensions[layer],),name=name)
             
-            input = tf.keras.layers.Input(shape=(units,),name=name)
-            
-            name = "l0_sineblock"
-            
-            x = SineLayerBlock(input,hyperparameters.layer_dimensions[layer+1],name=name)
+            name = "l0_sinelayer"
+            x = SineLayer(inputs=input_layer,units=network_config.layer_dimensions[layer+1],scale=scale,name=name)
           
-        # Add the output layer
-        elif (layer == hyperparameters.total_num_layers - 1):
+        # Add the final dense output layer
+        elif (layer == network_config.total_layers - 1):
           
             name = "l{}_output".format(layer)
             
-            output =  tf.keras.layers.Dense(units=units,
-                                            activation=None,
-                                            use_bias=True,
-                                            kernel_initializer="glorot_uniform",
-                                            bias_initializer="zeros",
-                                            name=name)(x)
+            output_layer =  tf.keras.layers.Dense(units=network_config.layer_dimensions[layer],name=name)(x)
           
-        # Add residual block layers
+        # Add intermediate residual block layers
         else:
           
-            name = "l{}_res".format(layer)
+            name = "l{}_sineblock".format(layer)
             
             avg_1 = (layer > 1)
-            avg_2 = (layer == (hyperparameters.total_num_layers - 3))
+            avg_2 = (layer == (network_config.total_layers - 2))                    # this used to be 3
             
-            x = ResidualBlock(x,units,name,avg_1=avg_1,avg_2=avg_2)
+            x = SineBlock(inputs=x,units=network_config.layer_dimensions[layer],scale=scale,name=name,avg_1=avg_1,avg_2=avg_2)
     
     # Declare the network model
-    NeurComp = tf.keras.Model(inputs=input,outputs=output)
+    NeurComp = tf.keras.Model(inputs=input_layer,outputs=output_layer)
     
     return NeurComp
 
-
-def ComputeTotalParameters(hyperparameters,neurons_per_layer):
- 
-    # Determine the number of inter-layer operations
-    num_of_operations = hyperparameters.total_num_layers     
-    
-    # [input -> dense] + [dense / residual -> residual] + [residual -> output]                        
-      
-    # Set the total number of network parameters to zero
-    num_of_parameters = 0                                                         
-      
-    # Iterate through each of the temporary layers
-    for layer in range(0,num_of_operations):
-      
-        if (layer==0):                             # [input -> dense]
-    
-            # Determine the input and output dimensions of each layer
-            dim_input  = hyperparameters.input_dimension              
-            dim_output = neurons_per_layer
-              
-            # Add parameters from the weight matrix and bias vector
-            num_of_parameters += (dim_input * dim_output) + dim_output
-      
-        elif (layer==num_of_operations-1):     # [residual -> output]
-      
-            # Determine the input and output dimensions of each layer
-            dim_input  = neurons_per_layer
-            dim_output = hyperparameters.yield_dimension
-              
-            # Add parameters from the weight matrix and bias vector
-            num_of_parameters += (dim_input * dim_output) + dim_output 
-      
-        else:                         # [dense / residual -> residual]
-      
-            # Add parameters from the weight matrix and bias vector
-            num_of_parameters += (neurons_per_layer * neurons_per_layer) + neurons_per_layer
-            num_of_parameters += (neurons_per_layer * neurons_per_layer) + neurons_per_layer        
-              
-    return num_of_parameters
-
-
-def ComputeNeuronsPerLayer(hyperparameters):
-  
-    # Set the minimum neurons per layer
-    neurons_per_layer = hyperparameters.min_neurons_per_layer
-      
-    # Keep adding neurons until the network size exceeds the target size
-    while (ComputeTotalParameters(hyperparameters,neurons_per_layer) < hyperparameters.target_size):
-        neurons_per_layer = neurons_per_layer + 1
-      
-    # Return the first neuron count to exceed the compression target
-    neurons_per_layer = neurons_per_layer - 1
-    
-    return neurons_per_layer
-
-
-#=# DEFINE CLASSES #==========================================================#
-
-
-#=============================================================================#
+#=============================================================================

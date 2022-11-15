@@ -1,95 +1,51 @@
-""" Created: 18.07.2022  \\  Updated: 18.07.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 10.11.2022  \\   Author: Robert Sales """
 
-#=# IMPORT LIBRARIES #========================================================#
+#==============================================================================
+# Import libraries and set flags
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-#=# DEFINE CLASSES #==========================================================#
-     
-class FilepathClass():
-    
-    def __init__(self,parent_folder,hyperparameters):
-        
-        # Get parent folder and network save name
-        self.parent_folder = parent_folder
-        save_name = hyperparameters.save_name
-        
-        # Make folders        
-    
-        # Make TensorBoard folder + path
-        self.tensorboard_path = os.path.join(self.parent_folder,
-                                             "Training",
-                                             "Logs",
-                                             "TensorBoard",
-                                             save_name)  
-        
-        if not os.path.exists(self.tensorboard_path):
-            os.makedirs(self.tensorboard_path)
-            print("Creating Folder: '{}'\n".format(self.tensorboard_path))
-          
-        # Make CSV summary folder + path
-        self.csv_summary_path = os.path.join(self.parent_folder,
-                                             "Training",
-                                             "Logs",
-                                             "CSV Summary",
-                                             save_name)
-        
-        if not os.path.exists(self.csv_summary_path):
-            os.makedirs(self.csv_summary_path)
-            print("Creating Folder: '{}'\n".format(self.csv_summary_path))
-    
-        # Make checkpoints folder + path
-        self.checkpoints_path = os.path.join(self.parent_folder,
-                                             "Training",
-                                             "Checkpoints",
-                                             save_name)
-        
-        if not os.path.exists(self.checkpoints_path):
-            os.makedirs(self.checkpoints_path)
-            print("Creating Folder: '{}'\n".format(self.checkpoints_path))
-            
-        # Make trained model folder + path
-        self.trained_model_path = os.path.join(self.parent_folder,
-                                               "Training",
-                                               "Trained Models",
-                                               save_name)
-        
-        if not os.path.exists(self.trained_model_path):
-            os.makedirs(self.trained_model_path)
-            print("Creating Folder: '{}'\n".format(self.trained_model_path))
+#==============================================================================
+# Define a class for generating and storing all the key filenames and filepaths
 
-        # Make output volume folder + path
-        self.output_volume_path = os.path.join(self.parent_folder,
-                                               "Outputs",
-                                               "Volumes",
-                                               save_name)
+class FileClass():
+    
+    #==========================================================================
+    # Define the initialisation constructor function for 'FileStructureClass'
+    
+    def __init__(self,base_directory,network_config):
         
-        if not os.path.exists(self.output_volume_path):
-            os.makedirs(self.output_volume_path)
-            print("Creating Folder: '{}'\n".format(self.output_volume_path))
-            
-        # Make filepaths
+        # Copy the base directory and network save name
+        self.base_directory = base_directory
+        self.network_name = network_config.network_name
         
-        # Make normal model save filepath
-        normal_model_name = hyperparameters.save_name        
-        self.normal_model_path = os.path.join(self.trained_model_path,
-                                              normal_model_name)
+        print("\n{:30}{}".format("Created filepaths at:",base_directory.split("/")[-1]))
         
-        # Make tflite model save filepath
-        tflite_model_name = hyperparameters.save_name + "_normal" + ".tflite"        
-        self.tflite_model_path = os.path.join(self.trained_model_path,
-                                              tflite_model_name)
+        #======================================================================
+        # Make the outputs path and create directory folder
         
-        # Make quantised model save filepath
-        quantd_model_name = hyperparameters.save_name + "_quantd" + ".tflite"
-        self.quantd_model_path = os.path.join(self.trained_model_path,
-                                              quantd_model_name)
+        self.output_directory = os.path.join(self.base_directory,"outputs",self.network_name)
+        if not os.path.exists(self.output_directory): os.makedirs(self.output_directory)
         
-        # Make hyperparameters save filepath
-        hyperparameters_name = hyperparameters.save_name + "_parameters.txt"
-        self.hyperparameters_path = os.path.join(self.csv_summary_path,
-                                                 hyperparameters_name)
-
+        #======================================================================
+        # Set the output file filepaths       
+        
+        # Make the network architecture, weights and biases .json filepaths
+        self.network_architecture_path = os.path.join(self.output_directory,"network_architecture.json")
+        self.network_weights_path = os.path.join(self.output_directory,"network_weights.json")
+        
+        # Set the network configuration .json filepath
+        self.network_configuration_path = os.path.join(self.output_directory,"network_configuration.json")
+        
+        # Make the network image PNG filepath
+        self.network_image_path = os.path.join(self.output_directory,"network_image.png")
+        
+        # Make the training data and output volume filepaths
+        self.training_data_path = os.path.join(self.output_directory,"training_data.json")
+        self.output_volume_path = os.path.join(self.output_directory,"output_volume")
+ 
         return None
-#=============================================================================#
+        
+    
+#==============================================================================    
