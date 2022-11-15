@@ -10,4 +10,9 @@ Author: [Robert Sales](https://github.com/RobertMichaelSales).
 
 ## To do:
 - [x] Upload files
-- [ ] Update to do list
+- [X] Develop code to recreate compression results
+- [X] Test code on "test_vol.npy" and plot results
+- [ ] Develop code to save network architecture
+- [ ] Develop code to save network weights & biases
+- [ ] Develop code to load network architecture
+- [ ] Develop code to load network weights & biases
