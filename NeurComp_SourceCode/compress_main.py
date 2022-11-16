@@ -6,6 +6,7 @@
 from data_management         import DataClass
 from file_management         import FileClass
 from network_configuration   import NetworkConfigClass
+from network_encoder         import EncodeWeights,EncodeArchitecture
 from network_make            import BuildNeurComp
 from training_functions      import TrainStep,LRScheduler,LossPSNR
 
@@ -58,10 +59,12 @@ def compress(base_directory,input_filepath,config_filepath):
     network_config.NetworkStructure(input_data=input_data)
     
     # Create a 'FileClass'object to store output directory and filepath data
+    print("\n{:30}{}".format("Created filepaths at:",base_directory.split("/")[-1]))
     filepaths = FileClass(base_directory=base_directory,network_config=network_config)
         
     # Build NeurComp from the config information
-    neur_comp = BuildNeurComp(network_config=network_config)
+    print("\n{:30}{}".format("Constructed network:",network_config.network_name))
+    neur_comp = BuildNeurComp(layer_dimensions=network_config.layer_dimensions)
     
     # Plot and save an image of the network architecture#
     tf.keras.utils.plot_model(neur_comp,to_file=filepaths.network_image_path,show_shapes=True)
@@ -148,12 +151,11 @@ def compress(base_directory,input_filepath,config_filepath):
     
     # Save the net architecture
     print("{:30}{}".format("Saved architecture to:",filepaths.network_architecture_path.split("/")[-1]))
-    # with open(filepaths.network_architecture_path,"w") as file: json.dump(neur_comp.get_config(),file,indent=4)
+    EncodeArchitecture(config=network_config,filepath=filepaths.network_architecture_path)
     
     # Save the trained weights
-    print("{:30}{}".format("Saved weights to:",filepaths.network_weights_path.split("/")[-1]))
-    # weights = {name:weights for (name,weights) in zip(list(neur_comp.get_weight_paths().keys()),neur_comp.get_weights())}
-    # with open(filepaths.network_weights_and_biases_path,"w") as file: json.dump(weights,file,indent=4)    
+    print("{:30}{}".format("Saved weights/biases to:",filepaths.network_weights_path.split("/")[-1]))
+    EncodeWeights(network=neur_comp,filepath=filepaths.network_weights_path)
     
     #==========================================================================
     # Start predicting data
@@ -189,7 +191,7 @@ if __name__=="__main__":
     # Set input filepath
     input_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/test_vol.npy"
  
-    #compress(base_directory=base_directory,input_filepath=input_filepath,config_filepath=config_filepath)   
+    # compress(base_directory=base_directory,input_filepath=input_filepath,config_filepath=config_filepath)   
 
 else:
     

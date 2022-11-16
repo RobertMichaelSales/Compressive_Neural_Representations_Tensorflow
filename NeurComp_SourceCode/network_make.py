@@ -37,32 +37,34 @@ def SineBlock(inputs,units,scale,name,avg_1=False,avg_2=False):
 
 #==============================================================================
 # Define a function that constructs the 'SIREN' network from a specific network
-# configuration using the TensorFlow functional API and Keras (called NeurComp)
+# layer arrangement using the TensorFlow functional API and Keras
 
-def BuildNeurComp(network_config):
+def BuildNeurComp(layer_dimensions):
     
-    print("\n{:30}{}".format("Constructed network:",network_config.network_name))
-    
+    # Set a scale to multiply the forward signal
     scale = tf.constant(1.0)
+    
+    # Determine the total number of layer blocks
+    total_layers = len(layer_dimensions)
 
     # Iterate through each layer in the 'SIREN' network
-    for layer in np.arange(network_config.total_layers):
+    for layer in np.arange(total_layers):
           
         # Add the input layer and the first sine layer
         if (layer == 0):                  
           
             name = "l0_input"
-            input_layer = tf.keras.layers.Input(shape=(network_config.layer_dimensions[layer],),name=name)
+            input_layer = tf.keras.layers.Input(shape=(layer_dimensions[layer],),name=name)
             
             name = "l0_sinelayer"
-            x = SineLayer(inputs=input_layer,units=network_config.layer_dimensions[layer+1],scale=scale,name=name)
+            x = SineLayer(inputs=input_layer,units=layer_dimensions[layer+1],scale=scale,name=name)
           
         # Add the final dense output layer
-        elif (layer == network_config.total_layers - 1):
+        elif (layer == total_layers - 1):
           
             name = "l{}_output".format(layer)
             
-            output_layer =  tf.keras.layers.Dense(units=network_config.layer_dimensions[layer],name=name)(x)
+            output_layer =  tf.keras.layers.Dense(units=layer_dimensions[layer],name=name)(x)
           
         # Add intermediate residual block layers
         else:
@@ -70,9 +72,9 @@ def BuildNeurComp(network_config):
             name = "l{}_sineblock".format(layer)
             
             avg_1 = (layer > 1)
-            avg_2 = (layer == (network_config.total_layers - 2))                    # this used to be 3
+            avg_2 = (layer == (total_layers - 2))
             
-            x = SineBlock(inputs=x,units=network_config.layer_dimensions[layer],scale=scale,name=name,avg_1=avg_1,avg_2=avg_2)
+            x = SineBlock(inputs=x,units=layer_dimensions[layer],scale=scale,name=name,avg_1=avg_1,avg_2=avg_2)
     
     # Declare the network model
     NeurComp = tf.keras.Model(inputs=input_layer,outputs=output_layer)

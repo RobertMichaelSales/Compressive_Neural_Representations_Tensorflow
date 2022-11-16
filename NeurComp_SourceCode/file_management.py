@@ -17,35 +17,31 @@ class FileClass():
     def __init__(self,base_directory,network_config):
         
         # Copy the base directory and network save name
-        self.base_directory = base_directory
-        self.network_name = network_config.network_name
+        base_directory  = base_directory
+        network_name    = network_config.network_name
         
-        print("\n{:30}{}".format("Created filepaths at:",base_directory.split("/")[-1]))
-        
-        #======================================================================
-        # Make the outputs path and create directory folder
-        
-        self.output_directory = os.path.join(self.base_directory,"outputs",self.network_name)
+        # Set the outputs path and create the output folder
+        self.output_directory = os.path.join(base_directory,"outputs",network_name)
         if not os.path.exists(self.output_directory): os.makedirs(self.output_directory)
         
-        #======================================================================
-        # Set the output file filepaths       
+        # Set the architecture filepath 
+        self.network_architecture_path  = os.path.join(self.output_directory,"network_architecture")
         
-        # Make the network architecture, weights and biases .json filepaths
-        self.network_architecture_path = os.path.join(self.output_directory,"network_architecture.json")
-        self.network_weights_path = os.path.join(self.output_directory,"network_weights.json")
+        # Set the network weights filepath
+        self.network_weights_path       = os.path.join(self.output_directory,"network_weights")
         
-        # Set the network configuration .json filepath
+        # Set the configuration filepath
         self.network_configuration_path = os.path.join(self.output_directory,"network_configuration.json")
         
-        # Make the network image PNG filepath
-        self.network_image_path = os.path.join(self.output_directory,"network_image.png")
+        # Set the network image filepath
+        self.network_image_path         = os.path.join(self.output_directory,"network_image.png")
         
-        # Make the training data and output volume filepaths
-        self.training_data_path = os.path.join(self.output_directory,"training_data.json")
-        self.output_volume_path = os.path.join(self.output_directory,"output_volume")
+        # Set the training data filepath
+        self.training_data_path         = os.path.join(self.output_directory,"training_data.json")
+        
+        # Set the output volume filepath
+        self.output_volume_path         = os.path.join(self.output_directory,"output_volume")
  
         return None
-        
     
 #==============================================================================    

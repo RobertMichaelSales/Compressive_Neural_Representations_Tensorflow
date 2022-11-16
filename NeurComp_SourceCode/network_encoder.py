@@ -7,18 +7,18 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
-import tensorflow as tf
 
 #==============================================================================
 # Define a function to encode the weights/biases of each layer as a binary file
-# containing strings of bytes.
+# containing strings of bytes
 
 # Note: The np.method '.tobytes()' returns the same bytestring as 'struct.pack'
 
-def EncodeWeights(network,filepath="weights.bin"):
+def EncodeWeights(network,filepath):
     
     # Extract a sorted list of the names of each layer in the network
-    layer_names = sorted(list(network.get_weight_paths().keys()),key=SortLayerNames,reverse=False)
+    layer_names = network.get_weight_paths().keys()
+    layer_names = sorted(list(layer_names),key=SortLayerNames)
     
     # Open the weights file in 'write as binary' mode
     file = open(filepath,"wb")
@@ -33,33 +33,44 @@ def EncodeWeights(network,filepath="weights.bin"):
         weights = np.ravel(weights,order="C").astype(np.float32)
     
         # Serialise weights into a string of bytes
-        weight_bytestring = weights.tobytes(order="C")
+        weights_bytestring = weights.tobytes(order="C")
              
         # Write 'weight_bytestring' to file
-        file.write(weight_bytestring)
+        file.write(weights_bytestring)
             
     # Flush the buffer and close the file 
     file.flush()
     file.close()
-
-def EncodeArchitecture(network,filepath):
-
-    # Extract the network configuration 
     
-    # with open(filepaths.network_architecture_path,"w") as file: json.dump(neur_comp.get_config(),file,indent=4)
+    return None
+    
+#==============================================================================
+# Define a function to encode the network layer dimensions (or architecture) as
+# a binary file containing strings of bytes
 
-    # THE NETWORK ARCHITECTURE ONLY DEPENDS ON:
-        
-    #     network_config.network_name
-        
-    #     network_config.total_layers
-        
-    #     network_config.layer_dimensions
-        
-    # BECAUSE network_make.py ONLY REQUIRES THOSE THREE THINGS
+def EncodeArchitecture(config,filepath):
+
+    # Extract the list of network layer dimensions
+    layer_dimensions = np.array(config.layer_dimensions).astype(np.uint16)
+    
+    # Open the architecture file in 'write as binary' mode
+    file = open(filepath,"wb")
+    
+    # Serialise layer dimensions into a string of bytes
+    layer_dimensions_bytestring = layer_dimensions.tobytes(order="C")
+    
+    # Write 'layer_dimensions_bytestring' to file
+    file.write(layer_dimensions_bytestring)
+    
+    # Flush the buffer and close the file 
+    file.flush()
+    file.close()
 
     return None
 
+#==============================================================================
+# Define a function to sort the layer names alpha-numerically so that the saved
+# weights are always in the correct order
 
 def SortLayerNames(layer_name):
     
@@ -76,8 +87,8 @@ def SortLayerNames(layer_name):
         
     if ".bias" in layer_name: 
         layer_index = layer_index + 0.25   
-    
+
     return layer_index
 
-    
+#==============================================================================
     
