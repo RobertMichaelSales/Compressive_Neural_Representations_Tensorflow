@@ -17,6 +17,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import time,json
+import numpy as np
 import tensorflow as tf
 
 #==============================================================================
@@ -162,7 +163,8 @@ def compress(base_directory,input_filepath,config_filepath):
     print("-"*80,"\nRECONSTRUCTING INPUT:")
     
     # Predict values using the Neurcomp's learned weights and biases
-    output_data.PredictValues(network=neur_comp,network_config=network_config)
+    output_data.flat_values = neur_comp.predict(output_data.flat_volume,batch_size=network_config.batch_size,verbose="1")
+    output_data.values = np.reshape(output_data.flat_values,(output_data.volume.shape[:-1]+(1,)),order="C")
     
     # Compute the peak signal-to-noise ratio of the predicted volume
     psnr = LossPSNR(true=input_data.values,pred=output_data.values)
@@ -175,7 +177,7 @@ def compress(base_directory,input_filepath,config_filepath):
     #==========================================================================
     print("-"*80,"\n"*2)
     
-    return None
+    return input_data.flat_volume
     
 #==============================================================================
 # Define the script to run when envoked from the terminal
@@ -191,7 +193,7 @@ if __name__=="__main__":
     # Set input filepath
     input_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/test_vol.npy"
  
-    # compress(base_directory=base_directory,input_filepath=input_filepath,config_filepath=config_filepath)   
+    flatvol1 = compress(base_directory=base_directory,input_filepath=input_filepath,config_filepath=config_filepath)   
 
 else:
     

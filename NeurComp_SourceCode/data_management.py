@@ -177,18 +177,6 @@ class DataClass():
         return dataset 
     
     #==========================================================================
-        
-    def PredictValues(self,network,network_config):
-        
-        # Predict 'flat_values' using the Neurcomp's learned weights and biases
-        self.flat_values = network.predict(self.flat_volume,batch_size=network_config.batch_size,verbose="0")
-        
-        # Reshape 'flat_values' into the shape of the original input dimensions
-        self.values = np.reshape(self.flat_values,(self.resolution+(self.output_dimensions,)),order="C")
-
-        return None        
-    
-    #==========================================================================
     # Define a function to concatenate and save a scalar field to a '.npy' file
     
     # -> Note: 'self.volume' and 'self.values' should be appropriately reshaped
@@ -215,12 +203,4 @@ class DataClass():
         return None
         
 #=============================================================================#
-# Potential class for storing training data
-
-class TrainingDataClass():
-    
-    def __init__(self):
-        
-        pass
-    
     

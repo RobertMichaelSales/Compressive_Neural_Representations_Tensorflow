@@ -23,6 +23,10 @@ def DecodeWeights(network,filepath):
     # Open the weights file in 'read as binary' mode
     file = open(filepath,"rb")
     
+    # Create an empty dictionary of the form {layer_name,weights}
+    weights_dict = {}
+    
+    # Iterate through each of the network layers
     for layer_name in layer_names:
         
         # Extract the un-initialised layer from the network
@@ -40,14 +44,30 @@ def DecodeWeights(network,filepath):
         # Resize the 1-d array according to layer_shape
         weights = np.reshape(weights,layer_shape,order="C")
         
-        # Assign the weights to the un-initialised network
-        layer.assign(weights)
+        # Add the weights to the dictionary
+        weights_dict[layer_name] = weights
 
     # Flush the buffer and close the file 
     file.flush()
     file.close()    
     
-    return None
+    return weights_dict
+
+#==============================================================================
+# Define a function to assign the weights/biases of each layer
+
+def AssignWeights(network,weights_dict):
+        
+    # Iterate through each of the network layers
+    for layer_name in weights_dict.keys():
+        
+        # Extract the un-initialised layer from the network
+        layer = network.get_weight_paths()[layer_name]
+                     
+        # Assign the weights to the un-initialised network
+        layer.assign(weights_dict[layer_name])
+    
+    return network
     
 #==============================================================================
 # Define a function to decode the network layer dimensions (architecture) from
