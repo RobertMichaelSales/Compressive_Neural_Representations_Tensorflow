@@ -87,7 +87,7 @@ def decompress(base_directory,architecture_filepath,weights_filepath,input_filep
     values_max = input_values.max()
     values_min = input_values.min()
     values_avg = (values_max+values_min)/2.0
-    values_rng = abs(values_max-values_max)
+    values_rng = abs(values_max-values_min)
     
     # For now, normalise the volume and values
     input_volume = (2.0*((input_volume-volume_avg)/(volume_rng)))
@@ -115,7 +115,7 @@ def decompress(base_directory,architecture_filepath,weights_filepath,input_filep
     
     #==========================================================================
     
-    return flat_volume
+    return output_values
     
 #==============================================================================
 # Define the script to run when envoked from the terminal
@@ -134,7 +134,7 @@ if __name__=="__main__":
     # Set input filepath
     input_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/test_vol.npy"
     
-    flatvol2 = decompress(base_directory=base_directory,architecture_filepath=architecture_filepath,weights_filepath=weights_filepath,input_filepath=input_filepath)   
+    val2 = decompress(base_directory=base_directory,architecture_filepath=architecture_filepath,weights_filepath=weights_filepath,input_filepath=input_filepath)   
 
 else:
     

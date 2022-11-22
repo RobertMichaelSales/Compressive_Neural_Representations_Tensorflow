@@ -177,7 +177,7 @@ def compress(base_directory,input_filepath,config_filepath):
     #==========================================================================
     print("-"*80,"\n"*2)
     
-    return input_data.flat_volume
+    return output_data.values
     
 #==============================================================================
 # Define the script to run when envoked from the terminal
@@ -193,7 +193,7 @@ if __name__=="__main__":
     # Set input filepath
     input_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/test_vol.npy"
  
-    flatvol1 = compress(base_directory=base_directory,input_filepath=input_filepath,config_filepath=config_filepath)   
+    val1 = compress(base_directory=base_directory,input_filepath=input_filepath,config_filepath=config_filepath)   
 
 else:
     
