@@ -16,7 +16,7 @@ from training_functions      import TrainStep,LearningRate,LossPSNR
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-import time,json
+import time,json,math
 import numpy as np
 import tensorflow as tf
 
@@ -67,10 +67,10 @@ def compress(base_directory,input_filepath,config_filepath,verbose):
     print("\n{:30}{}".format("Constructed network:",network_config.network_name))
     neur_comp = BuildNeurComp(layer_dimensions=network_config.layer_dimensions)
     
-    # Plot and save an image of the network architecture#
+    # Plot and save the graph for the network architecture
     tf.keras.utils.plot_model(neur_comp,to_file=filepaths.network_image_path,show_shapes=True)
     
-    # Set a training optimiser and select a training metric 
+    # Set a training optimiser and select training metrics
     optimiser = tf.keras.optimizers.Adam(learning_rate=network_config.initial_learning_rate)
     mse_error = tf.keras.metrics.MeanSquaredError()
     
@@ -79,68 +79,92 @@ def compress(base_directory,input_filepath,config_filepath,verbose):
     print("-"*80,"\nCONFIGURING DATASET:")
     
     # Generate a TF dataset to supply volume and values batches during training 
-    training_dataset = input_data.MakeDataset(batch_size=network_config.batch_size,repeat=False)
+    training_dataset = input_data.MakeDataset(batch_size=network_config.batch_size,repeat=True)
     
     #==========================================================================
     # Start compressing data
     print("-"*80,"\nCOMPRESSING DATA:")
-    
+        
     # Create a dictionary of lists for storing training data
     training_data = {"epoch": [],"error": [],"time": [],"learning_rate": []}
     
+    # Determine the number of batches per epoch and in total
+    batches_per_epoch = int(math.ceil(input_data.size/network_config.batch_size))
+    total_num_batches = int(network_config.epochs*batches_per_epoch)
+        
     # Start the training timer
     training_time_tick = time.time()
     
-    # Enter the outer training loop: epochs:
-    for epoch in range(network_config.epochs):
-        
-        print("\n",end="")
-        
-        # Store the current epoch number
-        training_data["epoch"].append(float(epoch))
-          
-        # Determine and store the learning rate 
-        learning_rate = LearningRate(network_config=network_config,epoch=epoch)
-        training_data["learning_rate"].append(float(learning_rate))   
-        
-        # Assign the learning rate to the optimiser
-        optimiser.lr.assign(learning_rate)
-        
-        # Print the current epoch number and learning rate
-        print("{:30}{:02}/{:02}".format("Epoch:",epoch,network_config.epochs))
-        print("{:30}{:.3E}".format("Learning Rate:",learning_rate))
-        
-        # Start timing epoch
-        epoch_time_tick = time.time()
+    # Enter the inner training loop
+    for batch,(volume_batch,values_batch,indices_batch) in enumerate(training_dataset):
         
         
-        # Enter the inner training loop: batches:
-        for batch, (volume_batch,values_batch,indices_batch) in enumerate(training_dataset):
+        # If batch is at the start of training epoch                 
+        if (batch % batches_per_epoch == 0):
             
-            # Print the batch number
-            if verbose: print("\r{:30}{:04}/{:04}".format("Batch Number:",(batch+1),len(training_dataset)),end="")
-        
-            # Run a training step with the current batch
-            TrainStep(model=neur_comp,optimiser=optimiser,metric=mse_error,volume_batch=volume_batch,values_batch=values_batch,indices_batch=indices_batch)
-                
-         
-        if verbose: print("\n",end="")
-        
-        # End the epoch time and store the elapsed time 
-        epoch_time_tock = time.time()       
-        training_data["time"].append(float(epoch_time_tock-epoch_time_tick))
-        
-        # Fetch, store and reset and the training error
-        training_data["error"].append(float(mse_error.result().numpy()))
-        mse_error.reset_states()
+            print("\n",end="")
+            
+            # Determine and store the current epoch
+            epoch = batch // batches_per_epoch
+            training_data["epoch"].append(float(epoch))
     
-        # Print the mean squared error and training time
-        print("{:30}{:.7f}".format("Mean Squared Error:",training_data["error"][-1]))
-        print("{:30}{:.2f} seconds".format("Epoch Time:",training_data["time"][-1]))
- 
+            # Determine and store the learning rate 
+            learning_rate = LearningRate(network_config=network_config,epoch=epoch)
+            training_data["learning_rate"].append(float(learning_rate))   
+            
+            # Assign the learning rate to the optimiser
+            optimiser.lr.assign(learning_rate)
+                        
+            # Print the epoch number and learning rate
+            print("{:30}{:02}/{:02}".format("Epoch:",epoch,network_config.epochs))
+            print("{:30}{:.3E}".format("Learning Rate:",learning_rate))
+            
+            # Start the epoch timer
+            epoch_time_tick = time.time()
+        else: pass
+    
+    
+        # Print the batch number
+        if verbose: 
+            print("\r{:30}{:04}/{:04}".format("Batch Number:",((batch%batches_per_epoch)+1),batches_per_epoch),end="")        
+        else: pass                
+        
+        # Run a training step on the current batch
+        TrainStep(model=neur_comp,optimiser=optimiser,metric=mse_error,volume_batch=volume_batch,values_batch=values_batch,indices_batch=indices_batch)
+
+        
+        # If batch is at the end of training epoch
+        if ((batch+1) % batches_per_epoch == 0):
+            
+            if verbose: 
+                print("\n",end="")
+            else: pass
+            
+            # End the epoch time and store the elapsed time 
+            epoch_time_tock = time.time()       
+            training_data["time"].append(float(epoch_time_tock-epoch_time_tick))
+            
+            # Fetch, store and reset and the training error
+            training_data["error"].append(float(mse_error.result().numpy()))
+            mse_error.reset_states()
+            
+            # Print the mean squared error and training time
+            print("{:30}{:.7f}".format("Mean Squared Error:",training_data["error"][-1]))
+            print("{:30}{:.2f} seconds".format("Epoch Time:",training_data["time"][-1]))
+            
+        else: pass
+    
+            
+        # If batch is the last batch then exit from training
+        if ((batch+1) == total_num_batches): 
+            break
+        else: pass
+    
+        #======================================================================
+             
     # End the training timer
     training_time_tock = time.time()
-    print("\n{:30}{:.2f} seconds".format("Training Duration:",training_time_tock-training_time_tick))    
+    print("\n{:30}{:.2f} seconds".format("Training Duration:",training_time_tock-training_time_tick))             
     
     #==========================================================================
     # Save training data

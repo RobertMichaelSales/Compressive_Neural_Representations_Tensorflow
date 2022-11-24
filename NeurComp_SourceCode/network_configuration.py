@@ -47,7 +47,7 @@ class NetworkConfigClass():
             # Set training hyperparameters (default)
             self.initial_learning_rate              = 5e-3
             self.batch_size                         = 1024
-            self.num_epochs                         = 1
+            self.epochs                             = 1
             self.decay_rate                         = 3
             
         print("\n{:30}{}".format("Target compression ratio:",self.target_compression_ratio))

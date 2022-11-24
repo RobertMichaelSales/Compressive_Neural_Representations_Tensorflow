@@ -75,18 +75,6 @@ def TrainStep(model,optimiser,metric,volume_batch,values_batch,indices_batch):
     return None
 
 #==============================================================================
-# Define a function to calculate the current learning rate based on epoch/decay
-
-def LRScheduler(network_config,epoch):
-    
-    initial_learning_rate = network_config.initial_learning_rate
-    decay_rate = network_config.decay_rate
-    
-    current_learning_rate = initial_learning_rate / (2**(epoch//decay_rate))
-
-    return current_learning_rate
-
-#==============================================================================
 # Define a function that computes the mean squared loss on predictions 
 
 @tf.function
@@ -121,5 +109,17 @@ def LossPSNR(true,pred):
     psnr = -20.0*(math.log10(math.sqrt(mse)/rng))
     
     return psnr
+
+#==============================================================================
+# Define a function to calculate the current learning rate based on epoch/decay
+
+def LearningRate(network_config,epoch):
+    
+    initial_lr = network_config.initial_learning_rate
+    decay_rate = network_config.decay_rate
+    
+    current_lr = initial_lr / (2**(epoch//decay_rate))
+
+    return current_lr
 
 #==============================================================================

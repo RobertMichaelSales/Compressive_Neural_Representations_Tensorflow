@@ -132,19 +132,6 @@ class DataClass():
                 pass
             
         return None
-
-    #==========================================================================
-    # Define a function to compute the gradient of 'values' with respect to the
-    # mesh (spacings) described by the elements of 'volume'
-    
-    def GetGradients(self):
-        
-        # Determine the gradient of 'values' with respect to 'volume'
-        # values_reduced = self.values[...,0]
-        # volume_reduced = [self.volume[...,x].shape for x in np.arange(self.input_dimensions)]
-        # self.volume_gradient = np.gradient(self.values,self.volume)
-        
-        return None
         
     #==========================================================================
     # Define a function to create and return a 'tf.data.Dataset' dataset object     
@@ -155,9 +142,9 @@ class DataClass():
     # -> Note: Moving 'dataset.cache()' up/down will reduce runtime performance
     # -> significantly.
     
-    def MakeDataset(self,network_config):
+    def MakeDataset(self,batch_size,repeat):
         
-        print("\n{:30}{}{}".format("Made TF dataset:","batch_size = ",network_config.batch_size))
+        print("\n{:30}{}{}".format("Made TF dataset:","batch_size = ",batch_size))
 
         # Create a dataset whose elements are slices of the given tensors
         dataset = tf.data.Dataset.from_tensor_slices((self.flat_volume,self.flat_values,self.flat_coords))
@@ -165,11 +152,16 @@ class DataClass():
         # Cache the elements of the dataset to increase runtime performance
         dataset = dataset.cache()
         
+        # Makes the dataset infinitely iterable (i.e. infinitely repeating)
+        if repeat: 
+            dataset = dataset.repeat(count=None)
+        else: pass
+        
         # Randomly shuffle the elements of the cached dataset 
         dataset = dataset.shuffle(buffer_size=self.size,reshuffle_each_iteration=True)
                     
         # Concatenate elements of the dataset into mini-batches
-        dataset = dataset.batch(batch_size=network_config.batch_size,drop_remainder=False)
+        dataset = dataset.batch(batch_size=batch_size,drop_remainder=False)
         
         # Pre-fetch elements from the dataset to increase throughput
         dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
