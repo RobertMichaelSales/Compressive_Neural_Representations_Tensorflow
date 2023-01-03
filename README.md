@@ -8,6 +8,12 @@ Link to original ArXiv preprint: [Compressive Neural Representations of Volumtri
 
 Author: [Robert Sales](https://github.com/RobertMichaelSales). 
 
+## Tests:
+
+In testing on simulated data, compression of scalar values is achieved up-to and beyond a factor of 1000 without severe degradation in visualisation quality. The figure below shows a series of 2D contour slices extracted from the middle of a cube (150x150x150) for increasing compression ratios. The relative error is also presented.
+
+![](https://github.com/RobertMichaelSales/Compressive_Neural_Representations_Tensorflow/blob/encoding/contours.gif)
+
 ## To do:
 - [x] Upload files
 - [X] Develop code to recreate compression results
@@ -16,3 +22,4 @@ Author: [Robert Sales](https://github.com/RobertMichaelSales).
 - [ ] Develop code to save network weights & biases
 - [ ] Develop code to load network architecture
 - [ ] Develop code to load network weights & biases
+
