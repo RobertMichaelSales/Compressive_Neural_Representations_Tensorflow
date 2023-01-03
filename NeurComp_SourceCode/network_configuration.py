@@ -25,15 +25,15 @@ class NetworkConfigClass():
             
             print("\n{:30}{}".format("Loaded network config:",config_filepath.split("/")[-1]))
             
-            # Load config data from config file
-            config_file = open(config_filepath)
-            config_dict = json.load(config_file)
+            # Load config data file
+            with open(config_filepath) as config_file:
+                config_dictionary = json.load(config_file)
+
+            # Set config attributes 
+            for attribute in config_dictionary.keys():
+                setattr(self,attribute,config_dictionary[attribute])
         
-            # Set attributes from 'config_dict'
-            for key in config_dict.keys():
-                setattr(self,key,config_dict[key])
-        
-        # If config file IS NOT provided: 
+        # If config file NOT provided: 
         else:
             
             print("\n{:30}{}".format("Loaded network config:","default"))
@@ -62,21 +62,21 @@ class NetworkConfigClass():
     def NetworkStructure(self,input_data):
                 
         # Extract the useful internal parameters from the 'input_data' object
-        self.input_dimensions = input_data.input_dimensions
-        self.output_dimensions = input_data.output_dimensions
-        size = input_data.size
+        self.i_dimensions = input_data.i_dimensions
+        self.o_dimensions = input_data.o_dimensions
+        self.input_size = input_data.input_size
         
         # Compute the neurons per layer as well as the overall network capacity
-        self.target_size = int(size/self.target_compression_ratio)
+        self.target_size = int(self.input_size/self.target_compression_ratio)
         self.neurons_per_layer = self.NeuronsPerLayer() 
         self.num_of_parameters = self.TotalParameters()
-        self.actual_compression_ratio = size/self.num_of_parameters
+        self.actual_compression_ratio = self.input_size/self.num_of_parameters
         
         # Specify the network architecture as a list of layer dimensions
         self.layer_dimensions = []   
-        self.layer_dimensions.extend([self.input_dimensions])  
+        self.layer_dimensions.extend([self.i_dimensions])  
         self.layer_dimensions.extend([self.neurons_per_layer]*self.hidden_layers)  
-        self.layer_dimensions.extend([self.output_dimensions]) 
+        self.layer_dimensions.extend([self.o_dimensions]) 
         
         print("\n{:30}{}".format("Network dimensions:",self.layer_dimensions))
 
@@ -104,47 +104,49 @@ class NetworkConfigClass():
     # Define a function to calculate the total number of network parameters for
     # a given network architecture (i.e. layer dimensions/neurons)
     
+    # The network structure can be summarised as follows:
+    # [input_layer      -> sine_layer] + 
+    # [sine_layer/block -> sine_block] +
+    # [sine_block       -> output_layer]  
+    
     def TotalParameters(self):
-        
-        # The network architecture can be built from the following blocks:
-        # [input_layer -> dense_layer] + 
-        # [dense_layer / residual_block -> residual_block] +
-        # [residual_layer -> output_layer]    
-     
+    
         # Determine the number of inter-layer operations (i.e. total layers)
         self.total_layers = self.hidden_layers + 2     
                   
-        # Set the total number of network parameters to zero
+        # Set the total number of parameters to zero
         self.num_of_parameters = 0                                                         
           
         #Iterate through each layer in the network (including input/output)
         for layer in np.arange(self.total_layers):
           
-            # [input -> dense]
+            # [input_layer -> sine_layer]
             if (layer==0):                             
                 
                 # Determine the input and output dimensions of each layer
-                dim_input  = self.input_dimensions              
-                dim_output = self.neurons_per_layer
+                i_dimensions = self.i_dimensions              
+                o_dimensions = self.neurons_per_layer
                   
                 # Add parameters from the weight matrix and bias vector
-                self.num_of_parameters += (dim_input * dim_output) + dim_output
+                self.num_of_parameters += (i_dimensions * o_dimensions) + o_dimensions
           
-            # [residual -> output]
+            # [sine_block -> output_layer]
             elif (layer==self.total_layers-1):     
     
                 # Determine the input and output dimensions of each layer
-                dim_input  = self.neurons_per_layer
-                dim_output = self.output_dimensions
+                i_dimensions = self.neurons_per_layer
+                o_dimensions = self.o_dimensions
                   
                 # Add parameters from the weight matrix and bias vector
-                self.num_of_parameters += (dim_input * dim_output) + dim_output 
+                self.num_of_parameters += (i_dimensions * o_dimensions) + o_dimensions 
           
-            # [dense / residual -> residual]
+            # [sine_layer/block -> sine_block]
             else:                         
                 
-                # Add parameters from the weight matrix and bias vector
+                # Add parameters from the 1st weight matrix and bias vector
                 self.num_of_parameters += (self.neurons_per_layer * self.neurons_per_layer) + self.neurons_per_layer
+                
+                # Add parameters from the 2nd weight matrix and bias vector
                 self.num_of_parameters += (self.neurons_per_layer * self.neurons_per_layer) + self.neurons_per_layer        
                   
         return self.num_of_parameters

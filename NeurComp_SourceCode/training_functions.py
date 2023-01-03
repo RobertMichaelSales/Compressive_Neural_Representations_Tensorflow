@@ -10,66 +10,27 @@ import math
 import tensorflow as tf
 
 #==============================================================================
-# Define a function (as a static graph) to perform training steps on batches of
-# training data within the main training loop
+# Define a function to perform training on batches of data within the main loop
 
 @tf.function
-def TrainingStep(model,optimiser,metric,volume_batch,values_batch,indices_batch):
+def TrainStep(model,optimiser,metric,volume_batch,values_batch):
     
-    # Open a 'GradientTape' to record the operations run during the forward
-    # pass, which enables auto-differentiation
+    # Open 'GradientTape' to record the operations run in each forward pass
     with tf.GradientTape() as tape:
         
-        # Compute a forward pass for the current mini-batch
+        # Compute a forward pass on the current mini-batch
         values_predicted = model(volume_batch,training=True)
         
-        # Compute the losses for the current mini-batch
-        loss_on_predicted = LossPred(values_batch,values_predicted)
-        # loss_on_gradients = LossGrad(values_batch,values_predicted)
-        total_loss = loss_on_predicted
+        # Compute the mean-squared error for the current mini-batch
+        error = MeanSquaredError(values_batch,values_predicted)
 
-    # Use the gradient tape to automatically retrieve the gradients for the
-    # trainable variables (weights/biases) with respect to loss
-    gradients = tape.gradient(total_loss,model.trainable_variables)
+    # Determine the weight and bias gradients with respect to error
+    gradients = tape.gradient(error,model.trainable_variables)
     
-    # Run a single step of gradient descent by updating the variable values
-    # in order to minimise the total loss per mini-batch
+    # Update the weight and bias values to minimise the total error
     optimiser.apply_gradients(zip(gradients,model.trainable_variables))
             
-    # Update the training metric for the current mini-batch results
-    metric.update_state(values_batch,values_predicted)
-    
-    return None
-
-
-#==============================================================================
-# Define a function (as a static graph) to perform training steps on batches of
-# training data within the main training loop
-
-@tf.function
-def TrainStep(model,optimiser,metric,volume_batch,values_batch,indices_batch):
-    
-    # Open a 'GradientTape' to record the operations run during the forward
-    # pass, which enables auto-differentiation
-    with tf.GradientTape() as tape:
-        
-        # Compute a forward pass for the current mini-batch
-        values_predicted = model(volume_batch,training=True)
-        
-        # Compute the losses for the current mini-batch
-        loss_on_predicted = LossPred(values_batch,values_predicted)
-        # loss_on_gradients = LossGrad(values_batch,values_predicted)
-        total_loss = loss_on_predicted
-
-    # Use the gradient tape to automatically retrieve the gradients for the
-    # trainable variables (weights/biases) with respect to loss
-    gradients = tape.gradient(total_loss,model.trainable_variables)
-    
-    # Run a single step of gradient descent by updating the variable values
-    # in order to minimise the total loss per mini-batch
-    optimiser.apply_gradients(zip(gradients,model.trainable_variables))
-            
-    # Update the training metric for the current mini-batch results
+    # Update the training metric
     metric.update_state(values_batch,values_predicted)
     
     return None
@@ -78,26 +39,16 @@ def TrainStep(model,optimiser,metric,volume_batch,values_batch,indices_batch):
 # Define a function that computes the mean squared loss on predictions 
 
 @tf.function
-def LossPred(true,pred):
+def MeanSquaredError(true,pred):
     
-    loss = tf.math.reduce_mean(tf.math.square(tf.math.subtract(pred,true)))
+    mse = tf.math.reduce_mean(tf.math.square(tf.math.subtract(pred,true)))
     
-    return loss
-
-#==============================================================================
-# Define a function that computes the mean squared loss on prediction gradients 
-
-@tf.function
-def LossGrad(true,pred):
-    
-    loss = tf.math.reduce_mean(tf.math.square(tf.math.subtract(pred,true)))
-    
-    return loss
+    return mse
 
 #==============================================================================
 # Define a function that computes the peak signal-to-noise ratio (PSNR) 
 
-def LossPSNR(true,pred):
+def SignalToNoiseRatio(true,pred):
     
     # Compute the mean squared error between signals
     mse = tf.math.reduce_mean(tf.math.square(tf.math.subtract(pred,true)))
@@ -113,7 +64,7 @@ def LossPSNR(true,pred):
 #==============================================================================
 # Define a function to calculate the current learning rate based on epoch/decay
 
-def LearningRate(network_config,epoch):
+def GetLearningRate(network_config,epoch):
     
     initial_lr = network_config.initial_learning_rate
     decay_rate = network_config.decay_rate

@@ -7,8 +7,8 @@ from data_management         import DataClass
 from file_management         import FileClass
 from network_configuration   import NetworkConfigClass
 from network_encoder         import EncodeWeights,EncodeArchitecture
-from network_make            import BuildNeurComp
-from training_functions      import TrainStep,LearningRate,LossPSNR
+from network_model           import ConstructNetwork
+from training_functions      import TrainStep,LearningRate,SignalToNoiseRatio
 
 #==============================================================================
 # Import libraries and set flags
@@ -38,13 +38,13 @@ def compress(base_directory,input_filepath,config_filepath,verbose):
         
     #==========================================================================
     # Start initialising I/O data files
-    print("-"*80,"\nINITIALISING FILES:")
+    print("-"*80,"\nINITIALISING DATA I/O:")
     
     # Create 'DataClass' objecta to store input/output data
     input_data, output_data = DataClass(), DataClass()
     
     # Load and normalise input data
-    input_data.LoadData(filepath=input_filepath,normalise=True)
+    input_data.LoadData(input_filepath=input_filepath,i_dimensions=3,o_dimensions=1)
     
     # Copy meta-data from the input
     output_data.CopyData(DataClassObject=input_data)
@@ -65,7 +65,7 @@ def compress(base_directory,input_filepath,config_filepath,verbose):
         
     # Build NeurComp from the config information
     print("\n{:30}{}".format("Constructed network:",network_config.network_name))
-    neur_comp = BuildNeurComp(layer_dimensions=network_config.layer_dimensions)
+    neur_comp = ConstructNetwork(layer_dimensions=network_config.layer_dimensions)
     
     # Plot and save an image of the network architecture#
     tf.keras.utils.plot_model(neur_comp,to_file=filepaths.network_image_path,show_shapes=True)
@@ -100,7 +100,7 @@ def compress(base_directory,input_filepath,config_filepath,verbose):
         training_data["epoch"].append(float(epoch))
           
         # Determine and store the learning rate 
-        learning_rate = LearningRate(network_config=network_config,epoch=epoch)
+        learning_rate = GetLearningRate(network_config=network_config,epoch=epoch)
         training_data["learning_rate"].append(float(learning_rate))   
         
         # Assign the learning rate to the optimiser
@@ -115,13 +115,13 @@ def compress(base_directory,input_filepath,config_filepath,verbose):
         
         
         # Enter the inner training loop: batches:
-        for batch, (volume_batch,values_batch,indices_batch) in enumerate(training_dataset):
+        for batch, (volume_batch,values_batch) in enumerate(training_dataset):
             
             # Print the batch number
             if verbose: print("\r{:30}{:04}/{:04}".format("Batch Number:",(batch+1),len(training_dataset)),end="")
         
             # Run a training step with the current batch
-            TrainStep(model=neur_comp,optimiser=optimiser,metric=mse_error,volume_batch=volume_batch,values_batch=values_batch,indices_batch=indices_batch)
+            TrainStep(model=neur_comp,optimiser=optimiser,metric=mse_error,volume_batch=volume_batch,values_batch=values_batch)
                 
          
         if verbose: print("\n",end="")
@@ -171,7 +171,7 @@ def compress(base_directory,input_filepath,config_filepath,verbose):
     output_data.values = np.reshape(output_data.flat_values,(output_data.volume.shape[:-1]+(1,)),order="C")
     
     # Compute the peak signal-to-noise ratio of the predicted volume
-    psnr = LossPSNR(true=input_data.values,pred=output_data.values)
+    psnr = SignalToNoiseRatio(true=input_data.values,pred=output_data.values)
     print("\n{:30}{:.3f}".format("Output PSNR:",psnr))
     
     # Save the predicted values to a '.npy' volume rescaling as appropriate
@@ -197,7 +197,7 @@ if __name__=="__main__":
     # Set input filepath
     input_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/test_vol.npy"
  
-    compress(base_directory=base_directory,input_filepath=input_filepath,config_filepath=config_filepath,verbose=True)   
+    # compress(base_directory=base_directory,input_filepath=input_filepath,config_filepath=config_filepath,verbose=True)   
 
 else:
     
