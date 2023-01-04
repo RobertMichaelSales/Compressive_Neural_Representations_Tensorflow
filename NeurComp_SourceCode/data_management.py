@@ -30,32 +30,32 @@ class DataClass():
     
     # -> Note: Make sure the flattening takes place after normalisation
     
-    def LoadData(self,input_filepath,i_dimensions,o_dimensions,normalise=True):
+    def LoadData(self,volume_path,i_dimensions,o_dimensions,normalise=True):
                 
-        print("\n{:30}{}".format("Loaded data:",input_filepath.split("/")[-1]))
+        print("\n{:30}{}".format("Loaded data:",volume_path.split("/")[-1]))
     
         # Set the input and output dimensions defined by user input
         self.i_dimensions = i_dimensions
         self.o_dimensions = o_dimensions
     
         # Load the data then extract the volume and values matrices
-        data = np.load(input_filepath)    
+        data = np.load(volume_path)    
         self.volume = data[...,:self.i_dimensions]
         self.values = data[...,self.i_dimensions:]
         
-        # Determine the input resolution and count of scalar values
+        # Determine the input resolution and number of input values
         self.resolution = self.values.shape[:-1]  
-        self.input_size = self.values.size
+        self.i_size = self.values.size
         
         # Determine the maximum, minimum, average and range of 'volume'
-        self.volume_max = np.amax(self.volume,axis=tuple(np.arange(self.i_dimensions)))
-        self.volume_min = np.amin(self.volume,axis=tuple(np.arange(self.i_dimensions)))
+        self.volume_max = np.array([self.volume[...,i].max() for i in np.arange(self.i_dimensions)])
+        self.volume_min = np.array([self.volume[...,i].min() for i in np.arange(self.i_dimensions)])
         self.volume_avg = (self.volume_max+self.volume_min)/2.0
         self.volume_rng = abs(self.volume_max-self.volume_min)
         
         # Determine the maximum, minimum, average and range of 'values'
-        self.values_max = np.amax(self.values,axis=tuple(np.arange(self.o_dimensions)))
-        self.values_min = np.amin(self.values,axis=tuple(np.arange(self.o_dimensions)))
+        self.values_max = np.array([self.values[...,i].max() for i in np.arange(self.o_dimensions)])
+        self.values_min = np.array([self.values[...,i].min() for i in np.arange(self.o_dimensions)])
         self.values_avg = (self.values_max+self.values_min)/2.0
         self.values_rng = abs(self.values_max-self.values_min)
         
@@ -64,6 +64,10 @@ class DataClass():
             self.volume = 2.0*((self.volume-self.volume_avg)/(self.volume_rng))        
             self.values = 2.0*((self.values-self.values_avg)/(self.values_rng))
         else: pass
+    
+        # Flatten 'volume' and 'values' into equal lists of vectors
+        self.flat_volume = np.reshape(np.ravel(self.volume,order="C"),(-1,self.volume.shape[-1]))
+        self.flat_values = np.reshape(np.ravel(self.values,order="C"),(-1,self.values.shape[-1]))
                 
         return None
        
@@ -74,7 +78,7 @@ class DataClass():
     
     # -> Note: 'getattr()' and 'setattr()' are used to copy without referencing 
     
-    def CopyData(self,DataClassObject):
+    def CopyMetaData(self,DataClassObject):
         
         # Extract attribute keys from 'DataObject' and define exceptions
         exception_keys = ["values","flat_values"]
@@ -95,10 +99,10 @@ class DataClass():
     
     # -> Note: 'volume' and 'values' must be reshaped to match the input shapes
     
-    def SaveData(self,output_volume_path,normalise=True):
+    def SaveData(self,output_volume_path,reverse_normalise=True):
                     
         # Reverse normalise 'volume' and 'values' to the initial ranges
-        if normalise:
+        if reverse_normalise:
             self.volume = ((self.volume_rng*(self.volume/2.0))+self.volume_avg)
             self.values = ((self.values_rng*(self.values/2.0))+self.values_avg)
         else: pass
@@ -107,7 +111,7 @@ class DataClass():
         np.save(output_volume_path,np.concatenate((self.volume,self.values),axis=-1))
         
         # Save as VTK file
-        volume_list = [np.ascontiguousarray(self.volume[...,x]) for x in range(self.input_dimensions)]
+        volume_list = [np.ascontiguousarray(self.volume[...,x]) for x in range(self.i_dimensions)]
         values_dict = {"values":np.ascontiguousarray(self.values[...,0])}
         gridToVTK(output_volume_path,*volume_list,pointData=values_dict)
 
@@ -126,10 +130,6 @@ class DataClass():
         
         print("\n{:30}{}{}".format("Made TF dataset:","batch_size = ",batch_size))
         
-        # Flatten 'volume' and 'values' into equal lists of vectors
-        self.flat_volume = np.reshape(np.ravel(self.volume,order="C"),(-1,self.volume.shape[-1]))
-        self.flat_values = np.reshape(np.ravel(self.values,order="C"),(-1,self.values.shape[-1])) 
-
         # Create a dataset whose elements are slices of the given tensors
         dataset = tf.data.Dataset.from_tensor_slices((self.flat_volume,self.flat_values))
         
@@ -142,10 +142,10 @@ class DataClass():
         else: pass
         
         # Randomly shuffle the elements of the cached dataset 
-        dataset = dataset.shuffle(buffer_size=self.input_size,reshuffle_each_iteration=True)
+        dataset = dataset.shuffle(buffer_size=self.i_size,reshuffle_each_iteration=True)
                     
         # Concatenate elements of the dataset into mini-batches
-        dataset = dataset.batch(batch_size=batch_size,drop_remainder=True)
+        dataset = dataset.batch(batch_size=batch_size,drop_remainder=False)
         
         # Pre-fetch elements from the dataset to increase throughput
         dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)

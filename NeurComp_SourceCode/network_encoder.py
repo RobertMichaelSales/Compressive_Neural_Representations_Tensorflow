@@ -14,14 +14,14 @@ import numpy as np
 
 # Note: The np.method '.tobytes()' returns the same bytestring as 'struct.pack'
 
-def EncodeWeights(network,filepath):
+def EncodeParameters(network,parameters_path):
     
     # Extract a sorted list of the names of each layer in the network
     layer_names = network.get_weight_paths().keys()
     layer_names = sorted(list(layer_names),key=SortLayerNames)
     
     # Open the weights file in 'write as binary' mode
-    file = open(filepath,"wb")
+    file = open(parameters_path,"wb")
     
     # Iterate through each of the network layers, in order 
     for layer_name in layer_names: 
@@ -48,10 +48,10 @@ def EncodeWeights(network,filepath):
 # Define a function to encode the network layer dimensions (or architecture) as
 # a binary file containing strings of bytes
 
-def EncodeArchitecture(config,filepath):
+def EncodeArchitecture(network_cfg,filepath):
 
     # Extract the list of network layer dimensions
-    layer_dimensions = np.array(config.layer_dimensions).astype(np.uint16)
+    layer_dimensions = np.array(network_cfg.layer_dimensions).astype(np.uint16)
     
     # Open the architecture file in 'write as binary' mode
     file = open(filepath,"wb")

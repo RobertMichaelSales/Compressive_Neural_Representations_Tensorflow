@@ -12,21 +12,21 @@ import numpy as np
 #==============================================================================
 # Define a class for generating, managing and storing the network configuration
 
-class NetworkConfigClass():
+class ConfigurationClass():
     
     #==========================================================================
     # Define the initialisation constructor function for 'NetworkConfigClass'
     # Note: These are the only user-configurable hyperparameters
 
-    def __init__(self,config_filepath):
+    def __init__(self,config_path):
         
         # If config file IS provided: 
-        if os.path.exists(config_filepath):
+        if os.path.exists(config_path):
             
-            print("\n{:30}{}".format("Loaded network config:",config_filepath.split("/")[-1]))
+            print("\n{:30}{}".format("Loaded network config:",config_path.split("/")[-1]))
             
             # Load config data file
-            with open(config_filepath) as config_file:
+            with open(config_path) as config_file:
                 config_dictionary = json.load(config_file)
 
             # Set config attributes 
@@ -45,10 +45,10 @@ class NetworkConfigClass():
             self.min_neurons_per_layer              = 10
             
             # Set training hyperparameters (default)
-            self.initial_learning_rate              = 5e-3
+            self.initial_lr                         = 5e-3
             self.batch_size                         = 1024
             self.epochs                             = 1
-            self.decay_rate                         = 3
+            self.half_life                          = 3
             
         print("\n{:30}{}".format("Target compression ratio:",self.target_compression_ratio))
            
@@ -59,18 +59,20 @@ class NetworkConfigClass():
     # dimensions, output dimensions and input size. The 'layer_dimensions' list
     # has dimensions for each layer as its elements
     
-    def NetworkStructure(self,input_data):
+    def GenerateStructure(self,i_dimensions,o_dimensions,i_size):
                 
         # Extract the useful internal parameters from the 'input_data' object
-        self.i_dimensions = input_data.i_dimensions
-        self.o_dimensions = input_data.o_dimensions
-        self.input_size = input_data.input_size
+        self.i_dimensions = i_dimensions
+        self.o_dimensions = o_dimensions
+        self.i_size = i_size
         
         # Compute the neurons per layer as well as the overall network capacity
-        self.target_size = int(self.input_size/self.target_compression_ratio)
+        self.target_size = int(self.i_size/self.target_compression_ratio)
         self.neurons_per_layer = self.NeuronsPerLayer() 
         self.num_of_parameters = self.TotalParameters()
-        self.actual_compression_ratio = self.input_size/self.num_of_parameters
+        self.actual_compression_ratio = self.i_size/self.num_of_parameters
+        
+        print("\n{:30}{}".format("Actual compression ratio:",self.actual_compression_ratio))
         
         # Specify the network architecture as a list of layer dimensions
         self.layer_dimensions = []   
