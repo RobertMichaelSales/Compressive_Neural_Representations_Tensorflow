@@ -1,14 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 10.11.2022  \\   Author: Robert Sales """
-
-#==============================================================================
-# Import user-defined libraries 
-
-from data_management         import DataClass
-from file_management         import FileClass
-from network_configuration   import NetworkConfigClass
-from network_encoder         import EncodeWeights,EncodeArchitecture
-from network_make            import BuildNeurComp
-from training_functions      import TrainStep,LearningRate,LossPSNR
+""" Created: 30.11.2022  \\  Updated: 05.01.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -16,145 +6,151 @@ from training_functions      import TrainStep,LearningRate,LossPSNR
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-import time,json,math
+import time
+import json
+import math
 import numpy as np
 import tensorflow as tf
 
 #==============================================================================
+# Import user-defined libraries 
+
+from data_management         import DataClass
+from network_cfguration   import ConfigurationClass
+from network_encoder         import EncodeParameters,EncodeArchitecture
+from network_model           import ConstructNetwork
+from compress_utilities      import TrainStep,GetLearningRate,SignalToNoise,MakeDataset
+
+#==============================================================================
     
-def compress(base_directory,input_filepath,config_filepath,verbose):
+def compress(volume_path,config_path,output_path,export_output):
+    
+    print("-"*80,"\nNEURCOMP: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
         
     #==========================================================================
-    # Enter the main script and check for hardware acceleration
-    print("-"*80,"\nNEURCOMP: IMPLICIT NEURAL REPRESENTATIONS (Version 2.0)")
-    
+    # Check whether hardware acceleration is enabled
+   
     gpus = tf.config.list_physical_devices('GPU')
     
-    if (len(gpus) == 0):        
-        print("\n{:30}{} - {}".format("CUDA GPU(s) Detected:",len(gpus),"Hardware Acceleration Is Disabled"))
-    else:        
-        tf.config.experimental.set_memory_growth(gpus[0],True)
+    if (len(gpus) != 0): 
         print("\n{:30}{} - {}".format("CUDA GPU(s) Detected:",len(gpus),"Hardware Acceleration Is Enabled"))
+        tf.config.experimental.set_memory_growth(gpus[0],True)
+    else:        
+        print("\n{:30}{} - {}".format("CUDA GPU(s) Detected:",len(gpus),"Hardware Acceleration Is Disabled"))
+        return None
         
     #==========================================================================
-    # Start initialising I/O data files
-    print("-"*80,"\nINITIALISING FILES:")
+    # Initialise i/o 
     
-    # Create 'DataClass' objecta to store input/output data
-    input_data, output_data = DataClass(), DataClass()
+    print("-"*80,"\nINITIALISING DATA I/O:")
+    
+    # Create 'DataClass' objects to store i/o data
+    i_data, o_data = DataClass(), DataClass()
     
     # Load and normalise input data
-    input_data.LoadData(filepath=input_filepath,normalise=True)
+    i_data.LoadData(volume_path=volume_path,i_dimensions=3,o_dimensions=1,normalise=True)
     
     # Copy meta-data from the input
-    output_data.CopyData(DataClassObject=input_data)
+    o_data.CopyMetaData(DataClassObject=i_data)
     
     #==========================================================================
-    # Configure network model and build
-    print("-"*80,"\nCONFIGURING BUILD:")
+    # Configure network 
     
-    # Create a 'NetworkConfigClass' object to store net parameters 
-    network_config = NetworkConfigClass(config_filepath=config_filepath)
+    print("-"*80,"\nCONFIGURING NETWORK:")
+    
+    # Create a 'ConfigurationClass' object to store net parameters 
+    network_cfg = ConfigurationClass(config_path=config_path)
     
     # Generate the network structure based on the input dimensions
-    network_config.NetworkStructure(input_data=input_data)
+    network_cfg.GenerateStructure(i_dimensions=i_data.i_dimensions,o_dimensions=i_data.o_dimensions,i_size=i_data.i_size)
     
-    # Create a 'FileClass'object to store output directory and filepath data
-    print("\n{:30}{}".format("Created filepaths at:",base_directory.split("/")[-1]))
-    filepaths = FileClass(base_directory=base_directory,network_config=network_config)
-        
     # Build NeurComp from the config information
-    print("\n{:30}{}".format("Constructed network:",network_config.network_name))
-    neur_comp = BuildNeurComp(layer_dimensions=network_config.layer_dimensions)
+    SquashNet = ConstructNetwork(layer_dimensions=network_cfg.layer_dimensions)
     
-    # Plot and save the graph for the network architecture
-    tf.keras.utils.plot_model(neur_comp,to_file=filepaths.network_image_path,show_shapes=True)
+    # Set a training optimiser
+    optimiser = tf.keras.optimizers.Adam(learning_rate=network_cfg.initial_lr)
     
-    # Set a training optimiser and select training metrics
-    optimiser = tf.keras.optimizers.Adam(learning_rate=network_config.initial_learning_rate)
-    mse_error = tf.keras.metrics.MeanSquaredError()
+    # Set a performance metric
+    mse_error_metric = tf.keras.metrics.MeanSquaredError()
     
     #==========================================================================
-    # Configure network model and build
+    # Configure output folder
+    print("-"*80,"\nCONFIGURING FOLDERS:")
+    
+    # Create an output directory for all future saved files
+    output_directory = os.path.join(output_path,network_cfg.network_name)
+    if not os.path.exists(output_directory):os.makedirs(output_directory)
+    print("\n{:30}{}".format("Created output folder:",output_directory.split("/")[-1]))
+            
+    #==========================================================================
+    # Configure dataset
     print("-"*80,"\nCONFIGURING DATASET:")
     
     # Generate a TF dataset to supply volume and values batches during training 
-    training_dataset = input_data.MakeDataset(batch_size=network_config.batch_size,repeat=True)
-    
-    #==========================================================================
-    # Start compressing data
-    print("-"*80,"\nCOMPRESSING DATA:")
+    dataset = i_data.MakeDataset(batch_size=network_cfg.batch_size,repeat=False)
         
-    # Create a dictionary of lists for storing training data
+    #==========================================================================
+    # Compression loop
+    print("-"*80,"\nCOMPRESSING DATA:")
+    
+    # Create a dictionary of lists to store training data
     training_data = {"epoch": [],"error": [],"time": [],"learning_rate": []}
     
     # Determine the number of batches per epoch and in total
-    batches_per_epoch = int(math.ceil(input_data.size/network_config.batch_size))
-    total_num_batches = int(network_config.epochs*batches_per_epoch)
+    batches_per_epoch = int(math.ceil(i_data.size/network_cfg.batch_size))
+    total_num_batches = int(network_cfg.epochs*batches_per_epoch)
         
-    # Start the training timer
+    # Start the overall training timer
     training_time_tick = time.time()
     
     # Enter the inner training loop
-    for batch,(volume_batch,values_batch,indices_batch) in enumerate(training_dataset):
-        
+    for batch,(volume_batch,values_batch) in enumerate(dataset):
         
         # If batch is at the start of training epoch                 
         if (batch % batches_per_epoch == 0):
             
             print("\n",end="")
             
-            # Determine and store the current epoch
+            # Determine, store and print the current epoch
             epoch = batch // batches_per_epoch
             training_data["epoch"].append(float(epoch))
-    
-            # Determine and store the learning rate 
-            learning_rate = LearningRate(network_config=network_config,epoch=epoch)
-            training_data["learning_rate"].append(float(learning_rate))   
+            print("{:30}{:02}/{:02}".format("Epoch:",epoch,network_cfg.epochs))
             
-            # Assign the learning rate to the optimiser
+            # Determine, update, store and print the learning rate 
+            learning_rate = GetLearningRate(initial_lr=network_cfg.initial_lr,half_life=network_cfg.half_life,epoch=epoch)
             optimiser.lr.assign(learning_rate)
-                        
-            # Print the epoch number and learning rate
-            print("{:30}{:02}/{:02}".format("Epoch:",epoch,network_config.epochs))
+            training_data["learning_rate"].append(float(learning_rate))   
             print("{:30}{:.3E}".format("Learning Rate:",learning_rate))
-            
+                
             # Start the epoch timer
             epoch_time_tick = time.time()
         else: pass
     
-    
-        # Print the batch number
-        if verbose: 
-            print("\r{:30}{:04}/{:04}".format("Batch Number:",((batch%batches_per_epoch)+1),batches_per_epoch),end="")        
-        else: pass                
-        
-        # Run a training step on the current batch
-        TrainStep(model=neur_comp,optimiser=optimiser,metric=mse_error,volume_batch=volume_batch,values_batch=values_batch,indices_batch=indices_batch)
-
+        # Print the current batch number
+        print("\r{:30}{:04}/{:04}".format("Batch Number:",((batch%batches_per_epoch)+1),batches_per_epoch),end="")        
+             
+        # Run a training step
+        TrainStep(model=SquashNet,optimiser=optimiser,metric=mse_error_metric,volume_batch=volume_batch,values_batch=values_batch)
         
         # If batch is at the end of training epoch
         if ((batch+1) % batches_per_epoch == 0):
-            
-            if verbose: 
-                print("\n",end="")
-            else: pass
-            
+
+            print("\n",end="")
+
             # End the epoch time and store the elapsed time 
             epoch_time_tock = time.time()       
-            training_data["time"].append(float(epoch_time_tock-epoch_time_tick))
+            epoch_time = float(epoch_time_tock-epoch_time_tick)
+            training_data["time"].append(epoch_time)
+            print("{:30}{:.2f} seconds".format("Epoch Time:",epoch_time))       
             
             # Fetch, store and reset and the training error
-            training_data["error"].append(float(mse_error.result().numpy()))
-            mse_error.reset_states()
-            
-            # Print the mean squared error and training time
-            print("{:30}{:.7f}".format("Mean Squared Error:",training_data["error"][-1]))
-            print("{:30}{:.2f} seconds".format("Epoch Time:",training_data["time"][-1]))
+            mse_error = float(mse_error_metric.result().numpy())
+            mse_error_metric.reset_states()
+            training_data["error"].append(mse_error)
+            print("{:30}{:.7f}".format("Mean Squared Error:",mse_error))
             
         else: pass
     
-            
         # If batch is the last batch then exit from training
         if ((batch+1) == total_num_batches): 
             break
@@ -162,50 +158,69 @@ def compress(base_directory,input_filepath,config_filepath,verbose):
     
         #======================================================================
              
-    # End the training timer
+    # End the overall training timer
     training_time_tock = time.time()
-    print("\n{:30}{:.2f} seconds".format("Training Duration:",training_time_tock-training_time_tick))             
+    training_time = float(training_time_tock-training_time_tick)
+    print("\n{:30}{:.2f} seconds".format("Training Duration:",training_time))               
     
     #==========================================================================
-    # Save training data
-    print("-"*80,"\nSAVING NETWORK AND RESULTS:")
+    # Save results
+    print("-"*80,"\nSAVING RESULTS:")
     
-    # Save the configuration
-    print("\n{:30}{}".format("Saved configuration to:",filepaths.network_configuration_path.split("/")[-1]))
-    with open(filepaths.network_configuration_path,"w") as file: json.dump(vars(network_config),file,indent=4)
+    print("\n",end="")
     
     # Save the training data
-    print("{:30}{}".format("Saved training data to:",filepaths.training_data_path.split("/")[-1]))
-    with open(filepaths.training_data_path,"w") as file: json.dump(training_data,file,indent=4,sort_keys=True)
+    training_data_path = os.path.join(output_path,network_cfg.network_name,"training_data.json")
+    with open(training_data_path,"w") as file: json.dump(training_data,file,indent=4,sort_keys=True)
+    print("{:30}{}".format("Saved training data to:",training_data_path.split("/")[-1]))
+
+    # Save the configuration
+    configuration_path = os.path.join(output_path,network_cfg.network_name,"configuration.json")
+    with open(configuration_path,"w") as file: json.dump(vars(network_cfg),file,indent=4)
+    print("{:30}{}".format("Saved configuration to:",configuration_path.split("/")[-1]))
     
-    # Save the net architecture
-    print("{:30}{}".format("Saved architecture to:",filepaths.network_architecture_path.split("/")[-1]))
-    EncodeArchitecture(config=network_config,filepath=filepaths.network_architecture_path)
+    #==========================================================================
+    # Save network 
+    print("-"*80,"\nSAVING NETWORK:")
     
-    # Save the trained weights
-    print("{:30}{}".format("Saved weights/biases to:",filepaths.network_weights_path.split("/")[-1]))
-    EncodeWeights(network=neur_comp,filepath=filepaths.network_weights_path)
+    print("\n",end="")
+    
+    # Extract value bounds
+    values_bounds = (i_data.values_max,i_data.values_min)
+    
+    # Save the parameters
+    parameters_path = os.path.join(output_path,network_cfg.network_name,"parameters.bin")
+    EncodeParameters(network=SquashNet,parameters_path=parameters_path,values_bounds=values_bounds)
+    print("{:30}{}".format("Saved parameters to:",parameters_path.split("/")[-1]))
+    
+    # Save the architecture
+    architecture_path = os.path.join(output_path,network_cfg.network_name,"architecture.bin")
+    EncodeArchitecture(layer_dimensions=network_cfg.layer_dimensions,architecture_path=architecture_path)
+    print("{:30}{}".format("Saved architecture to:",architecture_path.split("/")[-1]))
+
+    if not export_output:
+        print("-"*80,"\n")
+        return None
+    else: pass
     
     #==========================================================================
     # Start predicting data
-    print("-"*80,"\nRECONSTRUCTING INPUT:")
+    print("-"*80,"\nSAVING OUTPUTS:")
     
-    # Predict values using the Neurcomp's learned weights and biases
-    output_data.flat_values = neur_comp.predict(output_data.flat_volume,batch_size=network_config.batch_size,verbose="1")
-    output_data.values = np.reshape(output_data.flat_values,(output_data.volume.shape[:-1]+(1,)),order="C")
-    
-    # Compute the peak signal-to-noise ratio of the predicted volume
-    psnr = LossPSNR(true=input_data.values,pred=output_data.values)
-    print("\n{:30}{:.3f}".format("Output PSNR:",psnr))
-    
-    # Save the predicted values to a '.npy' volume rescaling as appropriate
-    print("{:30}{}".format("Saved reconstruction to:",filepaths.output_volume_path.split("/")[-1]))
-    output_data.SaveData(output_volume_path=filepaths.output_volume_path,reverse_normalise=True)
+    print("\n",end="")
+
+    # Generate the output volume and calculate the PSNR
+    o_data.flat_values = SquashNet.predict(o_data.flat_volume,batch_size=network_cfg.batch_size,verbose="1")
+    o_data.values = np.reshape(o_data.flat_values,(o_data.volume.shape[:-1]+(1,)),order="C")
+    print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_data.values,pred=o_data.values)))
+
+    # Save the output volume to ".npy" and ".vtk" files
+    output_volume_path = os.path.join(output_path,network_cfg.network_name,"output_volume")
+    o_data.SaveData(output_volume_path=output_volume_path,reverse_normalise=True)
+    print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_volume_path.split("/")[-1]))
     
     #==========================================================================
-    print("-"*80,"\n"*2)
-    
-    return None
+    print("-"*80,"\n")
     
 #==============================================================================
 # Define the script to run when envoked from the terminal

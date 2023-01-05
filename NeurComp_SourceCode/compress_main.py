@@ -1,5 +1,11 @@
 """ Created: 18.07.2022  \\  Updated: 05.01.2023  \\   Author: Robert Sales """
 
+# Separate volume and values (to be separate objects) in DataClass. Then move SaveData() from within DataClass to training_utils.py. Then rename training_utils.py to compress_utils.py.
+# Separate volume and values (to be separate objects) in DataClass. Then move SaveData() from within DataClass to training_utils.py. Then rename training_utils.py to compress_utils.py.
+# Separate volume and values (to be separate objects) in DataClass. Then move SaveData() from within DataClass to training_utils.py. Then rename training_utils.py to compress_utils.py.
+# Separate volume and values (to be separate objects) in DataClass. Then move SaveData() from within DataClass to training_utils.py. Then rename training_utils.py to compress_utils.py.
+# Separate volume and values (to be separate objects) in DataClass. Then move SaveData() from within DataClass to training_utils.py. Then rename training_utils.py to compress_utils.py.
+
 #==============================================================================
 # Import libraries and set flags
 
@@ -18,13 +24,13 @@ from data_management         import DataClass
 from network_configuration   import ConfigurationClass
 from network_encoder         import EncodeParameters,EncodeArchitecture
 from network_model           import ConstructNetwork
-from training_utilities      import TrainStep,GetLearningRate,SignalToNoise
+from compress_utilities      import TrainStep,GetLearningRate,SignalToNoise,MakeDataset
 
 #==============================================================================
     
 def compress(volume_path,config_path,output_path,export_output):
     
-    print("-"*80,"\nNEURCOMP: IMPLICIT NEURAL REPRESENTATIONS (Version 2.0)")
+    print("-"*80,"\nNEURCOMP: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
         
     #==========================================================================
     # Check whether hardware acceleration is enabled
@@ -87,7 +93,7 @@ def compress(volume_path,config_path,output_path,export_output):
     
     # Generate a TF dataset to supply volume and values batches during training 
     dataset = i_data.MakeDataset(batch_size=network_cfg.batch_size,repeat=False)
-    
+        
     #==========================================================================
     # Compression loop
     print("-"*80,"\nCOMPRESSING DATA:")
@@ -168,20 +174,18 @@ def compress(volume_path,config_path,output_path,export_output):
     
     print("\n",end="")
     
+    # Extract value bounds
+    values_bounds = (i_data.values_max,i_data.values_min)
+    
     # Save the parameters
     parameters_path = os.path.join(output_path,network_cfg.network_name,"parameters.bin")
-    EncodeParameters(network=SquashNet,parameters_path=parameters_path)
+    EncodeParameters(network=SquashNet,parameters_path=parameters_path,values_bounds=values_bounds)
     print("{:30}{}".format("Saved parameters to:",parameters_path.split("/")[-1]))
     
     # Save the architecture
     architecture_path = os.path.join(output_path,network_cfg.network_name,"architecture.bin")
-    EncodeArchitecture(network_cfg=network_cfg,filepath=architecture_path)
+    EncodeArchitecture(layer_dimensions=network_cfg.layer_dimensions,architecture_path=architecture_path)
     print("{:30}{}".format("Saved architecture to:",architecture_path.split("/")[-1]))
-    
-    # Save an image of the network architecture
-    network_plot_path = os.path.join(output_path,network_cfg.network_name,"network_plot.png")
-    tf.keras.utils.plot_model(model=SquashNet,to_file=network_plot_path,show_shapes=True)
-    print("{:30}{}".format("Saved network plot to:",network_plot_path.split("/")[-1]))
 
     if not export_output:
         print("-"*80,"\n")
@@ -202,12 +206,10 @@ def compress(volume_path,config_path,output_path,export_output):
     # Save the output volume to ".npy" and ".vtk" files
     output_volume_path = os.path.join(output_path,network_cfg.network_name,"output_volume")
     o_data.SaveData(output_volume_path=output_volume_path,reverse_normalise=True)
-    print("{:30}{}".format("Saved output volume to:",output_volume_path.split("/")[-1]))
+    print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_volume_path.split("/")[-1]))
     
     #==========================================================================
     print("-"*80,"\n")
-    
-    return None
    
 #==============================================================================
 # Define the script to run when envoked from the terminal
@@ -224,6 +226,8 @@ if __name__=="__main__":
     output_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
  
     # Execute compression
-    data = compress(volume_path=volume_path,config_path=config_path,output_path=output_path,export_output=True)   
+    compress(volume_path=volume_path,config_path=config_path,output_path=output_path,export_output=True)   
+
+else: pass
     
 #==============================================================================

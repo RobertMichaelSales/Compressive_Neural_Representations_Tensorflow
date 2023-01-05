@@ -4,7 +4,7 @@
     "hidden_layers": 8,
     "initial_lr": 0.005,
     "min_neurons_per_layer": 10,
-    "network_name": "neurcomp_test2",
-    "epochs": 30,
+    "network_name": "neurcomp_test",
+    "epochs": 2,
     "target_compression_ratio": 100
 }
