@@ -28,3 +28,4 @@ In testing on simulated data, compression of scalar values is achieved up-to and
 - [ ] Extend code to work for 4D (3D+Time) data
 - [ ] Test code extension for 4D (3D+Time) data
 - [ ] Develop DataClass to separate volume and values
+- [ ] Upload and extend code for plotting results
