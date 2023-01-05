@@ -14,7 +14,7 @@ In testing on simulated data, compression of scalar values is achieved up-to and
 
 ![](https://github.com/RobertMichaelSales/Compressive_Neural_Representations_Tensorflow/blob/main/contours.gif)
 
-## To do:
+## To Do List:
 - [X] Develop code to recreate compression results
 - [X] Test code on "test_vol.npy" and plot results
 - [X] Develop code to save network architecture
