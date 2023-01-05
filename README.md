@@ -12,7 +12,7 @@ Author: [Robert Sales](https://github.com/RobertMichaelSales).
 
 In testing on simulated data, compression of scalar values is achieved up-to and beyond a factor of 1000 without severe degradation in visualisation quality. The figure below shows a series of 2D contour slices extracted from the middle of a cube (150x150x150) for increasing compression ratios. The relative error is also presented.
 
-![](https://github.com/RobertMichaelSales/Compressive_Neural_Representations_Tensorflow/blob/encoding/contours.gif)
+![](https://github.com/RobertMichaelSales/Compressive_Neural_Representations_Tensorflow/blob/main/contours.gif)
 
 ## To do:
 - [X] Develop code to recreate compression results
