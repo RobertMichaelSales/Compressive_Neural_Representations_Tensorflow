@@ -1,6 +1,5 @@
 # Folders to ignore
-**__pycache__/
-
+NeurComp_SourceCode/__pycache__/
 NeurComp_AuxFiles/outputs
 NeurComp_AuxFiles/plots
 
