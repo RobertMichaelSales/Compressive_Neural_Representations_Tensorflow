@@ -1,10 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 05.01.2023  \\   Author: Robert Sales """
-
-# Separate volume and values (to be separate objects) in DataClass. Then move SaveData() from within DataClass to training_utils.py. Then rename training_utils.py to compress_utils.py.
-# Separate volume and values (to be separate objects) in DataClass. Then move SaveData() from within DataClass to training_utils.py. Then rename training_utils.py to compress_utils.py.
-# Separate volume and values (to be separate objects) in DataClass. Then move SaveData() from within DataClass to training_utils.py. Then rename training_utils.py to compress_utils.py.
-# Separate volume and values (to be separate objects) in DataClass. Then move SaveData() from within DataClass to training_utils.py. Then rename training_utils.py to compress_utils.py.
-# Separate volume and values (to be separate objects) in DataClass. Then move SaveData() from within DataClass to training_utils.py. Then rename training_utils.py to compress_utils.py.
+""" Created: 30.11.2022  \\  Updated: 05.01.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -14,6 +8,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import time
 import json
+import math
 import numpy as np
 import tensorflow as tf
 
@@ -21,7 +16,7 @@ import tensorflow as tf
 # Import user-defined libraries 
 
 from data_management         import DataClass
-from network_configuration   import ConfigurationClass
+from network_cfguration   import ConfigurationClass
 from network_encoder         import EncodeParameters,EncodeArchitecture
 from network_model           import ConstructNetwork
 from compress_utilities      import TrainStep,GetLearningRate,SignalToNoise,MakeDataset
@@ -100,57 +95,73 @@ def compress(volume_path,config_path,output_path,export_output):
     
     # Create a dictionary of lists to store training data
     training_data = {"epoch": [],"error": [],"time": [],"learning_rate": []}
-
+    
+    # Determine the number of batches per epoch and in total
+    batches_per_epoch = int(math.ceil(i_data.size/network_cfg.batch_size))
+    total_num_batches = int(network_cfg.epochs*batches_per_epoch)
+        
     # Start the overall training timer
     training_time_tick = time.time()
     
-    # Iterate through each epoch
-    for epoch in range(network_cfg.epochs):
+    # Enter the inner training loop
+    for batch,(volume_batch,values_batch) in enumerate(dataset):
         
-        print("\n",end="")
-        
-        # Store and print the current epoch number
-        training_data["epoch"].append(float(epoch))
-        print("{:30}{:02}/{:02}".format("Epoch:",epoch,network_cfg.epochs))
-        
-        # Determine, update, store and print the learning rate 
-        learning_rate = GetLearningRate(initial_lr=network_cfg.initial_lr,half_life=network_cfg.half_life,epoch=epoch)
-        optimiser.lr.assign(learning_rate)
-        training_data["learning_rate"].append(float(learning_rate))   
-        print("{:30}{:.3E}".format("Learning Rate:",learning_rate))
-        
-        # Start timing current epoch
-        epoch_time_tick = time.time()
-        
-        ## Iterate through each batch
-        for batch, (volume_batch,values_batch) in enumerate(dataset):
+        # If batch is at the start of training epoch                 
+        if (batch % batches_per_epoch == 0):
             
-            # Print the current batch number 
-            print("\r{:30}{:04}/{:04}".format("Batch Number:",(batch+1),len(dataset)),end="")
+            print("\n",end="")
             
-            # Run a training step 
-            TrainStep(model=SquashNet,optimiser=optimiser,metric=mse_error_metric,volume_batch=volume_batch,values_batch=values_batch)
-        ##
+            # Determine, store and print the current epoch
+            epoch = batch // batches_per_epoch
+            training_data["epoch"].append(float(epoch))
+            print("{:30}{:02}/{:02}".format("Epoch:",epoch,network_cfg.epochs))
+            
+            # Determine, update, store and print the learning rate 
+            learning_rate = GetLearningRate(initial_lr=network_cfg.initial_lr,half_life=network_cfg.half_life,epoch=epoch)
+            optimiser.lr.assign(learning_rate)
+            training_data["learning_rate"].append(float(learning_rate))   
+            print("{:30}{:.3E}".format("Learning Rate:",learning_rate))
+                
+            # Start the epoch timer
+            epoch_time_tick = time.time()
+        else: pass
+    
+        # Print the current batch number
+        print("\r{:30}{:04}/{:04}".format("Batch Number:",((batch%batches_per_epoch)+1),batches_per_epoch),end="")        
+             
+        # Run a training step
+        TrainStep(model=SquashNet,optimiser=optimiser,metric=mse_error_metric,volume_batch=volume_batch,values_batch=values_batch)
         
-        print("\n",end="")
-        
-        # End the epoch time and store the elapsed time 
-        epoch_time_tock = time.time() 
-        epoch_time = float(epoch_time_tock-epoch_time_tick)
-        training_data["time"].append(epoch_time)
-        print("{:30}{:.2f} seconds".format("Epoch Time:",epoch_time))
-        
-        # Fetch, store and reset and the training error
-        mse_error = float(mse_error_metric.result().numpy())
-        mse_error_metric.reset_states()
-        training_data["error"].append(mse_error)
-        print("{:30}{:.7f}".format("Mean Squared Error:",mse_error))
-    ##   
- 
+        # If batch is at the end of training epoch
+        if ((batch+1) % batches_per_epoch == 0):
+
+            print("\n",end="")
+
+            # End the epoch time and store the elapsed time 
+            epoch_time_tock = time.time()       
+            epoch_time = float(epoch_time_tock-epoch_time_tick)
+            training_data["time"].append(epoch_time)
+            print("{:30}{:.2f} seconds".format("Epoch Time:",epoch_time))       
+            
+            # Fetch, store and reset and the training error
+            mse_error = float(mse_error_metric.result().numpy())
+            mse_error_metric.reset_states()
+            training_data["error"].append(mse_error)
+            print("{:30}{:.7f}".format("Mean Squared Error:",mse_error))
+            
+        else: pass
+    
+        # If batch is the last batch then exit from training
+        if ((batch+1) == total_num_batches): 
+            break
+        else: pass
+    
+        #======================================================================
+             
     # End the overall training timer
     training_time_tock = time.time()
     training_time = float(training_time_tock-training_time_tick)
-    print("\n{:30}{:.2f} seconds".format("Training Duration:",training_time))    
+    print("\n{:30}{:.2f} seconds".format("Training Duration:",training_time))               
     
     #==========================================================================
     # Save results
@@ -210,24 +221,25 @@ def compress(volume_path,config_path,output_path,export_output):
     
     #==========================================================================
     print("-"*80,"\n")
-   
+    
 #==============================================================================
 # Define the script to run when envoked from the terminal
 
 if __name__=="__main__":
-    
-    # Set config filepath
-    config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config.json"
-       
-    # Set input filepath
-    volume_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/volume.npy"
-    
-    # Set output filepath
-    output_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
- 
-    # Execute compression
-    compress(volume_path=volume_path,config_path=config_path,output_path=output_path,export_output=True)   
 
-else: pass
+    # Set config filepath
+    config_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config_test.json"
+    
+    # Set base directory
+    base_directory = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles"
+    
+    # Set input filepath
+    input_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/test_vol.npy"
+ 
+    compress(base_directory=base_directory,input_filepath=input_filepath,config_filepath=config_filepath,verbose=True)   
+
+else:
+    
+    print("Please invoke 'compress_main.py' correctly from the terminal!")
     
 #==============================================================================

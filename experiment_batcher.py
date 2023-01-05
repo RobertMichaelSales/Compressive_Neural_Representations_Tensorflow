@@ -33,7 +33,7 @@ if __name__=="__main__":
             "min_neurons_per_layer"      : 10,
             "initial_learning_rate"      : 5e-3,
             "batch_size"                 : 1024,
-            "num_epochs"                 : 30,
+            "epochs"                     : 30,
             "decay_rate"                 : 3                        
             }
         

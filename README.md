@@ -18,8 +18,9 @@ In testing on simulated data, compression of scalar values is achieved up-to and
 - [x] Upload files
 - [X] Develop code to recreate compression results
 - [X] Test code on "test_vol.npy" and plot results
-- [ ] Develop code to save network architecture
-- [ ] Develop code to save network weights & biases
-- [ ] Develop code to load network architecture
-- [ ] Develop code to load network weights & biases
+- [X] Develop code to save network architecture
+- [X] Develop code to save network weights & biases
+- [X] Develop code to load network architecture
+- [X] Develop code to load network weights & biases
+- [X] Test code for loading/saving 
 

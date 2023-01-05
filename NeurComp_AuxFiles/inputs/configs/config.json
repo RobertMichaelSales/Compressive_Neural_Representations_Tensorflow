@@ -1,10 +1,10 @@
 {
     "batch_size": 1024,
-    "decay_rate": 3,
+    "half_life": 3,
     "hidden_layers": 8,
-    "initial_learning_rate": 0.005,
+    "initial_lr": 0.005,
     "min_neurons_per_layer": 10,
-    "network_name": "neurcomp_11",
-    "num_epochs": 30,
+    "network_name": "neurcomp_test",
+    "epochs": 2,
     "target_compression_ratio": 100
 }
