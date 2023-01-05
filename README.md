@@ -15,12 +15,16 @@ In testing on simulated data, compression of scalar values is achieved up-to and
 ![](https://github.com/RobertMichaelSales/Compressive_Neural_Representations_Tensorflow/blob/encoding/contours.gif)
 
 ## To do:
-- [x] Upload files
 - [X] Develop code to recreate compression results
 - [X] Test code on "test_vol.npy" and plot results
 - [X] Develop code to save network architecture
-- [X] Develop code to save network weights & biases
+- [X] Develop code to save network parameters
 - [X] Develop code to load network architecture
-- [X] Develop code to load network weights & biases
-- [X] Test code for loading/saving 
-
+- [X] Develop code to load network parameters
+- [X] Validate code for saving network architecture
+- [X] Validate code for saving network parameters
+- [X] Validate code for loading network architecture
+- [X] Validate code for loading network parameters
+- [ ] Extend code to work for 4D (3D+Time) data
+- [ ] Test code extension for 4D (3D+Time) data
+- [ ] Develop DataClass to separate volume and values
