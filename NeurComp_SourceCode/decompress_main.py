@@ -110,8 +110,9 @@ def decompress(architecture_path,parameters_path,volume_path):
     print("-"*80,"\nSAVING DECOMPRESSED RESULTS:")  
 
     # Save as Numpy file 
-    np.save("test",np.concatenate((volume,values),axis=-1))
-    
+    output_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs/test"
+    np.save(output_path,np.concatenate((volume,values),axis=-1))
+        
     #==========================================================================
     print("-"*80,"\n")
     
