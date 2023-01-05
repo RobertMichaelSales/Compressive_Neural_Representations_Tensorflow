@@ -1,4 +1,15 @@
-""" Created: 18.07.2022  \\  Updated: 10.11.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 05.01.2023  \\   Author: Robert Sales """
+
+#==============================================================================
+# Import libraries and set flags
+
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+import time
+import json
+import numpy as np
+import tensorflow as tf
 
 #==============================================================================
 # Import user-defined libraries 
@@ -10,18 +21,8 @@ from network_model           import ConstructNetwork
 from training_utilities      import TrainStep,GetLearningRate,SignalToNoise
 
 #==============================================================================
-# Import libraries and set flags
-
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-import time,json
-import numpy as np
-import tensorflow as tf
-
-#==============================================================================
     
-def compress(volume_path,config_path,output_path,reconstruct_output):
+def compress(volume_path,config_path,output_path,export_output):
     
     print("-"*80,"\nNEURCOMP: IMPLICIT NEURAL REPRESENTATIONS (Version 2.0)")
         
@@ -182,7 +183,7 @@ def compress(volume_path,config_path,output_path,reconstruct_output):
     tf.keras.utils.plot_model(model=SquashNet,to_file=network_plot_path,show_shapes=True)
     print("{:30}{}".format("Saved network plot to:",network_plot_path.split("/")[-1]))
 
-    if not reconstruct_output:
+    if not export_output:
         print("-"*80,"\n")
         return None
     else: pass
@@ -214,15 +215,15 @@ def compress(volume_path,config_path,output_path,reconstruct_output):
 if __name__=="__main__":
     
     # Set config filepath
-    config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config_test.json"
+    config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config.json"
        
     # Set input filepath
-    volume_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/test_vol.npy"
+    volume_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/volume.npy"
     
     # Set output filepath
     output_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
  
     # Execute compression
-    data = compress(volume_path=volume_path,config_path=config_path,output_path=output_path,reconstruct_output=True)   
+    data = compress(volume_path=volume_path,config_path=config_path,output_path=output_path,export_output=True)   
     
 #==============================================================================

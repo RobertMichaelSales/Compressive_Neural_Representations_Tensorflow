@@ -1,12 +1,9 @@
-""" Created: 18.07.2022  \\  Updated: 10.11.2022  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 05.01.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
 
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-import json
+import os, json
 import numpy as np
 
 #==============================================================================
