@@ -22,4 +22,5 @@ In testing on simulated data, compression of scalar values is achieved up-to and
 - [X] Develop code to save network weights & biases
 - [X] Develop code to load network architecture
 - [X] Develop code to load network weights & biases
-- [ ] Test code for loading/saving 
+- [X] Test code for loading/saving 
+
