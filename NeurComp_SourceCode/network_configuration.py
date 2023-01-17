@@ -56,18 +56,18 @@ class ConfigurationClass():
     # dimensions, output dimensions and input size. The 'layer_dimensions' list
     # has dimensions for each layer as its elements
     
-    def GenerateStructure(self,i_dimensions,o_dimensions,i_size):
+    def GenerateStructure(self,i_dimensions,o_dimensions,size):
                 
         # Extract the useful internal parameters from the 'input_data' object
         self.i_dimensions = i_dimensions
         self.o_dimensions = o_dimensions
-        self.i_size = i_size
+        self.size = size
         
         # Compute the neurons per layer as well as the overall network capacity
-        self.target_size = int(self.i_size/self.target_compression_ratio)
+        self.target_size = int(self.size/self.target_compression_ratio)
         self.neurons_per_layer = self.NeuronsPerLayer() 
         self.num_of_parameters = self.TotalParameters()
-        self.actual_compression_ratio = self.i_size/self.num_of_parameters
+        self.actual_compression_ratio = self.size/self.num_of_parameters
         
         print("\n{:30}{}".format("Actual compression ratio:",self.actual_compression_ratio))
         

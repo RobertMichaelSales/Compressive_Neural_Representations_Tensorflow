@@ -69,43 +69,4 @@ def GetLearningRate(initial_lr,half_life,epoch):
 
     return current_lr
 
-'''
-#==========================================================================
-# Define a function to create and return a 'tf.data.Dataset' dataset object
-
-# -> Note: 'AUTOTUNE' prompts 'tf.data' to tune the value  of 'buffer_size'
-# -> dynamically at runtime
-
-# -> Note: Moving 'dataset.cache()' up/down will reduce runtime performance
-# -> significantly
-
-def MakeDataset(flat_volume,flat_values,batch_size,repeat=False):
-    
-    print("\n{:30}{}{}".format("Made TF dataset:","batch_size = ",batch_size))
-    
-    # Create a dataset whose elements are slices of the given tensors
-    dataset = tf.data.Dataset.from_tensor_slices((flat_volume,flat_values))
-    
-    # Cache the elements of the dataset to increase runtime performance
-    dataset = dataset.cache()
-    
-    # Makes the dataset infinitely iterable (i.e. infinitely repeating)
-    if repeat: 
-        dataset = dataset.repeat(count=None)
-    else: pass
-
-    # Set the shuffle buffer size to equal the number of scalars
-    buffer_size=flat_values.size
-    
-    # Randomly shuffle the elements of the cached dataset 
-    dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
-                
-    # Concatenate elements of the dataset into mini-batches
-    dataset = dataset.batch(batch_size=batch_size,drop_remainder=False)
-    
-    # Pre-fetch elements from the dataset to increase throughput
-    dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
-            
-    return dataset    
-'''
 #==============================================================================
