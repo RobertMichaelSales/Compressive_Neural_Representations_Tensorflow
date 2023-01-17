@@ -14,7 +14,7 @@ import tensorflow as tf
 #==============================================================================
 # Import user-defined libraries 
 
-from data_management_edited  import DataClass,MakeDataset,SaveData
+from data_management         import DataClass,MakeDataset,SaveData
 from network_configuration   import ConfigurationClass
 from network_encoder         import EncodeParameters,EncodeArchitecture
 from network_model           import ConstructNetwork
@@ -219,7 +219,7 @@ if __name__=="__main__":
     config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config.json"
        
     # Set input filepath
-    input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy"
+    input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/passage.npy"
     
     # Set output filepath
     output_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
