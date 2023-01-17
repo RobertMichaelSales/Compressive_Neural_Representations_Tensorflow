@@ -1,15 +1,7 @@
-""" Created: 13.06.2022  \\  Updated: 09.11.2022  \\   Author: Robert Sales """
+""" Created: 13.06.2022  \\  Updated: 17.01.2023  \\   Author: Robert Sales """
 
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-def VTKtoNPY_3D(vtk_filename,variable_name,shape):
-    
-    # Import libraries
-    import vtk
-    import numpy as np
-    from vtk.util.numpy_support import vtk_to_numpy
-    
-    # Configure filename
-    npy_filename = vtk_filename.replace(".vts","_test")
+def GetVarsFromVTK(vtk_filename):
         
     # Set up a vtk file reader
     reader = vtk.vtkXMLStructuredGridReader()
@@ -19,74 +11,114 @@ def VTKtoNPY_3D(vtk_filename,variable_name,shape):
     
     # Update the reader object
     reader.Update()
-        
-    # Get the coordinates of the grid
-    flat_volume = vtk_to_numpy(reader.GetOutput().GetPoints().GetData())
-    volume = np.reshape(flat_volume,(output_shape+(-1,)),order="F")
     
-    # Initialise the 'values' dictionary
-    values_dictionary = {}
+    # Create a list for variable names
+    variables = []
+    
+    print("\nThe point-data variables stored in {} are:".format(vtk_filename.split("/")[-1]))
     
     # Iterate through all of the fields
     for index in range(reader.GetOutput().GetPointData().GetNumberOfArrays()):
+
+        variables.append(reader.GetOutput().GetPointData().GetArrayName(index))
         
-        # Get the scalars stored at grid points
-        array = vtk_to_numpy(reader.GetOutput().GetPointData().GetArray(index))
+        print("'{}'".format(variables[-1]))
+    
+    return variables
+
+#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+def PickVarFromList(variables):
+    
+    variable = ""
+    
+    while(variable not in variables):
         
-        # Get the name of the scalar field
-        label = reader.GetOutput().GetPointData().GetArrayName(index)    
+        variable = input("\nSelect the point-data variable to convert: ")
+    
+    print("'{}'".format(variable))
+    
+    return variable 
+
+#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+def VTKtoNPY_3D(vtk_filename,variable_name,shape):
+    
+    npy_filename = vtk_filename.replace(".vts","")
+    
+    print("\nConverting file: {} -> {}.npy".format(vtk_filename.split("/")[-1],npy_filename.split("/")[-1]))    
+            
+    # Create a vtk file reader object to read structured grids
+    reader = vtk.vtkXMLStructuredGridReader()
+    
+    # Set the input filename for the VTK reader
+    reader.SetFileName(vtk_filename)
+    
+    # Update the reader object to obtain values
+    reader.Update()
+    
+    # Initialise a dictionary to store the scalars 
+    variables = {}
+    
+    # Iterate through each point array
+    for index in range(reader.GetNumberOfPointArrays()):
         
-        # Add the fields to the 'values' dictionary
-        values_dictionary[label] = array
+        # Get the variable name
+        label = reader.GetOutput().GetPointData().GetArrayName(index)
         
-    # Check that the desired variable exists
-    if variable_name in values_dictionary.keys():
+        # Get the scalar values
+        value = vtk_to_numpy(reader.GetOutput().GetPointData().GetArray(index))
         
-        # Extract the desired variable scalar field
-        flat_values = values_dictionary[variable_name]
-        values = np.reshape(flat_values,(output_shape+(-1,)),order="F")
+        # Add the name and values to a dictionary
+        variables[label] = value
+    ##
         
-        # Save the data to a file
-        np.save(npy_filename,np.concatenate((volume,values),axis=-1))
+    # Get the x,y,z coordinates of each grid point
+    volume = vtk_to_numpy(reader.GetOutput().GetPoints().GetData())
         
-        print("Converting: Success!")
+    # Get the scalar values at each grid point 
+    values = np.expand_dims(variables[variable_name],axis=-1)
         
-    else:        
-        print("No such variable: {}".format(variable_name))
+    # Cast the arrays to float32 precision
+    volume = volume.astype(np.float32)
+    values = values.astype(np.float32)
+    
+    # Concatenate volume and values arrays
+    npy_data = np.concatenate((volume,values),axis=-1)   
         
-    return None
+    # Reshape the array according to the user's resolution
+    npy_data = np.reshape(npy_data,(shape[2],shape[0],shape[1],-1),order="F")
+    
+    # Transpose from z,x,y -> x,y,z index ordering
+    npy_data = np.transpose(npy_data,(1,2,0,3))
+
+    # Save the data to a file
+    np.save(npy_filename, npy_data)
+
+    print("\nSuccess!")
+    
+    return npy_data
         
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
-# Options: "r, rt, ro, mut, Vx, Vy, Vz, V, T, M, To, P, Po, alpha, beta, sfunc"
+# Import libraries
+import os, vtk
+import numpy as np
+from vtk.util.numpy_support import vtk_to_numpy
 
-import os
-
-# Specify the parent directory
-input_directory = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes"
-
-# Specify file names
-input_filenames = ["test_vol.vts"]
-
-# Specify variable name 
-variable_names = ["values"]
+# Specify the vtk file name
+vtk_filename = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/passage.vts"
 
 # Specify volume shape
-output_shape = (150,150,150)
+shape = (133,49,49)
 
-# Iterate through all specified files
-for input_filename in input_filenames:
+if os.path.exists(vtk_filename):
+
+    # Pick which variables
+    variable_name = PickVarFromList(GetVarsFromVTK(vtk_filename))
     
-    # Iterate through all specified variables
-    for variable_name in variable_names:
-
-        # Create absolute path for input and output files
-        vtk_filename = os.path.join(input_directory,input_filename)    
-
-        if os.path.exists(vtk_filename):
-            print("Converting File: {}".format(vtk_filename))
-            VTKtoNPY_3D(vtk_filename,variable_name,output_shape)
-        else: 
-            print("Could not find file '{}'.".format(vtk_filename))
+    # Convert specifed variable
+    volume = VTKtoNPY_3D(vtk_filename,variable_name,shape)    
+    
+else: 
+    print("File not found '{}'.".format(vtk_filename.split("/")[-1]))
         
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
