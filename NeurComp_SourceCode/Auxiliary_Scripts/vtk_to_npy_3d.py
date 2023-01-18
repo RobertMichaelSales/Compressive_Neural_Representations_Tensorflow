@@ -1,4 +1,4 @@
-""" Created: 13.06.2022  \\  Updated: 17.01.2023  \\   Author: Robert Sales """
+""" Created: 13.06.2022  \\  Updated: 18.01.2023  \\   Author: Robert Sales """
 
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 def GetVarsFromVTK(vtk_filename):
@@ -40,9 +40,9 @@ def PickVarFromList(variables):
     return variable 
 
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-def VTKtoNPY_3D(vtk_filename,variable_name,shape):
+def VTKtoNPY_3D(vtk_filename,variable_name,shape,check_save):
     
-    npy_filename = vtk_filename.replace(".vts","")
+    npy_filename = vtk_filename.replace(".vts","") # + "_" + variable_name
     
     print("\nConverting file: {} -> {}.npy".format(vtk_filename.split("/")[-1],npy_filename.split("/")[-1]))    
             
@@ -89,20 +89,42 @@ def VTKtoNPY_3D(vtk_filename,variable_name,shape):
     
     # Transpose from z,x,y -> x,y,z index ordering
     npy_data = np.transpose(npy_data,(1,2,0,3))
-
+    
     # Save the data to a file
     np.save(npy_filename, npy_data)
-
+    
+    if check_save: 
+        CheckSavedAsVTK(vtk_filename,variable_name,npy_data,shape)
+    else: pass
+    
     print("\nSuccess!")
     
     return npy_data
         
+#<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+def CheckSavedAsVTK(vtk_filename,variable_name,npy_data,shape):
+    
+    # Add to the vtk filename
+    new_vtk_filename = vtk_filename.replace(".vts","_check_") + variable_name
+    
+    # Create a list of the coordinate positions
+    volume_list = [np.ascontiguousarray(npy_data[...,x]) for x in range(len(shape))]
+    
+    # Create a dictionary of the scalar values
+    values_dict = {variable_name: np.ascontiguousarray(npy_data[...,-1])}
+    
+    # Save point data to VTK file    
+    gridToVTK(new_vtk_filename,*volume_list,pointData=values_dict)
+
+    return None
+
 #<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 # Import libraries
 import os, vtk
 import numpy as np
 from vtk.util.numpy_support import vtk_to_numpy
+from pyevtk.hl import gridToVTK
 
 # Specify the vtk file name
 vtk_filename = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/passage.vts"
@@ -116,7 +138,7 @@ if os.path.exists(vtk_filename):
     variable_name = PickVarFromList(GetVarsFromVTK(vtk_filename))
     
     # Convert specifed variable
-    volume = VTKtoNPY_3D(vtk_filename,variable_name,shape)    
+    npy_data = VTKtoNPY_3D(vtk_filename,variable_name,shape,check_save=False)    
     
 else: 
     print("File not found '{}'.".format(vtk_filename.split("/")[-1]))
