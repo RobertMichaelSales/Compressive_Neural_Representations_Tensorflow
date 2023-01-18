@@ -27,5 +27,10 @@ In testing on simulated data, compression of scalar values is achieved up-to and
 - [X] Validate code for loading network parameters
 - [ ] Extend code to work for 4D (3D+Time) data
 - [ ] Test code extension for 4D (3D+Time) data
-- [ ] Develop DataClass to separate volume and values
-- [ ] Upload and extend code for plotting results
+- [X] Develop DataClass to separate volume and values
+- [ ] Develop code for plotting results
+- [X] Develop auxiliary code to convert .vts files to .npy files
+- [X] Test auxiliary code to convert .vts files
+- [ ] Test compression on real 3D data fields
+- [ ] Experiment with batch size and learning rate (as function of input size)
+
