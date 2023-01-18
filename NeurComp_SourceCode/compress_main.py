@@ -98,7 +98,7 @@ def compress(input_data_path,config_path,output_path,export_output):
     print("-"*80,"\nCOMPRESSING DATA:")
     
     # Create a dictionary of lists to store training data
-    training_data = {"epoch": [],"error": [],"time": [],"learning_rate": []}
+    training_data = {"epoch": [],"error": [],"time": [],"learning_rate": [], "psnr": []}
 
     # Start the overall training timer
     training_time_tick = time.time()
@@ -201,6 +201,7 @@ def compress(input_data_path,config_path,output_path,export_output):
     o_values.flat = SquashNet.predict(o_volume.flat,batch_size=network_cfg.batch_size,verbose="1")
     o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(1,)),order="C")
     print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_values.data,pred=o_values.data)))
+    training_data["psnr"].append(SignalToNoise(true=i_values.data,pred=o_values.data))
 
     # Save the output volume to ".npy" and ".vtk" files
     output_data_path = os.path.join(output_path,network_cfg.network_name,"output_volume")
@@ -215,15 +216,20 @@ def compress(input_data_path,config_path,output_path,export_output):
 
 if __name__=="__main__":
     
-    # Set config filepath
-    config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config.json"
-       
-    # Set input filepath
-    input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/passage.npy"
+    import sys
     
-    # Set output filepath
-    output_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
- 
+    # # Set config filepath
+    # config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config.json"
+    config_path = sys.argv[1]
+    
+    # # Set input filepath
+    # input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/passage.npy"
+    input_data_path = sys.argv[2]
+    
+    # # Set output filepath
+    # output_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
+    output_path = sys.argv[3]
+    
     # Execute compression
     compress(input_data_path=input_data_path,config_path=config_path,output_path=output_path,export_output=True)   
 

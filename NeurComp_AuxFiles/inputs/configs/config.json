@@ -1,10 +1,11 @@
 {
-    "batch_size": 1024,
-    "half_life": 2,
+    "batch_size": 32,
+    "epochs": 2,
+    "half_life": 3,
     "hidden_layers": 8,
     "initial_lr": 0.005,
+    "input_data_path": "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/passage.npy",
     "min_neurons_per_layer": 10,
-    "network_name": "neurcomp_test",
-    "epochs": 30,
+    "network_name": "squashnet_batchsize_32_passage",
     "target_compression_ratio": 100
 }
