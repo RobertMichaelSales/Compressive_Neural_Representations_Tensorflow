@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 17.01.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 19.01.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -6,8 +6,7 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-import time
-import json
+import time, json, math
 import numpy as np
 import tensorflow as tf
 
@@ -54,8 +53,8 @@ def compress(input_data_path,config_path,output_path,export_output):
     i_values.LoadData(input_data_path=input_data_path,dimensions=(3,1),normalise=True)
     
     # Copy meta-data from the input
-    o_volume.CopyData(DataClassObject=i_volume)
-    o_values.CopyData(DataClassObject=i_values)
+    o_volume.CopyData(DataClassObject=i_volume,exception_keys=[])
+    o_values.CopyData(DataClassObject=i_values,exception_keys=[])
     
     #==========================================================================
     # Configure network 
@@ -89,6 +88,12 @@ def compress(input_data_path,config_path,output_path,export_output):
     #==========================================================================
     # Configure dataset
     print("-"*80,"\nCONFIGURING DATASET:")
+    
+    # Choose between batch fraction and size (for experiments only)
+    if (network_cfg.batch_fraction):
+        network_cfg.batch_size = math.floor(network_cfg.batch_fraction*network_cfg.size)
+        network_cfg.batch_fraction = (network_cfg.batch_size/network_cfg.size)
+    else: pass
     
     # Generate a TF dataset to supply volume and values batches during training 
     dataset = MakeDataset(volume=i_volume,values=i_values,batch_size=network_cfg.batch_size,repeat=False)

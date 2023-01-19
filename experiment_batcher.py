@@ -1,9 +1,10 @@
-""" Created: 10.11.2022  \\  Updated: 18.01.2023  \\   Author: Robert Sales """
+""" Created: 10.11.2022  \\  Updated: 19.01.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries
 
 import os, json
+import numpy as np
 
 #==============================================================================
 
@@ -19,17 +20,18 @@ if __name__=="__main__":
     output_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
     
     # Iterate through all inputs
-    for batch_size in [32]: #,64,128,256,512,1024,2048,4096]):
+    for batch_fraction in np.linspace(0.0001,0.0025,13):
                        
         # Define the network config
         config = {
-            "network_name"              : "squashnet_" + "batchsize_" + str(batch_size) + "_" + (input_data_path.split("/")[-1].split(".")[0]),
+            "network_name"              : "squashnet_" + "batchfraction_" + "{:.4f}_".format(batch_fraction) + (input_data_path.split("/")[-1].split(".")[0]),
             "target_compression_ratio"  : 100,
             "hidden_layers"             : 8,
             "min_neurons_per_layer"     : 10,
             "initial_lr"                : 5e-3,
-            "batch_size"                : batch_size,
-            "epochs"                    : 2,
+            "batch_size"                : 1024,
+            "batch_fraction"            : batch_fraction,
+            "epochs"                    : 30,
             "half_life"                 : 3,
             "input_data_path"           : input_data_path             
             }

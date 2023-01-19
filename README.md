@@ -33,4 +33,4 @@ In testing on simulated data, compression of scalar values is achieved up-to and
 - [X] Test auxiliary code to convert .vts files
 - [ ] Test compression on real 3D data fields
 - [ ] Experiment with batch size and learning rate (as function of input size)
-
+- [ ] Finish code for saving decompressed outputs

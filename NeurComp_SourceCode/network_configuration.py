@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 05.01.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 19.01.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -29,7 +29,7 @@ class ConfigurationClass():
             # Set config attributes 
             for attribute in config_dictionary.keys():
                 setattr(self,attribute,config_dictionary[attribute])
-        
+                
         # If config file NOT provided: 
         else:
             
@@ -44,6 +44,7 @@ class ConfigurationClass():
             # Set training hyperparameters (default)
             self.initial_lr                         = 5e-3
             self.batch_size                         = 1024
+            self.batch_fraction                     = None
             self.epochs                             = 1
             self.half_life                          = 3
             

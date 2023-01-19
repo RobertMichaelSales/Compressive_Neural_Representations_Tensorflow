@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 17.01.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 19.01.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -49,6 +49,9 @@ class DataClass():
             self.data = np.load(input_data_path)[...,coords:]  
         else: pass
     
+        # Determine the field resolution
+        self.resolution = self.data.shape[:-1]
+    
         # Determine the number of values
         self.size = self.data.size
         
@@ -81,10 +84,9 @@ class DataClass():
     
     # -> Note: 'getattr()' and 'setattr()' are used to copy without referencing 
     
-    def CopyData(self,DataClassObject):
+    def CopyData(self,DataClassObject,exception_keys):
         
         # Extract attribute keys from 'DataObject' and define exceptions
-        exception_keys = []
         attribute_keys = DataClassObject.__dict__.keys()
         
         # Iterate through the list of attribute keys
