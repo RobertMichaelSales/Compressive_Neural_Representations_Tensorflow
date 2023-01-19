@@ -155,23 +155,7 @@ def compress(input_data_path,config_path,output_path,export_output):
     training_time_tock = time.time()
     training_time = float(training_time_tock-training_time_tick)
     print("\n{:30}{:.2f} seconds".format("Training Duration:",training_time))    
-    
-    #==========================================================================
-    # Save results
-    print("-"*80,"\nSAVING RESULTS:")
-    
-    print("\n",end="")
-    
-    # Save the training data
-    training_data_path = os.path.join(output_path,network_cfg.network_name,"training_data.json")
-    with open(training_data_path,"w") as file: json.dump(training_data,file,indent=4,sort_keys=True)
-    print("{:30}{}".format("Saved training data to:",training_data_path.split("/")[-1]))
-
-    # Save the configuration
-    configuration_path = os.path.join(output_path,network_cfg.network_name,"configuration.json")
-    with open(configuration_path,"w") as file: json.dump(vars(network_cfg),file,indent=4)
-    print("{:30}{}".format("Saved configuration to:",configuration_path.split("/")[-1]))
-    
+       
     #==========================================================================
     # Save network 
     print("-"*80,"\nSAVING NETWORK:")
@@ -212,6 +196,22 @@ def compress(input_data_path,config_path,output_path,export_output):
     output_data_path = os.path.join(output_path,network_cfg.network_name,"output_volume")
     SaveData(output_data_path=output_data_path,volume=o_volume,values=o_values,reverse_normalise=True)
     print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1]))
+    
+    #==========================================================================
+    # Save results
+    print("-"*80,"\nSAVING RESULTS:")
+    
+    print("\n",end="")
+    
+    # Save the training data
+    training_data_path = os.path.join(output_path,network_cfg.network_name,"training_data.json")
+    with open(training_data_path,"w") as file: json.dump(training_data,file,indent=4,sort_keys=True)
+    print("{:30}{}".format("Saved training data to:",training_data_path.split("/")[-1]))
+
+    # Save the configuration
+    configuration_path = os.path.join(output_path,network_cfg.network_name,"configuration.json")
+    with open(configuration_path,"w") as file: json.dump(vars(network_cfg),file,indent=4)
+    print("{:30}{}".format("Saved configuration to:",configuration_path.split("/")[-1]))
     
     #==========================================================================
     print("-"*80,"\n")
