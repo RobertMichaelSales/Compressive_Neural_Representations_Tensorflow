@@ -1,4 +1,12 @@
-""" Created: 25.01.2023  \\  Updated: 26.01.2023  \\   Author: Robert Sales """
+""" Created: 25.01.2023  \\  Updated: 27.01.2023  \\   Author: Robert Sales """
+
+#==============================================================================
+# Import libraries and set flags
+
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+import numpy as np
 
 #==============================================================================
 
@@ -92,7 +100,7 @@ def LoadArray(filename,dtype,shape):
     available_memory = psutil.virtual_memory().available
     print("Available Memory: {:12d} Bytes ({:5.2f} GigaBytes)".format(available_memory,(available_memory/1024**3)))
     
-    threshold_memory = 4 * 1024 * 1024 * 1024
+    threshold_memory = int(0.01 * 1024 * 1024 * 1024)
     print("Threshold Memory: {:12d} Bytes ({:5.2f} GigaBytes)".format(threshold_memory,(threshold_memory/1024**3)))
     
     file_size = os.path.getsize(filename)
@@ -111,10 +119,10 @@ def LoadArray(filename,dtype,shape):
         print("\nFile size > available/threshold memory. Loading as memmap.")
         
         if file_type == "npy":
-            data = LoadLargeArrayNpy(filename=filename,dtype=dtype,shape=shape)
+            data = LoadLargeArrayNpy(filename=filename,shape=shape)
             
         elif file_type == "bin":
-            data = LoadLargeArrayBin(filename=filename,dtype=dtype,shape=shape)
+            data = LoadLargeArrayBin(filename=filename,shape=shape)
             
         else: print("File type '.{}' not supported. Try using '.npy' or '.bin'")
    
@@ -123,10 +131,10 @@ def LoadArray(filename,dtype,shape):
         print("\nFile size < available/threshold memory. Loading as normal.")
         
         if file_type == "npy":
-            data = LoadSmallArrayNpy(filename=filename,dtype=dtype,shape=shape)
+            data = LoadSmallArrayNpy(filename=filename,shape=shape)
             
         elif file_type == "bin":
-            data = LoadSmallArrayBin(filename=filename,dtype=dtype,shape=shape)
+            data = LoadSmallArrayBin(filename=filename,shape=shape)
             
         else: print("File type '.{}' not supported. Try using '.npy' or '.bin'")
     
@@ -135,16 +143,16 @@ def LoadArray(filename,dtype,shape):
     return data
         
     
-def LoadSmallArrayNpy(filename,dtype,shape):
+def LoadSmallArrayNpy(filename,shape):
     
     import numpy as np
     
-    data = np.ascontiguousarray(np.load(filename).astype(dtype).reshape(shape))
+    data = np.ascontiguousarray(np.load(filename).astype("float32").reshape(shape))
     
     return data
 
 
-def LoadSmallArrayBin(filename,dtype,shape):
+def LoadSmallArrayBin(filename,shape):
     
     with open(filename,"rb") as file:
         
@@ -165,16 +173,16 @@ def LoadSmallArrayBin(filename,dtype,shape):
     return data
 
 
-def LoadLargeArrayNpy(filename,dtype,shape):
+def LoadLargeArrayNpy(filename,shape):
     
     import numpy as np
     
-    data = np.lib.format.open_memmap(filename=filename,mode="r",dtype=dtype,shape=shape)
+    data = np.lib.format.open_memmap(filename=filename,mode="r",dtype="float32",shape=shape)
     
     return data
 
 
-def LoadLargeArrayBin(filename,dtype,shape):
+def LoadLargeArrayBin(filename,shape):
     
     with open(filename,"rb") as file:
         
@@ -195,11 +203,64 @@ def LoadLargeArrayBin(filename,dtype,shape):
           
     return data
 
+
 #==============================================================================
 
-import numpy as np
+
+def CreateDataGen(volume,values):
+    
+    def DataGen():
+        
+        for volume_item,values_item in zip(volume,values):
+            
+            yield volume_item,values_item
+            
+    return DataGen
+        
+
+def MakeTensorflowDataset(volume,values,batch_size,repeat=False):
+    
+    import tensorflow as tf
+    
+    generator = CreateDataGen(volume,values)
+    
+    output_types = (tf.float32,tf.float32)
+    
+    output_shapes = (tf.TensorShape((volume.shape[-1],)),tf.TensorShape(values.shape[-1],))
+        
+    dataset = tf.data.Dataset.from_generator(generator=generator,output_types=output_types,output_shapes=output_shapes)
+    
+    dataset = dataset.cache()
+    
+    if repeat: 
+        dataset = dataset.repeat(count=None)
+    else: pass
+
+    buffer_size = min(values.size,int(1e6))
+    
+    dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
+                
+    dataset = dataset.batch(batch_size=batch_size,drop_remainder=False)
+    
+    dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
+            
+    return dataset    
+
+
+        
+#==============================================================================
 
 # data = LoadArray(filename="/home/rms221/Documents/Miscellaneous/large_array.npy",dtype=np.float32,shape=(100,100,100,100,15))
 # data = LoadArray(filename="/home/rms221/Documents/Miscellaneous/large_array.bin",dtype=np.float32,shape=(100,100,100,100,15))
 # data = LoadArray(filename="/home/rms221/Documents/Miscellaneous/small_array.npy",dtype=np.float32,shape=(10 ,10 ,10 ,10 ,15))
 # data = LoadArray(filename="/home/rms221/Documents/Miscellaneous/small_array.bin",dtype=np.float32,shape=(10 ,10 ,10 ,10 ,15))
+
+filename = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy"
+
+data = LoadArray(filename=filename,dtype=np.float32,shape=(150,150,150,4))
+
+volume,values = data[...,:3].reshape(-1,3),data[...,3:].reshape(-1,1)
+
+dataset = MakeTensorflowDataset(volume=volume,values=values,batch_size=1024)
+
+del data, volume, values, filename
