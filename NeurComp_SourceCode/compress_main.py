@@ -1,5 +1,7 @@
 """ Created: 18.07.2022  \\  Updated: 19.01.2023  \\   Author: Robert Sales """
 
+# Changes made to lines 135/6 to print progress when training with new dataset.
+
 #==============================================================================
 # Import libraries and set flags
 
@@ -20,7 +22,7 @@ from network_model           import ConstructNetwork
 from compress_utilities      import TrainStep,GetLearningRate,SignalToNoise
 
 #==============================================================================
-    
+
 def compress(input_data_path,config_path,output_path,export_output):
     
     print("-"*80,"\nNEURCOMP: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
@@ -130,7 +132,8 @@ def compress(input_data_path,config_path,output_path,export_output):
         for batch, (volume_batch,values_batch) in enumerate(dataset):
             
             # Print the current batch number 
-            print("\r{:30}{:04}/{:04}".format("Batch Number:",(batch+1),len(dataset)),end="")
+            # print("\r{:30}{:04}/{:04}".format("Batch Number:",(batch+1),len(dataset)),end="") 
+            print("\r{:30}{:04}".format("Batch Number:",(batch+1)),end="")
             
             # Run a training step 
             TrainStep(model=SquashNet,optimiser=optimiser,metric=mse_error_metric,volume_batch=volume_batch,values_batch=values_batch)
@@ -228,7 +231,7 @@ if __name__=="__main__":
     config_path = sys.argv[1]
     
     # # Set input filepath
-    # input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/passage.npy"
+    # input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy"
     input_data_path = sys.argv[2]
     
     # # Set output filepath
