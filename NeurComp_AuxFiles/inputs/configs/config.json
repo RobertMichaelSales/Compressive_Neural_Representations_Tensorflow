@@ -1,12 +1,12 @@
 {
-    "batch_fraction": 0.0025,
+    "batch_fraction": 0.0005,
     "batch_size": 1024,
     "epochs": 30,
     "half_life": 3,
     "hidden_layers": 8,
     "initial_lr": 0.005,
-    "input_data_path": "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy",
+    "input_data_path": "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/passage.npy",
     "min_neurons_per_layer": 10,
-    "network_name": "squashnet_batchfraction_0.0025_cube",
-    "target_compression_ratio": 100
+    "network_name": "squashnet_compressratio_1000.00_passage",
+    "target_compression_ratio": 1000.0
 }

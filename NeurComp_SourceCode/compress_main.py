@@ -132,8 +132,8 @@ def compress(input_data_path,config_path,output_path,export_output):
         for batch, (volume_batch,values_batch) in enumerate(dataset):
             
             # Print the current batch number 
-            # print("\r{:30}{:04}/{:04}".format("Batch Number:",(batch+1),len(dataset)),end="") 
-            print("\r{:30}{:04}".format("Batch Number:",(batch+1)),end="")
+            print("\r{:30}{:04}/{:04}".format("Batch Number:",(batch+1),len(dataset)),end="") 
+            # print("\r{:30}{:04}".format("Batch Number:",(batch+1)),end="")
             
             # Run a training step 
             TrainStep(model=SquashNet,optimiser=optimiser,metric=mse_error_metric,volume_batch=volume_batch,values_batch=values_batch)

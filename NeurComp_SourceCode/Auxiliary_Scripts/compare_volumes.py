@@ -236,9 +236,7 @@ def CompareContours(with_grad=True):
         else:
             alpha = 1.0
         
-        # Plot input
-        vmin,vmax,layers = 0.0,1.0,100
-        ax[0].contourf(varx_i,vary_i,vals_i,np.linspace(vmin,vmax,layers),vmin=vmin,vmax=vmax,cmap=plt.get_cmap('Blues'),extend="both",alpha=alpha)
+        
         if with_grad:
             space,scale = 15,0.8
             ax[0].quiver(varx_i[space::space,space::space],vary_i[space::space,space::space],grad_x_i[space::space,space::space],grad_y_i[space::space,space::space],pivot="mid",scale=scale,alpha=1.0,width=0.01)

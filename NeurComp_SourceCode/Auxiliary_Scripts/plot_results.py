@@ -32,8 +32,6 @@ lstyles = ["solid","dashed","dotted",]
 # Matplotlib blues colourmap
 blues = cm.get_cmap("Blues",20)
 
-c_map = matplotlib.colors.LinearSegmentedColormap.from_list("custom", ["lightblue","blue","darkblue"])
-
 #==============================================================================
 
 def PlotErrorDurationBatch(save=False):
@@ -68,7 +66,13 @@ def PlotErrorDurationBatch(save=False):
         input_volume_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/" + dataset + ".npy"
         
         # Get a sorted list of all the experiements directories
-        experiment_directories = [x for x in os.listdir(base_directory) if dataset in x]
+        experiment_directories = []
+        
+        for folder_name in os.listdir(base_directory):
+            if (dataset in folder_name) and ("batchfraction" in folder_name):
+                experiment_directories.append(folder_name)
+                
+                
         experiment_directories.sort(key = lambda x: float(x.split("_")[-2]))
                     
         #======================================================================
@@ -168,14 +172,15 @@ def PlotErrorDurationBatch(save=False):
     ax2.set_ylabel(r"Per-Epoch Training Time / $s$",color="red")
 
     # Set the figure title
-    ax1.set_title(r"Batch Fraction vs. Mean-Squared Error vs. Training Duration")
+    # ax1.set_title(r"Batch Fraction vs. Mean-Squared Error vs. Training Duration")
     
     # Set the figure legend
-    ax1.legend(title=r"Input Volume",loc="upper right",ncol=2,labelcolor="black")
-
+    leg = ax1.legend(title=r"Input Volume",loc="upper right",ncol=2,labelcolor="black")
+    leg.legendHandles[0].set_color("dimgray")
+    leg.legendHandles[1].set_color("dimgray")
 
     if save:
-        savename = os.path.join(plot_directory,"error_duration_batchfraction.png")
+        savename = os.path.join(plot_directory,"error_vs_time_vs_batchfraction.png")
         plt.savefig(savename)
     else: pass
 
@@ -205,20 +210,30 @@ def PlotConvergenceBatch(save=False):
     # Set current directory
     plot_directory = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/plots"
     
-    #======================================================================
-    # Make figure and plot axes
-    fig, ax1 = plt.subplots(1,1,constrained_layout=True)
-    
     #==========================================================================
     # Iterate through each data set
-    for index1,dataset in enumerate(["cube"]):
+    for index1,dataset in enumerate(["passage","cube"]):
+        
+        #======================================================================
+        # Make figure and plot axes
+        fig, ax1 = plt.subplots(1,1,constrained_layout=True)
+        
+        #======================================================================
     
         # Set input filepath
         input_volume_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/" + dataset + ".npy"
         
         # Get a sorted list of all the experiements directories
-        experiment_directories = [x for x in os.listdir(base_directory) if dataset in x]
+        experiment_directories = []
+        
+        for folder_name in os.listdir(base_directory):
+            if (dataset in folder_name) and ("batchfraction" in folder_name):
+                experiment_directories.append(folder_name)
+                
         experiment_directories.sort(key = lambda x: float(x.split("_")[-2]))
+        
+        # Get rid of the last data point so the graph fits better
+        experiment_directories.pop(0)
                     
         #======================================================================
         # Set up storage for results
@@ -284,9 +299,13 @@ def PlotConvergenceBatch(save=False):
             #==================================================================
             # Matplotlib code
 
-            color = c_map(np.linspace(0.0,1.0,len(experiment_directories))[index2])
+            cmap = matplotlib.colors.LinearSegmentedColormap.from_list("custom", ["blue","indigo","red"])
 
-            ax1.plot(epoch,error,linestyle="solid",marker="None",color=color,label=None)
+            color = cmap(np.linspace(0.0,1.0,len(experiment_directories))[index2])
+            
+            label = "{:.1f}".format(batch_fraction[-1]/1e-4)
+
+            ax1.plot(epoch,error,linestyle="solid",marker="None",color=color,label=label)
             
         ##
 
@@ -296,48 +315,51 @@ def PlotConvergenceBatch(save=False):
         #======================================================================
         # Matplotlib code
         
-        ax1.annotate(r'Increasing Batch Fraction: [0.0001 $\to$ 0.0025]', color='black',
-            xy=(0.25,0.10), xycoords='axes fraction',
-            xytext=(0.67, 0.80), textcoords='axes fraction',
-            arrowprops=dict(arrowstyle="<|-",connectionstyle="arc3,rad=-0.3",linewidth=1.2,color='black'),
-            horizontalalignment='center', verticalalignment='center')
+        # ax1.annotate(r'Increasing Batch Fraction: [0.0001 $\to$ 0.0025]', color='black',
+        #     xy=(0.25,0.10), xycoords='axes fraction',
+        #     xytext=(0.67, 0.80), textcoords='axes fraction',
+        #     arrowprops=dict(arrowstyle="<|-",connectionstyle="arc3,rad=-0.3",linewidth=1.2,color='black'),
+        #     horizontalalignment='center', verticalalignment='center')
+        
+        # # Set x- and y- scale
+        # ax1.set_xscale('linear')
+        ax1.set_yscale('log')
+        # ax2.set_yscale('linear')
+        
+        # Set x- and y-limits
+        if dataset == "cube":
+            ax1.set_xlim(0,30)
+            ax1.set_ylim(0.0001,0.1)
+        if dataset == "passage":
+            ax1.set_xlim(0,30)
+            ax1.set_ylim(0.0010,0.1)
+        
+        # Set x- and y-ticks
+        # ax1.set_xticks(,minor=False)
+        # ax1.set_yticks(np.linspace(0,0.008,5),minor=False)
+
+        # Set x- and y-labels
+        ax1.set_xlabel(r"Training Epoch")
+        ax1.set_ylabel(r"Mean-Squared Error $(MSE)$")
+
+        # Set the figure title
+        # ax1.set_title(r"Convergence Progress: Mean-Squared Error vs. Training Epoch")
+        
+        # Set the figure legend
+        ax1.legend(title=r"Batch Fraction ($\times 10^{-4})$",loc="upper right",ncol=3,labelcolor="black")
+
+        if save:
+            savename = os.path.join(plot_directory,"convergence_batchfraction_"+dataset+".png")
+            plt.savefig(savename)
+        else: pass
+
+        plt.show()
     
     ##
         
     #==========================================================================
     # Matplotlib code
     
-    # # Set x- and y- scale
-    # ax1.set_xscale('linear')
-    ax1.set_yscale('log')
-    # ax2.set_yscale('linear')
-    
-    # Set x- and y-limits
-    ax1.set_xlim(0,30)
-    ax1.set_ylim(0.0001,0.1)
-    
-    # Set x- and y-ticks
-    # ax1.set_xticks(,minor=False)
-    # ax1.set_yticks(np.linspace(0,0.008,5),minor=False)
-
-    # Set x- and y-labels
-    ax1.set_xlabel(r"Training Epoch")
-    ax1.set_ylabel(r"Mean-Squared Error $(MSE)$")
-
-    # Set the figure title
-    ax1.set_title(r"Convergence Progress: Mean-Squared Error vs. Training Epoch")
-    
-    # Set the figure legend
-    # ax1.legend(title=r"Batch Fraction",loc="upper right",ncol=3,labelcolor="black")
-
-
-    if save:
-        savename = os.path.join(plot_directory,"convergence_batchfraction.png")
-        plt.savefig(savename)
-    else: pass
-
-    plt.show()
-        
     #==========================================================================
             
     return None
@@ -346,10 +368,17 @@ def PlotConvergenceBatch(save=False):
 
 def PlotContourSlices(save=False):
     
+    from matplotlib.gridspec import GridSpec
+    
     plt.style.use("plot.mplstyle")  
     
     params_plot = {'text.latex.preamble': [r'\usepackage{amsmath}',r'\usepackage{amssymb}'],
-                   'axes.grid': True}
+                   'axes.grid': False,
+                   'xtick.major.top'         : False,
+                   'xtick.major.bottom'      : False,
+                   'ytick.major.left'        : False,
+                   'ytick.major.right'       : False,
+                   'figure.figsize'          : (6.3*1.5,4.5*1.5),}
     
     matplotlib.rcParams.update(params_plot) 
 
@@ -368,7 +397,10 @@ def PlotContourSlices(save=False):
         
         #======================================================================
         # Make figure and plot axes
-        fig, ax1 = plt.subplots(1,3,constrained_layout=True)
+        fig = plt.figure(constrained_layout=True)
+        
+        # Define a gridspec
+        gridspec = fig.add_gridspec(nrows=4,ncols=6)
         
         #======================================================================
         
@@ -376,7 +408,12 @@ def PlotContourSlices(save=False):
         input_volume_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/" + dataset + ".npy"
         
         # Get a sorted list of all the experiements directories
-        experiment_directories = [x for x in os.listdir(base_directory) if dataset in x]
+        experiment_directories = []
+        
+        for folder_name in os.listdir(base_directory):
+            if (dataset in folder_name) and ("compressratio" in folder_name):
+                experiment_directories.append(folder_name)
+        
         experiment_directories.sort(key = lambda x: float(x.split("_")[-2]))
                     
         #======================================================================
@@ -439,89 +476,74 @@ def PlotContourSlices(save=False):
             # Specific data wrangling
             
             # Make 2D cuts from 3D data
-            axis,cut = 'x',75
-            varx_i,vary_i,vals_i = MakeSliceFrom3D(data=input_data, cut=cut,axis=axis)
-            varx_o,vary_o,vals_o = MakeSliceFrom3D(data=output_data,cut=cut,axis=axis)
+            if dataset == "cube":       axis,cut = 'x',75
+            if dataset == "passage":    axis,cut = 'x',130
             
-            return varx_i,vary_i,vals_i
+            volx_true,voly_true,vals_true = MakeSliceFrom3D(data=input_data, cut=cut,axis=axis)
+            volx_pred,voly_pred,vals_pred = MakeSliceFrom3D(data=output_data,cut=cut,axis=axis)
+                       
+            # Normalise values by the same maximum and minimum
+            vals_true = Normalise(data=vals_true,maximum=vals_true.max(),minimum=vals_true.min())
+            vals_pred = Normalise(data=vals_pred,maximum=vals_true.max(),minimum=vals_true.min())
             
-            # # Normalise values
-            # vals_i = Normalise(vals_i)
-            # vals_o = Normalise(vals_o)
+            # Compute the errors between input and output vals
+            val_error = (vals_true - vals_pred)
             
-            # # Compute gradients from values and coordinates
-            # grad_i = np.sum(np.gradient(vals_i,edge_order=1),axis=0)
-            # grad_o = np.sum(np.gradient(vals_o,edge_order=1),axis=0)
+            if dataset == "passage": volx_true,voly_true = voly_true,volx_true
             
-            # # Compute gradient components
-            # grad_x_i,grad_y_i = np.gradient(vals_i,edge_order=1)[0],np.gradient(vals_i,edge_order=1)[1]
-            # grad_x_o,grad_y_o = np.gradient(vals_o,edge_order=1)[0],np.gradient(vals_o,edge_order=1)[1]
+            #==================================================================
+            # Matplotlib code
             
-            # # Normalise gradients
-            # grad_i = Normalise(grad_i)
-            # grad_o = Normalise(grad_o)
+            vmin,vmax,layers = 0.0,1.0,25
+                        
+            row = (0 if index2 < 4 else 2)
+            col = ((index2 + 2) % 6)
             
-            # # Calculate errors
-            # varx_e = varx_i
-            # vary_e = vary_i
-            # vals_e = abs(vals_i-vals_o)
-            # grad_e = abs(grad_i-grad_o)
+            ax1 = fig.add_subplot(gridspec[row,  col]) 
+            ax1.contourf(volx_true,voly_true,vals_pred,np.linspace(vmin,vmax,layers),vmin=vmin,vmax=vmax,cmap=plt.get_cmap('Blues')  ,extend="both",alpha=1.0)
+  
+            ax2 = fig.add_subplot(gridspec[row+1,col])
+            ax2.contourf(volx_true,voly_true,val_error,np.linspace(-0.25,+0.25,layers),vmin=-0.25,vmax=+0.25,cmap=plt.get_cmap('seismic'),extend="both",alpha=1.0)
             
+            # print(val_error.max(),val_error.min())
             
-            
-    #     #======================================================================
-    #     # Specific data wrangling      
+            if (index2==0):
+                ax3 = fig.add_subplot(gridspec[0:2,0:2])
+                ax3.contourf(volx_true,voly_true,vals_true,np.linspace(vmin,vmax,layers),vmin=vmin,vmax=vmax,cmap=plt.get_cmap('Blues'),extend="both",alpha=1.0)
+                
+                ax1.set_title(fr"$\gamma$ = {actual_compression_ratio[-1]:.2f}")
+                ax3.set_title(fr"Ground Truth (Axis = {axis.upper()}, Index = {cut})")
+            else: 
+                ax1.set_title(fr"{actual_compression_ratio[-1]:.2f}")
+
+            if (index2 in [3,9]):
+                
+                ax1.yaxis.set_label_position("right")
+                ax1.set_ylabel("Contour Slices")
+                ax2.yaxis.set_label_position("right")
+                ax2.set_ylabel("Relative Error")
+    
+
+        #======================================================================
+        # Specific data wrangling      
         
                     
-    #     #======================================================================
-    #     # Matplotlib code
-            
-    #     ax1.plot(batch_fraction,mean_squared_loss,linestyle=lstyles[index1],marker=markers[index1],color=colours["blue"],label=dataset.capitalize())
-    #     ax2.plot(batch_fraction,duration_of_epoch,linestyle=lstyles[index1],marker=markers[index1],color=colours["red"])
-
-    # #==========================================================================
-    # # Matplotlib code
-    
-    # # Vertical rectangle
-    # ax1.axvspan(0.00025,0.00075, alpha=0.25, color='gray',hatch=None)
+        #======================================================================
+        # Matplotlib code
         
-    # # # Set x- and y- scale
-    # ax1.set_xscale('linear')
-    # ax1.set_yscale('linear')
-    # ax2.set_yscale('linear')
-    
-    # # # Set x- and y-limits
-    # ax1.set_xlim(-0.0000,+0.0026)
-    # ax1.set_ylim(-0.0000,+0.0080)
-    # ax2.set_ylim(-0.0000,+16.000)
-    
-    # # Set x- and y-ticks
-    # # ax1.set_xticks(,minor=False)
-    # ax1.set_yticks(np.linspace(0,0.008,5),minor=False)
-    # ax2.set_yticks(np.linspace(0,16.00,5),minor=False)
-
-    # # Set x- and y-labels
-    # ax1.set_xlabel(r"Batch Fraction (Batch Size / Volume Size)")
-    # ax1.set_ylabel(r"Mean-Squared Error $(MSE)$",color=colours["blue"])
-    # ax2.set_ylabel(r"Per-Epoch Training Time / $s$",color=colours["red"])
-
-    # # Set the figure title
-    # ax1.set_title(r"Batch Fraction vs. Mean-Squared Error vs. Training Duration")
-    
-    # # Set the figure legend
-    # ax1.legend(title=r"Input Volume",loc="upper right",ncol=2,labelcolor="black")
-
-
-    # if save:
-    #     savename = os.path.join(plot_directory,"error_duration_batchfraction.png")
-    #     plt.savefig(savename)
-    # else: pass
-
-    # plt.show()
+        if save:
+            savename = os.path.join(plot_directory,"contours_"+dataset+".png")
+            plt.savefig(savename)
+        else: pass
         
-    # #==========================================================================
+        plt.show()       
+
+    #==========================================================================
+    # Matplotlib code
+
+    #==========================================================================
             
-    # return None
+    return None
 
 #==============================================================================
     
@@ -537,7 +559,7 @@ def MakeSliceFrom3D(data,cut,axis='x'):
 
 #==============================================================================
     
-def Normalise(data):
+def Normalise(data,maximum,minimum):
     
     data = (data-((data.max()+data.min())/2))/(abs(data.max()-data.min()))+0.5
         
@@ -545,11 +567,6 @@ def Normalise(data):
 
 #==============================================================================
 
-
-
-np.gradient
-#==============================================================================
-
-PlotErrorDurationBatch()
-PlotConvergenceBatch()
-# x,y,v = PlotContourSlices()
+PlotErrorDurationBatch(save=True)
+PlotConvergenceBatch(save=True)
+PlotContourSlices(save=True)
