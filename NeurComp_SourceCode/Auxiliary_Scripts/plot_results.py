@@ -366,7 +366,7 @@ def PlotConvergenceBatch(save=False):
 
 #==============================================================================
 
-def PlotContourSlices(save=False):
+def PlotContourSlices(dataset,axis,cut,save=False):
     
     from matplotlib.gridspec import GridSpec
     
@@ -391,152 +391,162 @@ def PlotContourSlices(save=False):
     # Set current directory
     plot_directory = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/plots"
     
-    #==========================================================================
-    # Iterate through each data set
-    for index1,dataset in enumerate(["cube","passage"]):
-        
-        #======================================================================
-        # Make figure and plot axes
-        fig = plt.figure(constrained_layout=True)
-        
-        # Define a gridspec
-        gridspec = fig.add_gridspec(nrows=4,ncols=6)
-        
-        #======================================================================
-        
-        # Set input filepath
-        input_volume_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/" + dataset + ".npy"
-        
-        # Get a sorted list of all the experiements directories
-        experiment_directories = []
-        
-        for folder_name in os.listdir(base_directory):
-            if (dataset in folder_name) and ("compressratio" in folder_name):
-                experiment_directories.append(folder_name)
-        
-        experiment_directories.sort(key = lambda x: float(x.split("_")[-2]))
+  
+    #======================================================================
+    # Make figure and plot axes
+    fig = plt.figure(constrained_layout=True)
+    
+    # Define a gridspec
+    gridspec = fig.add_gridspec(nrows=4,ncols=7,height_ratios=[1,1,1,1], width_ratios=[1,1,1,1,1,1,0.2] )
+    
+    #======================================================================
+    
+    # Set input filepath
+    input_volume_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/" + dataset + ".npy"
+    
+    # Get a sorted list of all the experiements directories
+    experiment_directories = []
+    
+    for folder_name in os.listdir(base_directory):
+        if (dataset in folder_name) and ("compressratio" in folder_name):
+            experiment_directories.append(folder_name)
+    
+    experiment_directories.sort(key = lambda x: float(x.split("_")[-2]))
+                
+    #======================================================================
+    # Set up storage for results
+    
+    # Record once per experiment
+    target_compression_ratio = []
+    actual_compression_ratio = []
+    initial_lr = []
+    batch_size = []
+    batch_fraction = []
+    num_of_parameters = []
+    
+    training_duration = []
+    mean_squared_loss = []
+    peak_signal_noise = []
+            
+    #======================================================================
+    # Iterate through all the experiments
+    for index2,experiment_directory in enumerate(experiment_directories):
                     
-        #======================================================================
-        # Set up storage for results
+        # Set the current experiment directory
+        experiment_directory = os.path.join(base_directory,experiment_directory)
+        
+        # Set the config, output, and training data filepaths
+        configuration_filepath = os.path.join(experiment_directory,"configuration.json")
+        output_volume_filepath = os.path.join(experiment_directory,"output_volume.npy")
+        training_data_filepath = os.path.join(experiment_directory,"training_data.json")
+        
+        # Load the config and training data 
+        with open(configuration_filepath) as configuration_file: configuration = json.load(configuration_file)
+        with open(training_data_filepath) as training_data_file: training_data = json.load(training_data_file)
+        
+        # Load the input and output volumes
+        input_data = np.load(input_volume_filepath)
+        output_data = np.load(output_volume_filepath)
+        
+        #==================================================================
+        # Extract data for plotting
         
         # Record once per experiment
-        target_compression_ratio = []
-        actual_compression_ratio = []
-        initial_lr = []
-        batch_size = []
-        batch_fraction = []
-        num_of_parameters = []
+        target_compression_ratio.append(configuration["target_compression_ratio"])
+        actual_compression_ratio.append(configuration["actual_compression_ratio"])
+        initial_lr.append(configuration["initial_lr"])
+        batch_size.append(configuration["batch_size"])
+        batch_fraction.append(configuration["batch_fraction"])
         
-        training_duration = []
-        mean_squared_loss = []
-        peak_signal_noise = []
-                
-        #======================================================================
-        # Iterate through all the experiments
-        for index2,experiment_directory in enumerate(experiment_directories):
-                        
-            # Set the current experiment directory
-            experiment_directory = os.path.join(base_directory,experiment_directory)
-            
-            # Set the config, output, and training data filepaths
-            configuration_filepath = os.path.join(experiment_directory,"configuration.json")
-            output_volume_filepath = os.path.join(experiment_directory,"output_volume.npy")
-            training_data_filepath = os.path.join(experiment_directory,"training_data.json")
-            
-            # Load the config and training data 
-            with open(configuration_filepath) as configuration_file: configuration = json.load(configuration_file)
-            with open(training_data_filepath) as training_data_file: training_data = json.load(training_data_file)
-            
-            # Load the input and output volumes
-            input_data = np.load(input_volume_filepath)
-            output_data = np.load(output_volume_filepath)
-            
-            #==================================================================
-            # Extract data for plotting
-            
-            # Record once per experiment
-            target_compression_ratio.append(configuration["target_compression_ratio"])
-            actual_compression_ratio.append(configuration["actual_compression_ratio"])
-            initial_lr.append(configuration["initial_lr"])
-            batch_size.append(configuration["batch_size"])
-            batch_fraction.append(configuration["batch_fraction"])
-            
-            # Record every training epoch
-            learning_rate = training_data["learning_rate"]
-            epoch = training_data["epoch"]
-            error = training_data["error"]
-            time = training_data["time"]
-            
-            # Derived data from training
-            training_duration.append(np.sum(time))
-            mean_squared_loss.append(error[-1])   
-            peak_signal_noise.append(training_data["psnr"][-1])
-            
-            #==================================================================
-            # Specific data wrangling
-            
-            # Make 2D cuts from 3D data
-            if dataset == "cube":       axis,cut = 'x',75
-            if dataset == "passage":    axis,cut = 'x',130
-            
-            volx_true,voly_true,vals_true = MakeSliceFrom3D(data=input_data, cut=cut,axis=axis)
-            volx_pred,voly_pred,vals_pred = MakeSliceFrom3D(data=output_data,cut=cut,axis=axis)
-                       
-            # Normalise values by the same maximum and minimum
-            vals_true = Normalise(data=vals_true,maximum=vals_true.max(),minimum=vals_true.min())
-            vals_pred = Normalise(data=vals_pred,maximum=vals_true.max(),minimum=vals_true.min())
-            
-            # Compute the errors between input and output vals
-            val_error = (vals_true - vals_pred)
-            
-            if dataset == "passage": volx_true,voly_true = voly_true,volx_true
-            
-            #==================================================================
-            # Matplotlib code
-            
-            vmin,vmax,layers = 0.0,1.0,25
-                        
-            row = (0 if index2 < 4 else 2)
-            col = ((index2 + 2) % 6)
-            
-            ax1 = fig.add_subplot(gridspec[row,  col]) 
-            ax1.contourf(volx_true,voly_true,vals_pred,np.linspace(vmin,vmax,layers),vmin=vmin,vmax=vmax,cmap=plt.get_cmap('Blues')  ,extend="both",alpha=1.0)
-  
-            ax2 = fig.add_subplot(gridspec[row+1,col])
-            ax2.contourf(volx_true,voly_true,val_error,np.linspace(-0.25,+0.25,layers),vmin=-0.25,vmax=+0.25,cmap=plt.get_cmap('seismic'),extend="both",alpha=1.0)
-            
-            # print(val_error.max(),val_error.min())
-            
-            if (index2==0):
-                ax3 = fig.add_subplot(gridspec[0:2,0:2])
-                ax3.contourf(volx_true,voly_true,vals_true,np.linspace(vmin,vmax,layers),vmin=vmin,vmax=vmax,cmap=plt.get_cmap('Blues'),extend="both",alpha=1.0)
-                
-                ax1.set_title(fr"$\gamma$ = {actual_compression_ratio[-1]:.2f}")
-                ax3.set_title(fr"Ground Truth (Axis = {axis.upper()}, Index = {cut})")
-            else: 
-                ax1.set_title(fr"{actual_compression_ratio[-1]:.2f}")
-
-            if (index2 in [3,9]):
-                
-                ax1.yaxis.set_label_position("right")
-                ax1.set_ylabel("Contour Slices")
-                ax2.yaxis.set_label_position("right")
-                ax2.set_ylabel("Relative Error")
-    
-
-        #======================================================================
-        # Specific data wrangling      
+        # Record every training epoch
+        learning_rate = training_data["learning_rate"]
+        epoch = training_data["epoch"]
+        error = training_data["error"]
+        time = training_data["time"]
         
-                    
-        #======================================================================
+        # Derived data from training
+        training_duration.append(np.sum(time))
+        mean_squared_loss.append(error[-1])   
+        peak_signal_noise.append(training_data["psnr"][-1])
+        
+        #==================================================================
+        # Specific data wrangling
+        
+        # Make 2D cuts from 3D data
+        
+        volx_true,voly_true,vals_true = MakeSliceFrom3D(data=input_data, cut=cut,axis=axis)
+        volx_pred,voly_pred,vals_pred = MakeSliceFrom3D(data=output_data,cut=cut,axis=axis)
+                   
+        # Normalise values by the same maximum and minimum
+        vals_true = Normalise(data=vals_true,maximum=vals_true.max(),minimum=vals_true.min())
+        vals_pred = Normalise(data=vals_pred,maximum=vals_true.max(),minimum=vals_true.min())
+        
+        # Compute the errors between input and output vals
+        val_error = (vals_true - vals_pred)
+        
+        if dataset == "passage": volx_true,voly_true = voly_true,volx_true
+        
+        #==================================================================
         # Matplotlib code
         
-        if save:
-            savename = os.path.join(plot_directory,"contours_"+dataset+".png")
-            plt.savefig(savename)
-        else: pass
+        row = (0 if index2 < 4 else 2)
+        col = ((index2 + 2) % 6)
         
-        plt.show()       
+        vmin1,vmax1,layers = 0.0,1.0,25
+        
+        ax1 = fig.add_subplot(gridspec[row,  col]) 
+        plt1 = ax1.contourf(volx_true,voly_true,vals_pred,np.linspace(vmin1,vmax1,layers),vmin=vmin1,vmax=vmax1,cmap=plt.get_cmap('Blues')  ,extend="both",alpha=1.0)        
+        
+        vmin2,vmax2,layers = -0.25,0.25,24
+  
+        ax2 = fig.add_subplot(gridspec[row+1,col])
+        plt2 = ax2.contourf(volx_true,voly_true,val_error,np.linspace(vmin2,vmax2,layers),vmin=vmin2,vmax=vmax2,cmap=plt.get_cmap('seismic'),extend="both",alpha=1.0)
+        # print(val_error.max(),val_error.min())
+        
+        if (index2==0):
+            ax3 = fig.add_subplot(gridspec[0:2,0:2])
+            ax3.contourf(volx_true,voly_true,vals_true,np.linspace(vmin1,vmax1,layers),vmin=vmin1,vmax=vmax1,cmap=plt.get_cmap('Blues'),extend="both",alpha=1.0)
+            
+            ax1.set_title(fr"$\gamma$ = {actual_compression_ratio[-1]:.2f}")
+            ax3.set_title(fr"Ground Truth (Axis = {axis.upper()}, Index = {cut})")
+        else: 
+            ax1.set_title(fr"$\gamma$ = {actual_compression_ratio[-1]:.2f}")
+
+        # if (index2 in [3,9]):
+            
+            # ax1.yaxis.set_label_position("right")
+            # ax1.set_ylabel("Values")
+            # ax2.yaxis.set_label_position("right")
+            # ax2.set_ylabel("Errors")
+            
+    from matplotlib.colorbar import Colorbar
+    from matplotlib import ticker
+            
+    cbax1 = fig.add_subplot(gridspec[0:2,6])
+    cb1 = Colorbar(ax=cbax1,mappable=plt1,orientation="vertical",ticklocation="right",ticks=np.linspace(0,1,9))
+    cb1.set_label(label=r"Scalar Values [-]",labelpad=8)
+    cb1.ax.yaxis.set_major_formatter(plt.FuncFormatter('{:.3f}'.format))
+    
+    cbax2 = fig.add_subplot(gridspec[2:4,6])
+    cb2 = Colorbar(ax=cbax2,mappable=plt2,orientation="vertical",ticklocation="right",ticks=np.linspace(-0.25,0.25,9))
+    cb2.set_label(label=r"Absolute Errors [-]",labelpad=8)
+    cb2.ax.yaxis.set_major_formatter(plt.FuncFormatter('{:.3f}'.format))
+
+    #======================================================================
+    # Specific data wrangling      
+    
+    #======================================================================
+    # Matplotlib code
+    
+    savename = os.path.join(plot_directory,"contours_"+ dataset + "_" + axis + "_" + str(cut) + ".png")
+    print(savename)
+    
+    if save:
+        savename = os.path.join(plot_directory,"contours_"+ dataset + "_" + axis + "_" + str(cut) + ".png")
+        plt.savefig(savename)
+    else: pass
+    
+    plt.show()       
 
     #==========================================================================
     # Matplotlib code
@@ -551,9 +561,9 @@ def MakeSliceFrom3D(data,cut,axis='x'):
     
     if axis == 'x': var1,var2,vals = data[cut,:,:,1],data[cut,:,:,2],data[cut,:,:,3]
     
-    if axis == 'y': var1,var2,vals = data[:,cut,:,0],data[:,cut,:,2],data[:,cut,:,3]
+    if axis == 'y' or axis == 'r': var1,var2,vals = data[:,cut,:,0],data[:,cut,:,2],data[:,cut,:,3]
     
-    if axis == 'z': var1,var2,vals = data[:,:,cut,0],data[:,:,cut,1],data[:,:,cut,3]
+    if axis == 'z' or axis == 't': var1,var2,vals = data[:,:,cut,0],data[:,:,cut,1],data[:,:,cut,3]
         
     return var1,var2,vals
 
@@ -567,6 +577,29 @@ def Normalise(data,maximum,minimum):
 
 #==============================================================================
 
-PlotErrorDurationBatch(save=True)
-PlotConvergenceBatch(save=True)
-PlotContourSlices(save=True)
+save = True
+
+PlotErrorDurationBatch(save=save)
+PlotConvergenceBatch(save=save)
+
+
+PlotContourSlices(dataset = "cube"   , axis = "x", cut = 0  , save=save)
+PlotContourSlices(dataset = "cube"   , axis = "x", cut = 75 , save=save)
+PlotContourSlices(dataset = "cube"   , axis = "x", cut = 149, save=save)
+PlotContourSlices(dataset = "cube"   , axis = "y", cut = 0  , save=save)
+PlotContourSlices(dataset = "cube"   , axis = "y", cut = 75 , save=save)
+PlotContourSlices(dataset = "cube"   , axis = "y", cut = 149, save=save)
+PlotContourSlices(dataset = "cube"   , axis = "z", cut = 0  , save=save)
+PlotContourSlices(dataset = "cube"   , axis = "z", cut = 75 , save=save)
+PlotContourSlices(dataset = "cube"   , axis = "z", cut = 149, save=save)
+
+PlotContourSlices(dataset = "passage", axis = "x", cut = 0  , save=save)
+PlotContourSlices(dataset = "passage", axis = "x", cut = 75 , save=save)
+PlotContourSlices(dataset = "passage", axis = "x", cut = 130, save=save)
+PlotContourSlices(dataset = "passage", axis = "r", cut = 0  , save=save)
+PlotContourSlices(dataset = "passage", axis = "r", cut = 25 , save=save)
+PlotContourSlices(dataset = "passage", axis = "r", cut = 48 , save=save)
+PlotContourSlices(dataset = "passage", axis = "t", cut = 0  , save=save)
+PlotContourSlices(dataset = "passage", axis = "t", cut = 25 , save=save)
+PlotContourSlices(dataset = "passage", axis = "t", cut = 48 , save=save)
+
