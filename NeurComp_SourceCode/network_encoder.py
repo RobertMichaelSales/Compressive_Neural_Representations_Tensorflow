@@ -1,9 +1,44 @@
-""" Created: 15.11.2022  \\  Updated: 15.11.2022  \\   Author: Robert Sales """
+""" Created: 15.11.2022  \\  Updated: 09.02.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
 
 import numpy as np
+
+#==============================================================================
+# Define a function to encode the network layer dimensions (or architecture) as
+# a binary file containing strings of bytes
+
+# Note: The np.method '.tobytes()' returns the same bytestring as 'struct.pack'
+
+def EncodeArchitecture(layer_dimensions,frequencies,architecture_path):
+
+    # Extract the total number of layer dimensions to bytestrings
+    total_num_layers = np.array(len(layer_dimensions)).astype('uint16')    
+    total_num_layers_as_bytestring = total_num_layers.tobytes()
+    
+    # Extract the list of network layer dimensions to bytestrings
+    layer_dimensions = np.array(layer_dimensions).astype('uint16')
+    layer_dimensions_as_bytestring = layer_dimensions.tobytes()
+    
+    # Extract the number of positional encoding frequencies to bytestrings
+    frequencies = np.array(frequencies).astype('uint16')
+    frequencies_as_bytestring = frequencies.tobytes()
+    
+    # Open the architecture file in 'write as binary' mode
+    with open(architecture_path,"wb") as file:
+        
+        # Write each bytestring to file
+        file.write(total_num_layers_as_bytestring)
+        file.write(layer_dimensions_as_bytestring)
+        file.write(frequencies_as_bytestring)
+        
+        # Flush the buffer and close the file 
+        file.flush()
+        file.close()
+    ##
+
+    return None
 
 #==============================================================================
 # Define a function to encode the weights/biases of each layer as a binary file
@@ -27,7 +62,7 @@ def EncodeParameters(network,parameters_path,values_bounds):
             weights = network.get_weight_paths()[layer_name].numpy()
             
             # Flatten the layer weights and biases
-            weights = np.ravel(weights,order="C").astype(np.float32)
+            weights = np.ravel(weights,order="C").astype('float32')
         
             # Serialise weights into a string of bytes
             weights_as_bytestring = weights.tobytes(order="C")
@@ -37,7 +72,7 @@ def EncodeParameters(network,parameters_path,values_bounds):
         ##
             
         # Convert value bounds to a numpy array
-        bounds = np.array(values_bounds).astype(np.float32)
+        bounds = np.array(values_bounds).astype('float32')
         
         # Serialise value bounds into a string of bytes
         bounds_as_bytestring = bounds.tobytes(order="C")
@@ -52,33 +87,6 @@ def EncodeParameters(network,parameters_path,values_bounds):
     
     return None
     
-#==============================================================================
-# Define a function to encode the network layer dimensions (or architecture) as
-# a binary file containing strings of bytes
-
-# Note: The np.method '.tobytes()' returns the same bytestring as 'struct.pack'
-
-def EncodeArchitecture(layer_dimensions,architecture_path):
-
-    # Extract the list of network layer dimensions
-    layer_dimensions = np.array(layer_dimensions).astype(np.uint16)
-    
-    # Open the architecture file in 'write as binary' mode
-    with open(architecture_path,"wb") as file:
-    
-        # Serialise layer dimensions into a string of bytes
-        layer_dimensions_as_bytestring = layer_dimensions.tobytes(order="C")
-        
-        # Write 'layer_dimensions_bytestring' to file
-        file.write(layer_dimensions_as_bytestring)
-        
-        # Flush the buffer and close the file 
-        file.flush()
-        file.close()
-    ##
-
-    return None
-
 #==============================================================================
 # Define a function to sort the layer names alpha-numerically so that the saved
 # weights are always in the same correct order (the as-constructed ordering)
@@ -102,4 +110,3 @@ def SortLayerNames(layer_name):
     return layer_index
 
 #==============================================================================
-    

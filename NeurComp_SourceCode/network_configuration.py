@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 19.01.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 09.02.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -36,10 +36,11 @@ class ConfigurationClass():
             print("\n{:30}{}".format("Loaded network config:","default"))
                
             # Set network hyperparameters (default)
-            self.network_name                       = "neurcomp_default"
+            self.network_name                       = "squashnet_default"
             self.target_compression_ratio           = 50        
             self.hidden_layers                      = 8
             self.min_neurons_per_layer              = 10
+            self.frequencies                        = 0
             
             # Set training hyperparameters (default)
             self.initial_lr                         = 5e-3
@@ -48,7 +49,7 @@ class ConfigurationClass():
             self.epochs                             = 1
             self.half_life                          = 3
             
-        print("\n{:30}{}".format("Target compression ratio:",self.target_compression_ratio))
+        print("\n{:30}{:.2f}".format("Target compression ratio:",self.target_compression_ratio))
            
         return None
     
@@ -64,13 +65,15 @@ class ConfigurationClass():
         self.o_dimensions = o_dimensions
         self.size = size
         
+        print("\n{:30}{}".format("Encoding Frequencies:",self.frequencies))
+        
         # Compute the neurons per layer as well as the overall network capacity
         self.target_size = int(self.size/self.target_compression_ratio)
         self.neurons_per_layer = self.NeuronsPerLayer() 
         self.num_of_parameters = self.TotalParameters()
         self.actual_compression_ratio = self.size/self.num_of_parameters
         
-        print("\n{:30}{}".format("Actual compression ratio:",self.actual_compression_ratio))
+        print("\n{:30}{:.2f}".format("Actual compression ratio:",self.actual_compression_ratio))
         
         # Specify the network architecture as a list of layer dimensions
         self.layer_dimensions = []   
@@ -120,11 +123,16 @@ class ConfigurationClass():
         #Iterate through each layer in the network (including input/output)
         for layer in np.arange(self.total_layers):
           
-            # [input_layer -> sine_layer]
+            # [input_layer -> sine_layer] / [encoding -> sine_layer]
             if (layer==0):                             
                 
                 # Determine the input and output dimensions of each layer
-                i_dimensions = self.i_dimensions              
+
+                if (self.frequencies > 0):
+                    i_dimensions = self.i_dimensions * self.frequencies * 2
+                else:
+                    i_dimensions = self.i_dimensions
+                          
                 o_dimensions = self.neurons_per_layer
                   
                 # Add parameters from the weight matrix and bias vector

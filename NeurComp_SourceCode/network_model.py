@@ -1,8 +1,9 @@
-""" Created: 18.07.2022  \\  Updated: 05.01.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 09.02.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
 
+import math
 import numpy as np
 import tensorflow as tf
 
@@ -32,11 +33,38 @@ def SineBlock(inputs,units,name):
     
     return x
 
+
+#==============================================================================
+# Define the positional encoding layer
+
+def PositionalEncoding(inputs,frequencies):
+    
+    frequency_bands = 2.0**tf.linspace(0.0,frequencies-1,frequencies)
+    
+    periodic_functions = [tf.math.sin,tf.math.cos]
+    
+    encoding_functions = []
+    
+        
+    for fb in frequency_bands:
+        
+        for pf in periodic_functions:
+            
+            encoding_functions.append(lambda x, pf=pf, fb=fb: pf(x*math.pi*fb))
+       
+        ##
+        
+    ##
+    
+    x = tf.concat([ef(inputs) for ef in encoding_functions],axis=-1)
+    
+    return x
+
 #==============================================================================
 # Define a function that constructs the 'SIREN' network 
 
-def ConstructNetwork(layer_dimensions):
-    
+def ConstructNetwork(layer_dimensions,frequencies):
+ 
     total_layers = len(layer_dimensions)
 
     for layer in np.arange(total_layers):
@@ -45,7 +73,12 @@ def ConstructNetwork(layer_dimensions):
         if (layer == 0):                  
           
             input_layer = tf.keras.layers.Input(shape=(layer_dimensions[layer],),name="l{}_input".format(layer))
-            x = SineLayer(inputs=input_layer,units=layer_dimensions[layer+1],name="l{}_sinelayer".format(layer))
+            
+            if (frequencies > 0):
+                x = PositionalEncoding(inputs=input_layer,frequencies=frequencies)               
+                x = SineLayer(inputs=x          ,units=layer_dimensions[layer+1],name="l{}_sinelayer".format(layer))
+            else:
+                x = SineLayer(inputs=input_layer,units=layer_dimensions[layer+1],name="l{}_sinelayer".format(layer))
           
         # Add the final output layer
         elif (layer == (total_layers - 1)):

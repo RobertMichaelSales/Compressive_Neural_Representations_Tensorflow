@@ -196,7 +196,6 @@ def LoadLargeArrayBin(filename,shape):
         dtype_size = int(np.frombuffer(dtype_size_as_bytes,dtype="uint32"))
         
         header = dimensions_as_bytes + resolution_as_bytes + dtype_size_as_bytes
-        
     ##
         
     data = np.memmap(filename=filename,dtype="float32",mode="r",offset=len(header),shape=resolution,order="C")

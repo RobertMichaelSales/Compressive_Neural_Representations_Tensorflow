@@ -33,7 +33,8 @@ if __name__=="__main__":
             "batch_fraction"            : 0.0005,
             "epochs"                    : 30,
             "half_life"                 : 3,
-            "input_data_path"           : input_data_path             
+            "input_data_path"           : input_data_path,
+            "frequencies"               : 0
             }
         
         # Save the network config

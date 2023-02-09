@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 19.01.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 09.02.2023  \\   Author: Robert Sales """
 
 # Changes made to lines 135/6 to print progress when training with new dataset.
 
@@ -70,14 +70,14 @@ def compress(input_data_path,config_path,output_path,export_output):
     network_cfg.GenerateStructure(i_dimensions=i_volume.dimensions,o_dimensions=i_values.dimensions,size=i_values.size)
     
     # Build NeurComp from the config information
-    SquashNet = ConstructNetwork(layer_dimensions=network_cfg.layer_dimensions)
+    SquashNet = ConstructNetwork(layer_dimensions=network_cfg.layer_dimensions,frequencies=network_cfg.frequencies)
     
     # Set a training optimiser
     optimiser = tf.keras.optimizers.Adam(learning_rate=network_cfg.initial_lr)
     
     # Set a performance metric
     mse_error_metric = tf.keras.metrics.MeanSquaredError()
-    
+        
     #==========================================================================
     # Configure output folder
     print("-"*80,"\nCONFIGURING FOLDERS:")
@@ -120,7 +120,10 @@ def compress(input_data_path,config_path,output_path,export_output):
         print("{:30}{:02}/{:02}".format("Epoch:",epoch,network_cfg.epochs))
         
         # Determine, update, store and print the learning rate 
-        learning_rate = GetLearningRate(initial_lr=network_cfg.initial_lr,half_life=network_cfg.half_life,epoch=epoch)
+        learning_rate = GetLearningRate(initial_lr=network_cfg.initial_lr,
+                                        half_life=network_cfg.half_life,
+                                        epoch=epoch)
+        
         optimiser.lr.assign(learning_rate)
         training_data["learning_rate"].append(float(learning_rate))   
         print("{:30}{:.3E}".format("Learning Rate:",learning_rate))
@@ -175,7 +178,7 @@ def compress(input_data_path,config_path,output_path,export_output):
     
     # Save the architecture
     architecture_path = os.path.join(output_path,network_cfg.network_name,"architecture.bin")
-    EncodeArchitecture(layer_dimensions=network_cfg.layer_dimensions,architecture_path=architecture_path)
+    EncodeArchitecture(layer_dimensions=network_cfg.layer_dimensions,frequencies=network_cfg.frequencies,architecture_path=architecture_path)
     print("{:30}{}".format("Saved architecture to:",architecture_path.split("/")[-1]))
 
     if not export_output:
@@ -227,19 +230,19 @@ if __name__=="__main__":
     import sys
     
     # # Set config filepath
-    # config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config.json"
-    config_path = sys.argv[1]
+    config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config.json"
+    # config_path = sys.argv[1]
     
     # # Set input filepath
-    # input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy"
-    input_data_path = sys.argv[2]
+    input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy"
+    # input_data_path = sys.argv[2]
     
     # # Set output filepath
-    # output_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
-    output_path = sys.argv[3]
+    output_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
+    # output_path = sys.argv[3]
     
     # Execute compression
-    compress(input_data_path=input_data_path,config_path=config_path,output_path=output_path,export_output=True)   
+    network = compress(input_data_path=input_data_path,config_path=config_path,output_path=output_path,export_output=True)   
 
 else: pass
     

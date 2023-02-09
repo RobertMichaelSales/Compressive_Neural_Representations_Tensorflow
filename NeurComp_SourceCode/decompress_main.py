@@ -38,10 +38,10 @@ def decompress(architecture_path,parameters_path,input_data_path):
     # Construct network
     print("-"*80,"\nCONSTRUCTING NETWORK:")  
     
-    layer_dimensions = DecodeArchitecture(architecture_path=architecture_path)
+    layer_dimensions,frequencies = DecodeArchitecture(architecture_path=architecture_path)
     print("\n{:30}{}".format("Loaded architecture from:",architecture_path.split("/")[-1]))
     
-    SquashNet = ConstructNetwork(layer_dimensions=layer_dimensions)
+    SquashNet = ConstructNetwork(layer_dimensions=layer_dimensions,frequencies=frequencies)
     print("\n{:30}{}".format("Network dimensions:",layer_dimensions))
     
     #==========================================================================
