@@ -180,7 +180,7 @@ def MakeDatasetFromGenerator(data,indices,batch_size,repeat=False):
         dataset = dataset.repeat(count=None)
     else: pass
 
-    buffer_size = min(values.size,int(1e6))
+    buffer_size = min(data.shape[0]*len(indices[1]),int(1e6))                                                                       # <<<<<<<<<
     
     dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
                 
