@@ -51,8 +51,8 @@ def compress(input_data_path,config_path,output_path,export_output):
     o_values = DataClass(data_type="values")
     
     # Load and normalise input data
-    i_volume.LoadData(input_data_path=input_data_path,dimensions=(3,1),normalise=True)
-    i_values.LoadData(input_data_path=input_data_path,dimensions=(3,1),normalise=True)
+    i_volume.LoadData(input_data_path=input_data_path,indices=([0,1,2],[3]),normalise=True)
+    i_values.LoadData(input_data_path=input_data_path,indices=([0,1,2],[3]),normalise=True)
     
     # Copy meta-data from the input
     o_volume.CopyData(DataClassObject=i_volume,exception_keys=[])

@@ -30,23 +30,31 @@ class DataClass():
     
     # -> Note: Make sure the flattening takes place after normalisation
     
-    def LoadData(self,input_data_path,dimensions,normalise=True):
+    def LoadData(self,input_data_path,indices,normalise=True):
         
-        # Unpack the number of coordinate axes and scalar fields
-        coords,fields = dimensions
+        # Unpack the indices for the coordinate axes and scalar fields
+        coord_indices,field_indices = indices
           
         # Load the entire data block then extract the volume tensor
         if (self.data_type=="volume"): 
             print("\n{:30}{}".format("Loaded volume:",input_data_path.split("/")[-1]))
-            self.dimensions = coords
-            self.data = np.load(input_data_path)[...,:coords]   
+            self.dimensions = len(coord_indices)
+            # self.data = np.load(input_data_path)[...,coord_indices]   
+            
+            self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype='float32',shape=(100520000,10))[0:10052,coord_indices]      # <<<<<<<<<
+            
+            
         else: pass
             
         # Load the entire data block then extract the values tensor
         if (self.data_type=="values"): 
             print("\n{:30}{}".format("Loaded values:",input_data_path.split("/")[-1]))
-            self.dimensions = fields
-            self.data = np.load(input_data_path)[...,coords:]  
+            self.dimensions = len(field_indices)
+            # self.data = np.load(input_data_path)[...,field_indices]  
+            
+            self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype='float32',shape=(100520000,10))[0:10052,field_indices]      # <<<<<<<<<
+            
+            
         else: pass
     
         # Determine the field resolution
@@ -66,7 +74,7 @@ class DataClass():
         
         # Determine the range
         self.rng = abs(self.max-self.min)
-                
+ 
         # Normalise each tensor field to the range [-1,+1]
         if normalise:
             self.data = 2.0*((self.data-self.avg)/(self.rng))        
@@ -99,7 +107,7 @@ class DataClass():
             
         return None
         
-#==========================================================================
+#==============================================================================
 # Define a function to create and return a 'tf.data.Dataset' dataset object
 
 # -> Note: 'AUTOTUNE' prompts 'tf.data' to tune the value  of 'buffer_size'
@@ -139,6 +147,50 @@ def MakeDataset(volume,values,batch_size,repeat=False):
     return dataset    
 
 #==============================================================================
+# Define a generator function to supply the dataset with a datastream of inputs
+
+def CreateDataGen(data,indices):
+    
+    # Unpack the indices for the coordinate axes and scalar fields
+    coord_indices,field_indices = indices
+    
+    def DataGen():
+        
+        for row in data:
+            
+            yield row[coord_indices],row[field_indices]
+            
+    return DataGen
+
+#==============================================================================
+
+def MakeDatasetFromGenerator(data,indices,batch_size,repeat=False):
+        
+    generator = CreateDataGen(data,indices)
+    
+    output_types = (tf.float32,tf.float32)
+    
+    output_shapes = (tf.TensorShape((len(indices[0]),)),tf.TensorShape(len(indices[1]),))
+        
+    dataset = tf.data.Dataset.from_generator(generator=generator,output_types=output_types,output_shapes=output_shapes)
+    
+    dataset = dataset.cache()
+    
+    if repeat: 
+        dataset = dataset.repeat(count=None)
+    else: pass
+
+    buffer_size = min(values.size,int(1e6))
+    
+    dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
+                
+    dataset = dataset.batch(batch_size=batch_size,drop_remainder=False)
+    
+    dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
+            
+    return dataset    
+
+#==============================================================================
 # Define a function to concatenate and save a scalar field to a '.npy' file
 
 # -> Note: 'volume' and 'values' must be reshaped to match the input shapes
@@ -169,4 +221,26 @@ def SaveData(output_data_path,volume,values,reverse_normalise=True):
     return None
 
 #=============================================================================#
-    
+import numpy as np
+import tensorflow as tf
+
+# filename = "/Data/Compression_Datasets/combustor_les_compressible_time/combustor_les_compressible_time_all_data.npy"
+
+# volume = DataClass(data_type="volume")
+# values = DataClass(data_type="values")
+
+# volume.LoadData(input_data_path=filename, indices=([0,2,3],[4]), normalise=False)
+# values.LoadData(input_data_path=filename, indices=([0,2,3],[4]), normalise=False)
+
+#=============================================================================#
+import numpy as np
+import tensorflow as tf
+
+filename = "/Data/Compression_Datasets/combustor_les_compressible_time/combustor_les_compressible_time_all_data.npy"
+
+data = np.lib.format.open_memmap(filename=filename,mode="r",dtype='float32',shape=(100520000,10))
+
+# dataset = MakeDataset(volume=volume, values=values, batch_size=1)
+
+# next(iter(dataset))
+#=============================================================================#

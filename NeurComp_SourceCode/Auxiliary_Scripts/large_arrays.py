@@ -100,7 +100,7 @@ def LoadArray(filename,dtype,shape):
     available_memory = psutil.virtual_memory().available
     print("Available Memory: {:12d} Bytes ({:5.2f} GigaBytes)".format(available_memory,(available_memory/1024**3)))
     
-    threshold_memory = int(0.01 * 1024 * 1024 * 1024)
+    threshold_memory = int(4 * 1024 * 1024 * 1024)
     print("Threshold Memory: {:12d} Bytes ({:5.2f} GigaBytes)".format(threshold_memory,(threshold_memory/1024**3)))
     
     file_size = os.path.getsize(filename)
@@ -117,7 +117,7 @@ def LoadArray(filename,dtype,shape):
     if file_larger_than_memory:
         
         print("\nFile size > available/threshold memory. Loading as memmap.")
-        
+                
         if file_type == "npy":
             data = LoadLargeArrayNpy(filename=filename,shape=shape)
             
@@ -215,6 +215,9 @@ def CreateDataGen(volume,values):
             yield volume_item,values_item
             
     return DataGen
+
+
+
         
 
 def MakeTensorflowDataset(volume,values,batch_size,repeat=False):
@@ -254,12 +257,13 @@ def MakeTensorflowDataset(volume,values,batch_size,repeat=False):
 # data = LoadArray(filename="/home/rms221/Documents/Miscellaneous/small_array.npy",dtype=np.float32,shape=(10 ,10 ,10 ,10 ,15))
 # data = LoadArray(filename="/home/rms221/Documents/Miscellaneous/small_array.bin",dtype=np.float32,shape=(10 ,10 ,10 ,10 ,15))
 
-filename = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy"
+# data = LoadArray(filename="/Data/Compression_Datasets/jhtdb_isentropic1024coarse_pressure/jhtdb_isotropic1024coarse_pressure2.npy",dtype='float32',shape=(1024,1024,1024,4))
 
-data = LoadArray(filename=filename,dtype=np.float32,shape=(150,150,150,4))
+data = LoadArray(filename="/Data/Compression_Datasets/combustor_les_compressible_time/combustor_les_compressible_time_all_data.npy",dtype='float32',shape=(100520000,10))
+
 
 volume,values = data[...,:3].reshape(-1,3),data[...,3:].reshape(-1,1)
 
 dataset = MakeTensorflowDataset(volume=volume,values=values,batch_size=1024)
 
-del data, volume, values, filename
+# del data, volume, values, filename
