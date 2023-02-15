@@ -1,11 +1,12 @@
-""" Created: 18.07.2022  \\  Updated: 19.01.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 15.02.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
 
+import psutil
 import numpy as np
 import tensorflow as tf
-from pyevtk.hl import gridToVTK
+from pyevtk.hl import gridToVTK,unstructuredGridToVTK
 
 #==============================================================================
 # Define a class for managing datasets: i.e. loading, handling and storing data  
@@ -15,10 +16,16 @@ class DataClass():
     #==========================================================================
     # Define the initialisation constructor function for 'DataClass'   
 
-    def __init__(self,data_type):
+    def __init__(self,data_type,is_structured,input_exceeds_memory):
         
         # Set the object data type
         self.data_type = data_type
+        
+        # Set input data structure
+        self.is_structured = is_structured
+        
+        # Set input exceeds memory
+        self.input_exceeds_memory = input_exceeds_memory
         
         return None
     
@@ -30,30 +37,36 @@ class DataClass():
     
     # -> Note: Make sure the flattening takes place after normalisation
     
-    def LoadData(self,input_data_path,indices,normalise=True):
+    def LoadData(self,input_data_path,columns,rows,normalise=True):
         
-        # Unpack the indices for the coordinate axes and scalar fields
-        coord_indices,field_indices = indices
-          
-        # Load the entire data block then extract the volume tensor
-        if (self.data_type=="volume"): 
+        # Unpack the columns for the coordinate axes and scalar fields
+        coord_columns,field_columns = columns
+                
+        # Load the full dataset then extract the desired volume tensor
+        if (self.data_type=="volume"):             
             print("\n{:30}{}".format("Loaded volume:",input_data_path.split("/")[-1]))
-            self.dimensions = len(coord_indices)
-            # self.data = np.load(input_data_path)[...,coord_indices]   
+            self.dimensions = len(coord_columns)
             
-            self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype='float32',shape=(100520000,10))[0:10052,coord_indices]      # <<<<<<<<<
-            
-            
+            if self.is_structured:
+                pass
+            else:
+                
+                # self.data = np.load(input_data_path)[...,coord_columns]   
+                self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype='float64',shape=(100520000,10))[rows,coord_columns].astype('float32')      # <<<<<<<<<
+                
         else: pass
             
         # Load the entire data block then extract the values tensor
         if (self.data_type=="values"): 
             print("\n{:30}{}".format("Loaded values:",input_data_path.split("/")[-1]))
-            self.dimensions = len(field_indices)
-            # self.data = np.load(input_data_path)[...,field_indices]  
+            self.dimensions = len(field_columns)
             
-            self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype='float32',shape=(100520000,10))[0:10052,field_indices]      # <<<<<<<<<
+            if self.is_structured:
+                pass
+            else:
             
+                # self.data = np.load(input_data_path)[...,field_columns]  
+                self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype='float64',shape=(100520000,10))[rows,field_columns].astype('float32')      # <<<<<<<<<
             
         else: pass
     
@@ -149,28 +162,28 @@ def MakeDataset(volume,values,batch_size,repeat=False):
 #==============================================================================
 # Define a generator function to supply the dataset with a datastream of inputs
 
-def CreateDataGen(data,indices):
+def CreateDataGen(data,columns):
     
-    # Unpack the indices for the coordinate axes and scalar fields
-    coord_indices,field_indices = indices
+    # Unpack the columns for the coordinate axes and scalar fields
+    coord_columns,field_columns = columns
     
     def DataGen():
         
         for row in data:
             
-            yield row[coord_indices],row[field_indices]
+            yield row[coord_columns],row[field_columns]
             
     return DataGen
 
 #==============================================================================
 
-def MakeDatasetFromGenerator(data,indices,batch_size,repeat=False):
+def MakeDatasetFromGenerator(data,columns,batch_size,repeat=False):
         
-    generator = CreateDataGen(data,indices)
+    generator = CreateDataGen(data,columns)
     
     output_types = (tf.float32,tf.float32)
     
-    output_shapes = (tf.TensorShape((len(indices[0]),)),tf.TensorShape(len(indices[1]),))
+    output_shapes = (tf.TensorShape((len(columns[0]),)),tf.TensorShape(len(columns[1]),))
         
     dataset = tf.data.Dataset.from_generator(generator=generator,output_types=output_types,output_shapes=output_shapes)
     
@@ -180,7 +193,7 @@ def MakeDatasetFromGenerator(data,indices,batch_size,repeat=False):
         dataset = dataset.repeat(count=None)
     else: pass
 
-    buffer_size = min(data.shape[0]*len(indices[1]),int(1e6))                                                                       # <<<<<<<<<
+    buffer_size = min(data.shape[0]*len(columns[1]),int(1e6))                                                                       # <<<<<<<<<
     
     dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
                 
@@ -196,7 +209,7 @@ def MakeDatasetFromGenerator(data,indices,batch_size,repeat=False):
 # -> Note: 'volume' and 'values' must be reshaped to match the input shapes
 
 def SaveData(output_data_path,volume,values,reverse_normalise=True):
-                
+                    
     # Reverse normalise 'volume' and 'values' to the initial ranges
     if reverse_normalise:
         volume.data = ((volume.rng*(volume.data/2.0))+volume.avg)
@@ -215,32 +228,11 @@ def SaveData(output_data_path,volume,values,reverse_normalise=True):
     for dimension in range(values.dimensions):
         key = "field" + str(dimension)
         values_dict[key] = np.ascontiguousarray(values.data[...,dimension])
-                                                
-    gridToVTK(output_data_path,*volume_list,pointData=values_dict)
-
+    
+    if (volume.is_structured == False) and (values.is_structured == False):                                        
+        gridToVTK(output_data_path,*volume_list,pointData=values_dict)  
+    else: pass
+        
     return None
 
-#=============================================================================#
-import numpy as np
-import tensorflow as tf
-
-# filename = "/Data/Compression_Datasets/combustor_les_compressible_time/combustor_les_compressible_time_all_data.npy"
-
-# volume = DataClass(data_type="volume")
-# values = DataClass(data_type="values")
-
-# volume.LoadData(input_data_path=filename, indices=([0,2,3],[4]), normalise=False)
-# values.LoadData(input_data_path=filename, indices=([0,2,3],[4]), normalise=False)
-
-#=============================================================================#
-import numpy as np
-import tensorflow as tf
-
-filename = "/Data/Compression_Datasets/combustor_les_compressible_time/combustor_les_compressible_time_all_data.npy"
-
-data = np.lib.format.open_memmap(filename=filename,mode="r",dtype='float32',shape=(100520000,10))
-
-# dataset = MakeDataset(volume=volume, values=values, batch_size=1)
-
-# next(iter(dataset))
 #=============================================================================#

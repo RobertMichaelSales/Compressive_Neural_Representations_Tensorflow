@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 09.02.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 15.02.2023  \\   Author: Robert Sales """
 
 # Changes made to lines 135/6 to print progress when training with new dataset.
 
@@ -8,7 +8,7 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-import time, json, math
+import time, json, math, psutil
 import numpy as np
 import tensorflow as tf
 
@@ -40,19 +40,33 @@ def compress(input_data_path,config_path,output_path,export_output):
         return None
         
     #==========================================================================
+    # Check whether the input size exceeds available memory
+    
+    available_memory = psutil.virtual_memory().available
+    print("Available Memory: {:12d} Bytes ({:5.2f} GigaBytes)".format(available_memory,(available_memory/1024**3)))
+    
+    threshold_memory = int(4 * 1024 * 1024 * 1024)
+    print("Threshold Memory: {:12d} Bytes ({:5.2f} GigaBytes)".format(threshold_memory,(threshold_memory/1024**3)))
+    
+    input_file_size = os.path.getsize(input_data_path)
+    print("Input File Size:  {:12d} Bytes ({:5.2f} GigaBytes)".format(input_file_size,(input_file_size/1024**3)))
+    
+    input_exceeds_memory = (input_file_size > min(available_memory,threshold_memory))
+    
+    #==========================================================================
     # Initialise i/o 
     
     print("-"*80,"\nINITIALISING DATA I/O:")
     
     # Create 'DataClass' objects to store i/o volume and values
-    i_volume = DataClass(data_type="volume")
-    i_values = DataClass(data_type="values")
-    o_volume = DataClass(data_type="volume")
-    o_values = DataClass(data_type="values")
+    i_volume = DataClass(data_type="volume",is_structured=False,input_exceeds_memory=input_exceeds_memory)
+    i_values = DataClass(data_type="values",is_structured=False,input_exceeds_memory=input_exceeds_memory)
+    o_volume = DataClass(data_type="volume",is_structured=False,input_exceeds_memory=input_exceeds_memory)
+    o_values = DataClass(data_type="values",is_structured=False,input_exceeds_memory=input_exceeds_memory)
     
     # Load and normalise input data
-    i_volume.LoadData(input_data_path=input_data_path,indices=([0,1,2],[3]),normalise=True)
-    i_values.LoadData(input_data_path=input_data_path,indices=([0,1,2],[3]),normalise=True)
+    i_volume.LoadData(input_data_path=input_data_path,columns=([1,2,3],[7]),rows=slice(0,10052),normalise=True)
+    i_values.LoadData(input_data_path=input_data_path,columns=([1,2,3],[7]),rows=slice(0,10052),normalise=True)
     
     # Copy meta-data from the input
     o_volume.CopyData(DataClassObject=i_volume,exception_keys=[])
@@ -136,7 +150,8 @@ def compress(input_data_path,config_path,output_path,export_output):
             
             # Print the current batch number 
             print("\r{:30}{:04}/{:04}".format("Batch Number:",(batch+1),len(dataset)),end="") 
-            # print("\r{:30}{:04}".format("Batch Number:",(batch+1)),end="")
+            
+            # print("\r{:30}{:04}".format("Batch Number:",(batch+1)),end="")                                                                         # <<<<<<<<<
             
             # Run a training step 
             TrainStep(model=SquashNet,optimiser=optimiser,metric=mse_error_metric,volume_batch=volume_batch,values_batch=values_batch)
@@ -197,6 +212,8 @@ def compress(input_data_path,config_path,output_path,export_output):
     o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(1,)),order="C")
     print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_values.data,pred=o_values.data)))
     training_data["psnr"].append(SignalToNoise(true=i_values.data,pred=o_values.data))
+    
+    return o_volume,o_values
 
     # Save the output volume to ".npy" and ".vtk" files
     output_data_path = os.path.join(output_path,network_cfg.network_name,"output_volume")
@@ -234,7 +251,7 @@ if __name__=="__main__":
     # config_path = sys.argv[1]
     
     # # Set input filepath
-    input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy"
+    input_data_path = "/Data/Compression_Datasets/combustor_les_compressible_time/combustor_les_compressible_time_all_data.npy"
     # input_data_path = sys.argv[2]
     
     # # Set output filepath
@@ -242,8 +259,8 @@ if __name__=="__main__":
     # output_path = sys.argv[3]
     
     # Execute compression
-    network = compress(input_data_path=input_data_path,config_path=config_path,output_path=output_path,export_output=True)   
+    out1,out2 = compress(input_data_path=input_data_path,config_path=config_path,output_path=output_path,export_output=True)   
 
 else: pass
-    
+
 #==============================================================================

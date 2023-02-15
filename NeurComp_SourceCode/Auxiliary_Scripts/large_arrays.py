@@ -217,9 +217,6 @@ def CreateDataGen(volume,values):
     return DataGen
 
 
-
-        
-
 def MakeTensorflowDataset(volume,values,batch_size,repeat=False):
     
     import tensorflow as tf
@@ -257,13 +254,13 @@ def MakeTensorflowDataset(volume,values,batch_size,repeat=False):
 # data = LoadArray(filename="/home/rms221/Documents/Miscellaneous/small_array.npy",dtype=np.float32,shape=(10 ,10 ,10 ,10 ,15))
 # data = LoadArray(filename="/home/rms221/Documents/Miscellaneous/small_array.bin",dtype=np.float32,shape=(10 ,10 ,10 ,10 ,15))
 
-# data = LoadArray(filename="/Data/Compression_Datasets/jhtdb_isentropic1024coarse_pressure/jhtdb_isotropic1024coarse_pressure2.npy",dtype='float32',shape=(1024,1024,1024,4))
+data = LoadArray(filename="/Data/Compression_Datasets/jhtdb_isentropic1024coarse_pressure/jhtdb_isotropic1024coarse_pressure.npy",dtype='float32',shape=(1024,1024,1024,4))
 
-data = LoadArray(filename="/Data/Compression_Datasets/combustor_les_compressible_time/combustor_les_compressible_time_all_data.npy",dtype='float32',shape=(100520000,10))
+# data = LoadArray(filename="/Data/Compression_Datasets/combustor_les_compressible_time/combustor_les_compressible_time_all_data.npy",dtype='float32',shape=(100520000,10))
 
 
-volume,values = data[...,:3].reshape(-1,3),data[...,3:].reshape(-1,1)
+# volume,values = data[...,:3].reshape(-1,3),data[...,3:].reshape(-1,1)
 
-dataset = MakeTensorflowDataset(volume=volume,values=values,batch_size=1024)
+# dataset = MakeTensorflowDataset(volume=volume,values=values,batch_size=1024)
 
 # del data, volume, values, filename
