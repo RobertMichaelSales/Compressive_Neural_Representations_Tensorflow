@@ -35,27 +35,34 @@ def SineBlock(inputs,units,name):
 
 
 #==============================================================================
-# Define the positional encoding layer
+# Define the positional encoding layer (from the Neural Radiance Fields paper)
 
 def PositionalEncoding(inputs,frequencies):
     
+    # Define the positional encoding frequency bands
     frequency_bands = 2.0**tf.linspace(0.0,frequencies-1,frequencies)
     
+    # Define the positional encoding periodic functions
     periodic_functions = [tf.math.sin,tf.math.cos]
     
+    # Create an empty list to fill with encoding functions
     encoding_functions = []
     
         
+    # Iterate through each of the frequency bands
     for fb in frequency_bands:
         
+        # Iterate through each of the periodic functions
         for pf in periodic_functions:
             
+            # Append encoding lambda functions with arguments
             encoding_functions.append(lambda x, pf=pf, fb=fb: pf(x*math.pi*fb))
        
         ##
         
     ##
     
+    # Evaluate the encoding function on each input and concatenate
     x = tf.concat([ef(inputs) for ef in encoding_functions],axis=-1)
     
     return x
@@ -74,6 +81,8 @@ def ConstructNetwork(layer_dimensions,frequencies):
           
             input_layer = tf.keras.layers.Input(shape=(layer_dimensions[layer],),name="l{}_input".format(layer))
             
+            
+            # Add positional encoding if 'frequencies' > 0
             if (frequencies > 0):
                 x = PositionalEncoding(inputs=input_layer,frequencies=frequencies)               
                 x = SineLayer(inputs=x          ,units=layer_dimensions[layer+1],name="l{}_sinelayer".format(layer))

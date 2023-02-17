@@ -20,7 +20,7 @@ def TrainStep(model,optimiser,metric,volume_batch,values_batch):
         
         # Compute the mean-squared error for the current mini-batch
         mse = MeanSquaredError(values_batch,values_predicted)
-
+   
     # Determine the weight and bias gradients with respect to error
     gradients = tape.gradient(mse,model.trainable_variables)
     

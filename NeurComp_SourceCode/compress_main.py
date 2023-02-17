@@ -15,7 +15,7 @@ import tensorflow as tf
 #==============================================================================
 # Import user-defined libraries 
 
-from data_management         import DataClass,MakeDataset,SaveData
+from data_management         import DataClass,MakeDataset,SaveData,MakeDatasetFromGenerator
 from network_configuration   import ConfigurationClass
 from network_encoder         import EncodeParameters,EncodeArchitecture
 from network_model           import ConstructNetwork
@@ -25,7 +25,7 @@ from compress_utilities      import TrainStep,GetLearningRate,SignalToNoise
 
 def compress(input_data_path,config_path,output_path,export_output):
     
-    print("-"*80,"\nNEURCOMP: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
+    print("-"*80,"\nSQUASHNET: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
         
     #==========================================================================
     # Check whether hardware acceleration is enabled
@@ -37,37 +37,50 @@ def compress(input_data_path,config_path,output_path,export_output):
         tf.config.experimental.set_memory_growth(gpus[0],True)
     else:        
         print("\n{:30}{} - {}".format("CUDA GPU(s) Detected:",len(gpus),"Hardware Acceleration Is Disabled"))
-        return None
         
     #==========================================================================
     # Check whether the input size exceeds available memory
     
     available_memory = psutil.virtual_memory().available
-    print("Available Memory: {:12d} Bytes ({:5.2f} GigaBytes)".format(available_memory,(available_memory/1024**3)))
+    print("\n{:30}{:.3f} GigaBytes".format("Available Memory:",(available_memory/1e9)))
     
-    threshold_memory = int(4 * 1024 * 1024 * 1024)
-    print("Threshold Memory: {:12d} Bytes ({:5.2f} GigaBytes)".format(threshold_memory,(threshold_memory/1024**3)))
+    threshold_memory = int(4*1e9)
+    print("\n{:30}{:.3f} GigaBytes".format("Threshold Memory:",(threshold_memory/1e9)))
     
     input_file_size = os.path.getsize(input_data_path)
-    print("Input File Size:  {:12d} Bytes ({:5.2f} GigaBytes)".format(input_file_size,(input_file_size/1024**3)))
+    print("\n{:30}{:.3f} GigaBytes".format("Input File Size:",(input_file_size/1e9)))
     
-    input_exceeds_memory = (input_file_size > min(available_memory,threshold_memory))
+    exceeds_memory = (input_file_size > min(available_memory,threshold_memory))
+    
+    if exceeds_memory: print("\n{:30}{}".format("Warning:","File Size > RAM - Loading as Memmap File"))
     
     #==========================================================================
     # Initialise i/o 
     
     print("-"*80,"\nINITIALISING DATA I/O:")
     
+    # is_tabular = True
+    # shape = (100520000,10)
+    # dtype = 'float64'
+    # normalise = True
+    # columns = ([2,3],[7])
+    
+    is_tabular = False
+    shape = (150,150,150,4)
+    dtype = 'float32'
+    normalise = True
+    columns = ([0,1,2],[3])
+    
     # Create 'DataClass' objects to store i/o volume and values
-    i_volume = DataClass(data_type="volume",is_structured=False,input_exceeds_memory=input_exceeds_memory)
-    i_values = DataClass(data_type="values",is_structured=False,input_exceeds_memory=input_exceeds_memory)
-    o_volume = DataClass(data_type="volume",is_structured=False,input_exceeds_memory=input_exceeds_memory)
-    o_values = DataClass(data_type="values",is_structured=False,input_exceeds_memory=input_exceeds_memory)
+    i_volume = DataClass(data_type="volume",is_tabular=is_tabular,exceeds_memory=exceeds_memory)
+    i_values = DataClass(data_type="values",is_tabular=is_tabular,exceeds_memory=exceeds_memory)
+    o_volume = DataClass(data_type="volume",is_tabular=is_tabular,exceeds_memory=exceeds_memory)
+    o_values = DataClass(data_type="values",is_tabular=is_tabular,exceeds_memory=exceeds_memory)
     
     # Load and normalise input data
-    i_volume.LoadData(input_data_path=input_data_path,columns=([1,2,3],[7]),rows=slice(0,10052),normalise=True)
-    i_values.LoadData(input_data_path=input_data_path,columns=([1,2,3],[7]),rows=slice(0,10052),normalise=True)
-    
+    i_volume.LoadData(input_data_path=input_data_path,columns=columns,shape=shape,dtype=dtype,normalise=normalise)
+    i_values.LoadData(input_data_path=input_data_path,columns=columns,shape=shape,dtype=dtype,normalise=normalise)
+       
     # Copy meta-data from the input
     o_volume.CopyData(DataClassObject=i_volume,exception_keys=[])
     o_values.CopyData(DataClassObject=i_values,exception_keys=[])
@@ -91,7 +104,7 @@ def compress(input_data_path,config_path,output_path,export_output):
     
     # Set a performance metric
     mse_error_metric = tf.keras.metrics.MeanSquaredError()
-        
+    
     #==========================================================================
     # Configure output folder
     print("-"*80,"\nCONFIGURING FOLDERS:")
@@ -100,6 +113,12 @@ def compress(input_data_path,config_path,output_path,export_output):
     output_directory = os.path.join(output_path,network_cfg.network_name)
     if not os.path.exists(output_directory):os.makedirs(output_directory)
     print("\n{:30}{}".format("Created output folder:",output_directory.split("/")[-1]))
+    
+    tf.keras.utils.plot_model(model=SquashNet,to_file=os.path.join(output_directory,"model.png"))
+    
+    print(os.path.join(output_directory,"model"))
+          
+    return i_volume,i_values
             
     #==========================================================================
     # Configure dataset
@@ -113,7 +132,8 @@ def compress(input_data_path,config_path,output_path,export_output):
     
     # Generate a TF dataset to supply volume and values batches during training 
     dataset = MakeDataset(volume=i_volume,values=i_values,batch_size=network_cfg.batch_size,repeat=False)
-        
+    # dataset = MakeDatasetFromGenerator(volume=i_volume,values=i_values,batch_size=network_cfg.batch_size,repeat=False)                      # <<<<<<<<<
+    
     #==========================================================================
     # Compression loop
     print("-"*80,"\nCOMPRESSING DATA:")
@@ -150,7 +170,6 @@ def compress(input_data_path,config_path,output_path,export_output):
             
             # Print the current batch number 
             print("\r{:30}{:04}/{:04}".format("Batch Number:",(batch+1),len(dataset)),end="") 
-            
             # print("\r{:30}{:04}".format("Batch Number:",(batch+1)),end="")                                                                         # <<<<<<<<<
             
             # Run a training step 
@@ -212,8 +231,6 @@ def compress(input_data_path,config_path,output_path,export_output):
     o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(1,)),order="C")
     print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_values.data,pred=o_values.data)))
     training_data["psnr"].append(SignalToNoise(true=i_values.data,pred=o_values.data))
-    
-    return o_volume,o_values
 
     # Save the output volume to ".npy" and ".vtk" files
     output_data_path = os.path.join(output_path,network_cfg.network_name,"output_volume")
@@ -251,7 +268,7 @@ if __name__=="__main__":
     # config_path = sys.argv[1]
     
     # # Set input filepath
-    input_data_path = "/Data/Compression_Datasets/combustor_les_compressible_time/combustor_les_compressible_time_all_data.npy"
+    input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy"
     # input_data_path = sys.argv[2]
     
     # # Set output filepath
@@ -259,7 +276,7 @@ if __name__=="__main__":
     # output_path = sys.argv[3]
     
     # Execute compression
-    out1,out2 = compress(input_data_path=input_data_path,config_path=config_path,output_path=output_path,export_output=True)   
+    i_volume,i_values = compress(input_data_path=input_data_path,config_path=config_path,output_path=output_path,export_output=True)   
 
 else: pass
 

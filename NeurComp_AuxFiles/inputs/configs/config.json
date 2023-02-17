@@ -1,13 +1,13 @@
 {
     "batch_fraction": 0,
-    "batch_size": 10,
-    "epochs": 5,
+    "batch_size": 1024,
+    "epochs": 30,
     "half_life": 3,
     "hidden_layers": 8,
-    "initial_lr": 0.005,
-    "input_data_path": "/Data/Compression_Datasets/combustor_les_compressible_time/combustor_les_compressible_time_all_data.npy",
+    "initial_lr": 0.0005,
+    "input_data_path": "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy",
     "min_neurons_per_layer": 1,
     "network_name": "test_combustor_les",
-    "target_compression_ratio": 1.0,
-    "frequencies": 0
+    "target_compression_ratio": 100.0,
+    "frequencies": 1
 }
