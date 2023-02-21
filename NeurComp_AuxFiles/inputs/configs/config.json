@@ -9,5 +9,5 @@
     "min_neurons_per_layer": 1,
     "network_name": "test",
     "target_compression_ratio": 100.0,
-    "frequencies": 1
+    "frequencies": 0
 }

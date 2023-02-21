@@ -115,7 +115,6 @@ def compress(input_data_path,config_path,output_path,export_output):
     print("\n{:30}{}".format("Created output folder:",output_directory.split("/")[-1]))
     
     tf.keras.utils.plot_model(model=SquashNet,to_file=os.path.join(output_directory,"model.png"))                                       # <<<<<<<<<
-    # return i_volume,i_values                                                                                                            # <<<<<<<<<
             
     #==========================================================================
     # Configure dataset
@@ -136,7 +135,7 @@ def compress(input_data_path,config_path,output_path,export_output):
     
     lr_lspace,lr_deltas = LearningRateStudy(model=SquashNet,optimiser=optimiser,dataset=dataset,lr_bounds=(-7.0,-1.0),plot=True)         
 
-    
+    return lr_lspace,lr_deltas
     
     #==========================================================================
     # Compression loop
