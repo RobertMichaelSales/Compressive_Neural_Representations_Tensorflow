@@ -19,7 +19,7 @@ from data_management         import DataClass,MakeDataset,SaveData,MakeDatasetFr
 from network_configuration   import ConfigurationClass
 from network_encoder         import EncodeParameters,EncodeArchitecture
 from network_model           import ConstructNetwork
-from compress_utilities      import TrainStep,GetLearningRate,SignalToNoise
+from compress_utilities      import TrainStep,GetLearningRate,SignalToNoise,LearningRateStudy
 
 #==============================================================================
 
@@ -100,7 +100,7 @@ def compress(input_data_path,config_path,output_path,export_output):
     SquashNet = ConstructNetwork(layer_dimensions=network_cfg.layer_dimensions,frequencies=network_cfg.frequencies)
     
     # Set a training optimiser
-    optimiser = tf.keras.optimizers.Adam(learning_rate=network_cfg.initial_lr)
+    optimiser = tf.keras.optimizers.Adam()
     
     # Set a performance metric
     mse_error_metric = tf.keras.metrics.MeanSquaredError()
@@ -114,11 +114,8 @@ def compress(input_data_path,config_path,output_path,export_output):
     if not os.path.exists(output_directory):os.makedirs(output_directory)
     print("\n{:30}{}".format("Created output folder:",output_directory.split("/")[-1]))
     
-    tf.keras.utils.plot_model(model=SquashNet,to_file=os.path.join(output_directory,"model.png"))
-    
-    print(os.path.join(output_directory,"model"))
-          
-    return i_volume,i_values
+    tf.keras.utils.plot_model(model=SquashNet,to_file=os.path.join(output_directory,"model.png"))                                       # <<<<<<<<<
+    # return i_volume,i_values                                                                                                            # <<<<<<<<<
             
     #==========================================================================
     # Configure dataset
@@ -133,6 +130,13 @@ def compress(input_data_path,config_path,output_path,export_output):
     # Generate a TF dataset to supply volume and values batches during training 
     dataset = MakeDataset(volume=i_volume,values=i_values,batch_size=network_cfg.batch_size,repeat=False)
     # dataset = MakeDatasetFromGenerator(volume=i_volume,values=i_values,batch_size=network_cfg.batch_size,repeat=False)                      # <<<<<<<<<
+    
+    #==========================================================================
+    print("-"*80,"\nLEARNING RATE STUDY")
+    
+    lr_lspace,lr_deltas = LearningRateStudy(model=SquashNet,optimiser=optimiser,dataset=dataset,lr_bounds=(-7.0,-1.0),plot=True)         
+
+    
     
     #==========================================================================
     # Compression loop
@@ -154,9 +158,7 @@ def compress(input_data_path,config_path,output_path,export_output):
         print("{:30}{:02}/{:02}".format("Epoch:",epoch,network_cfg.epochs))
         
         # Determine, update, store and print the learning rate 
-        learning_rate = GetLearningRate(initial_lr=network_cfg.initial_lr,
-                                        half_life=network_cfg.half_life,
-                                        epoch=epoch)
+        learning_rate = GetLearningRate(initial_lr=network_cfg.initial_lr,half_life=network_cfg.half_life,epoch=epoch)
         
         optimiser.lr.assign(learning_rate)
         training_data["learning_rate"].append(float(learning_rate))   
@@ -276,7 +278,7 @@ if __name__=="__main__":
     # output_path = sys.argv[3]
     
     # Execute compression
-    i_volume,i_values = compress(input_data_path=input_data_path,config_path=config_path,output_path=output_path,export_output=True)   
+    lr_lspace,lr_deltas = compress(input_data_path=input_data_path,config_path=config_path,output_path=output_path,export_output=True)   
 
 else: pass
 
