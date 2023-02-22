@@ -180,71 +180,71 @@ def MakeDataset(volume,values,batch_size,repeat=False):
             
     return dataset    
 
-#==============================================================================
-# Define a generator function to supply the dataset with a datastream of inputs
+# #==============================================================================
+# # Define a generator function to supply the dataset with a datastream of inputs
 
-# def CreateDataGen(data,columns):
+# # def CreateDataGen(data,columns):
     
-#     # Unpack the columns for the coordinate axes and scalar fields
-#     coord_columns,field_columns = columns
+# #     # Unpack the columns for the coordinate axes and scalar fields
+# #     coord_columns,field_columns = columns
+    
+# #     def DataGen():
+        
+# #         for row in data:
+            
+# #             yield row[coord_columns],row[field_columns]
+            
+# #     return DataGen
+
+# def CreateDataGen(volume,values):
     
 #     def DataGen():
         
-#         for row in data:
+#         for vol,val in zip(volume,values):
             
-#             yield row[coord_columns],row[field_columns]
+#             yield vol,val
             
 #     return DataGen
 
-def CreateDataGen(volume,values):
+# #==============================================================================
+
+# def MakeDatasetFromGenerator(volume,values,batch_size,repeat=False):
     
-    def DataGen():
+#     print("\n{:30}{}{}".format("Made TF dataset:","batch_size = ",batch_size))
         
-        for vol,val in zip(volume,values):
-            
-            yield vol,val
-            
-    return DataGen
-
-#==============================================================================
-
-def MakeDatasetFromGenerator(volume,values,batch_size,repeat=False):
+#     # generator = CreateDataGen(data,columns)
     
-    print("\n{:30}{}{}".format("Made TF dataset:","batch_size = ",batch_size))
+#     # output_types = (tf.float32,tf.float32)
+    
+#     # output_shapes = (tf.TensorShape((len(columns[0]),)),tf.TensorShape(len(columns[1]),))
+
+#     generator = CreateDataGen(volume.flat,values.flat)
+    
+#     output_types = (tf.float32,tf.float32)
+
+#     output_shapes = (tf.TensorShape((volume.flat.shape[-1],)),tf.TensorShape(values.flat.shape[-1],))
         
-    # generator = CreateDataGen(data,columns)
+#     dataset = tf.data.Dataset.from_generator(generator=generator,output_types=output_types,output_shapes=output_shapes)
     
-    # output_types = (tf.float32,tf.float32)
+#     dataset = dataset.cache()
     
-    # output_shapes = (tf.TensorShape((len(columns[0]),)),tf.TensorShape(len(columns[1]),))
-
-    generator = CreateDataGen(volume.flat,values.flat)
-    
-    output_types = (tf.float32,tf.float32)
-
-    output_shapes = (tf.TensorShape((volume.flat.shape[-1],)),tf.TensorShape(values.flat.shape[-1],))
-        
-    dataset = tf.data.Dataset.from_generator(generator=generator,output_types=output_types,output_shapes=output_shapes)
-    
-    dataset = dataset.cache()
-    
-    if repeat: 
-        dataset = dataset.repeat(count=None)
-    else: pass
+#     if repeat: 
+#         dataset = dataset.repeat(count=None)
+#     else: pass
 
 
-    # buffer_size = min(data.shape[0]*len(columns[1]),int(1e6))                                                                       # <<<<<<<<<
+#     # buffer_size = min(data.shape[0]*len(columns[1]),int(1e6))                                                                       # <<<<<<<<<
     
-    buffer_size = min(values.flat.shape[0],int(1e6))                                                                       # <<<<<<<<<
+#     buffer_size = min(values.flat.shape[0],int(1e6))                                                                       # <<<<<<<<<
 
     
-    dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
+#     dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
                 
-    dataset = dataset.batch(batch_size=batch_size,drop_remainder=False)
+#     dataset = dataset.batch(batch_size=batch_size,drop_remainder=False)
     
-    dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
+#     dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
             
-    return dataset    
+#     return dataset    
 
 #==============================================================================
 # Define a function to concatenate and save a scalar field to a '.npy' file

@@ -15,11 +15,11 @@ import tensorflow as tf
 #==============================================================================
 # Import user-defined libraries 
 
-from data_management         import DataClass,MakeDataset,SaveData,MakeDatasetFromGenerator
+from data_management         import DataClass,MakeDataset,SaveData #,MakeDatasetFromGenerator
 from network_configuration   import ConfigurationClass
 from network_encoder         import EncodeParameters,EncodeArchitecture
 from network_model           import ConstructNetwork
-from compress_utilities      import TrainStep,GetLearningRate,SignalToNoise,LearningRateStudy
+from compress_utilities      import *
 
 #==============================================================================
 
@@ -83,9 +83,21 @@ def compress(input_data_path,config_path,output_path,export_output):
        
     # Copy meta-data from the input
     o_volume.CopyData(DataClassObject=i_volume,exception_keys=[])
-    o_values.CopyData(DataClassObject=i_values,exception_keys=[])
+    o_values.CopyData(DataClassObject=i_values,exception_keys=[])    
     
     #==========================================================================
+    # Calculate statistics on the input volume
+    
+    stats_flag = False
+    
+    if stats_flag:
+        values_standard_deviation = CalculateStandardDeviation(i_values.flat)
+        volume_pointcloud_density = CalculatePointCloudDensity(i_volume.flat)
+    else: pass
+    
+    return i_volume,i_values
+
+    #==========================================================================    
     # Configure network 
     
     print("-"*80,"\nCONFIGURING NETWORK:")
@@ -133,9 +145,17 @@ def compress(input_data_path,config_path,output_path,export_output):
     #==========================================================================
     print("-"*80,"\nLEARNING RATE STUDY")
     
-    lr_lspace,lr_deltas = LearningRateStudy(model=SquashNet,optimiser=optimiser,dataset=dataset,lr_bounds=(-7.0,-1.0),plot=True)         
+    lr_study_flag = False
+    
+    if lr_study_flag:
+        optimal_initial_lr = LearningRateStudy(model=SquashNet,optimiser=optimiser,dataset=dataset,lr_bounds=(-7.0,-1.0),plot=True)         
+    else: pass
 
-    return lr_lspace,lr_deltas
+    bf_study_flag = False
+    
+    if bf_study_flag:
+        pass
+    else: pass
     
     #==========================================================================
     # Compression loop
@@ -171,7 +191,6 @@ def compress(input_data_path,config_path,output_path,export_output):
             
             # Print the current batch number 
             print("\r{:30}{:04}/{:04}".format("Batch Number:",(batch+1),len(dataset)),end="") 
-            # print("\r{:30}{:04}".format("Batch Number:",(batch+1)),end="")                                                                         # <<<<<<<<<
             
             # Run a training step 
             TrainStep(model=SquashNet,optimiser=optimiser,metric=mse_error_metric,volume_batch=volume_batch,values_batch=values_batch)
@@ -269,7 +288,7 @@ if __name__=="__main__":
     # config_path = sys.argv[1]
     
     # # Set input filepath
-    input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy"
+    input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/passage.npy"
     # input_data_path = sys.argv[2]
     
     # # Set output filepath
@@ -277,7 +296,7 @@ if __name__=="__main__":
     # output_path = sys.argv[3]
     
     # Execute compression
-    lr_lspace,lr_deltas = compress(input_data_path=input_data_path,config_path=config_path,output_path=output_path,export_output=True)   
+    vol,val = compress(input_data_path=input_data_path,config_path=config_path,output_path=output_path,export_output=True)   
 
 else: pass
 

@@ -9,6 +9,7 @@ import tensorflow as tf
 import matplotlib
 import matplotlib.pyplot as plt
 
+from sklearn.neighbors import KDTree
 from keras.initializers import glorot_uniform
 
 #==============================================================================
@@ -77,6 +78,43 @@ def GetLearningRate(initial_lr,half_life,epoch):
     return current_lr
 
 #==============================================================================
+   
+def CalculateStandardDeviation(points):
+
+    standard_deviation = np.std(points,axis=None)
+    
+    return standard_deviation
+
+#==============================================================================
+    
+def CalculatePointCloudDensity(points):
+    
+    dimensions = points.shape[-1]
+    
+    kd_tree = KDTree(points,leaf_size=20)
+    
+    distances,neighbours = kd_tree.query(points,k=2**dimensions)
+    
+    max_distances = np.amax(distances,axis=-1)
+    
+    if dimensions == 2:
+        
+        density = np.average(1/(np.pi*(max_distances**2)))
+
+    elif dimensions == 3:
+        
+        density = np.average(3/(4*np.pi*(max_distances**3)))
+        
+    elif dimensions == 4:
+        
+        density = np.average(2/((np.pi**2)*(max_distances**4)))
+        
+    else: pass
+    
+    return density
+
+
+#==============================================================================
 # Define a function to perform/plot an initial learning rate optimisation study
 
 def LearningRateStudy(model,optimiser,dataset,lr_bounds,plot):
@@ -99,7 +137,7 @@ def LearningRateStudy(model,optimiser,dataset,lr_bounds,plot):
     # Iterate through the learning rates (including zero) for computing deltas
     for learning_rate in np.append([0],lr_lspace):
         
-        print("\n{:30}{}".format("Current Learning Rate:",learning_rate))
+        print("\n{:30}{:.3e}".format("Current Learning Rate:",learning_rate))
         
         # Restore the initial weights for each subsequent pass
         ModelClone.set_weights(initial_weights)
@@ -117,43 +155,152 @@ def LearningRateStudy(model,optimiser,dataset,lr_bounds,plot):
         for batch, (volume_batch,values_batch) in enumerate(dataset):
                         
             TrainStep(model=ModelClone,optimiser=optimiser,metric=lr_metric,volume_batch=volume_batch,values_batch=values_batch)
+            
+            if batch == 256: break
         ##
         
         # Fetch and store the performance metric
         lr_errors.append(lr_metric.result().numpy())
         
-        print("{:30}{}".format("Mean-Squared Error:",lr_errors[-1]))
+        print("{:30}{:.3f}".format("Mean-Squared Error:",lr_errors[-1]))
         
     ##
     
     # Compute the deltas relative to zero learning rate
     lr_deltas = lr_errors[1:] - lr_errors[0]
     
+    # Convert 'NaN' values to equal the zero-rate error
+    lr_deltas = np.nan_to_num(lr_deltas,nan=np.nanmax(lr_deltas))
+    
     # Check if plot flag is raised
     if plot:
-        
-        # Plot the results using MatplotLib
-        
-        plt.style.use("Auxiliary_Scripts/plot.mplstyle")  
-        
-        params_plot = {'text.latex.preamble': [r'\usepackage{amsmath}',r'\usepackage{amssymb}'],'axes.grid': True}
-        
-        matplotlib.rcParams.update(params_plot)
-        
-        fig, ax = plt.subplots(1,1,constrained_layout=True)
-        
-        ax.plot(lr_lspace,lr_deltas)
-        
-        ax.set_xscale('log')
                 
+        # Plot the results using MatplotLib
+        plt.style.use("Auxiliary_Scripts/plot.mplstyle")  
+        params_plot = {'text.latex.preamble': [r'\usepackage{amsmath}',r'\usepackage{amssymb}'],'axes.grid': True}
+        matplotlib.rcParams.update(params_plot)
+                
+        lr_argmin = lr_deltas.argmin()
+        
+        # Plot 'lr_deltas' versus 'lr_space'
+        fig, ax = plt.subplots(1,1,constrained_layout=True)
+        ax.plot(lr_lspace[:lr_argmin+1],lr_deltas[:lr_argmin+1],color="b",marker="o",fillstyle="full",markerfacecolor="b",zorder=2)
+        ax.plot(lr_lspace[lr_argmin+0:],lr_deltas[lr_argmin+0:],color="b",marker="o",fillstyle="full",markerfacecolor="r",zorder=1)
+        ax.set_xscale('log') 
         ax.set_title(r"Learning Rate Study: Initial Learning Rate Vs. Initial Loss Recovery")
         ax.set_xlabel(r"Initial Learning Rate")
         ax.set_ylabel(r"Initial Loss Recovery ($\Delta MSE$)")
-        
         plt.show()
         
+        # Plot the gradient of 'lr_deltas' versus 'lr_space'
+        fig, ax = plt.subplots(1,1,constrained_layout=True)
+        ax.plot(lr_lspace[:lr_argmin+1],np.gradient(lr_deltas)[:lr_argmin+1],color="b",marker="o",fillstyle="full",markerfacecolor="b",zorder=2)
+        ax.plot(lr_lspace[lr_argmin+0:],np.gradient(lr_deltas)[lr_argmin+0:],color="b",marker="o",fillstyle="full",markerfacecolor="r",zorder=1)
+        ax.set_xscale('log')
+        ax.set_title(r"Learning Rate Study: Initial Learning Rate Vs. Initial Loss Recovery")
+        ax.set_xlabel(r"Initial Learning Rate")
+        ax.set_ylabel(r"Gradient of Initial Loss Recovery ($\delta(\Delta MSE)$)")
+        plt.show()
+
     else: pass
+
+    print("\n{:30}{:.3e}".format("Maximum Stable Learning Rate:",lr_lspace[lr_argmin]))
     
-    return lr_lspace,lr_deltas  
+    return lr_lspace[lr_argmin]
+
+
+#==============================================================================
+# Define a function to perform/plot an initial learning rate optimisation study
+
+def BatchFractionStudy(model,optimiser,dataset,lr_bounds,plot):
+    
+    # Create a exponentially (regularly) increasing array of learning rates
+    lr_lspace = 10.0 ** np.linspace(lr_bounds[0],lr_bounds[1],25)
+    
+    # Set a performance metric
+    lr_metric = tf.keras.metrics.MeanSquaredError()
+    
+    # Create an empty list to store the first-pass training errors
+    lr_errors = []
+    
+    # Clone the original SquashNet model for this study
+    ModelClone = tf.keras.models.clone_model(model=model)
+    
+    # Initialise the weights of the model using a Glorot initialisation scheme
+    initial_weights = [glorot_uniform()(w.shape) for w in ModelClone.get_weights()]
+    
+    # Iterate through the learning rates (including zero) for computing deltas
+    for learning_rate in np.append([0],lr_lspace):
+        
+        print("\n{:30}{:.3e}".format("Current Learning Rate:",learning_rate))
+        
+        # Restore the initial weights for each subsequent pass
+        ModelClone.set_weights(initial_weights)
+        
+        # Reset/release all states generated by Keras
+        tf.keras.backend.clear_session()
+        
+        # Reset the performance metric
+        lr_metric.reset_state()
+        
+        # Update the learning rate
+        optimiser.lr.assign(learning_rate)  
+        
+        # Iterate through each batch
+        for batch, (volume_batch,values_batch) in enumerate(dataset):
+                        
+            TrainStep(model=ModelClone,optimiser=optimiser,metric=lr_metric,volume_batch=volume_batch,values_batch=values_batch)
+            
+            if batch == 256: break
+        ##
+        
+        # Fetch and store the performance metric
+        lr_errors.append(lr_metric.result().numpy())
+        
+        print("{:30}{:.3f}".format("Mean-Squared Error:",lr_errors[-1]))
+        
+    ##
+    
+    # Compute the deltas relative to zero learning rate
+    lr_deltas = lr_errors[1:] - lr_errors[0]
+    
+    # Convert 'NaN' values to equal the zero-rate error
+    lr_deltas = np.nan_to_num(lr_deltas,nan=np.nanmax(lr_deltas))
+    
+    # Check if plot flag is raised
+    if plot:
+                
+        # Plot the results using MatplotLib
+        plt.style.use("Auxiliary_Scripts/plot.mplstyle")  
+        params_plot = {'text.latex.preamble': [r'\usepackage{amsmath}',r'\usepackage{amssymb}'],'axes.grid': True}
+        matplotlib.rcParams.update(params_plot)
+                
+        lr_argmin = lr_deltas.argmin()
+        
+        # Plot 'lr_deltas' versus 'lr_space'
+        fig, ax = plt.subplots(1,1,constrained_layout=True)
+        ax.plot(lr_lspace[:lr_argmin+1],lr_deltas[:lr_argmin+1],color="b",marker="o",fillstyle="full",markerfacecolor="b",zorder=2)
+        ax.plot(lr_lspace[lr_argmin+0:],lr_deltas[lr_argmin+0:],color="b",marker="o",fillstyle="full",markerfacecolor="r",zorder=1)
+        ax.set_xscale('log') 
+        ax.set_title(r"Learning Rate Study: Initial Learning Rate Vs. Initial Loss Recovery")
+        ax.set_xlabel(r"Initial Learning Rate")
+        ax.set_ylabel(r"Initial Loss Recovery ($\Delta MSE$)")
+        plt.show()
+        
+        # Plot the gradient of 'lr_deltas' versus 'lr_space'
+        fig, ax = plt.subplots(1,1,constrained_layout=True)
+        ax.plot(lr_lspace[:lr_argmin+1],np.gradient(lr_deltas)[:lr_argmin+1],color="b",marker="o",fillstyle="full",markerfacecolor="b",zorder=2)
+        ax.plot(lr_lspace[lr_argmin+0:],np.gradient(lr_deltas)[lr_argmin+0:],color="b",marker="o",fillstyle="full",markerfacecolor="r",zorder=1)
+        ax.set_xscale('log')
+        ax.set_title(r"Learning Rate Study: Initial Learning Rate Vs. Initial Loss Recovery")
+        ax.set_xlabel(r"Initial Learning Rate")
+        ax.set_ylabel(r"Gradient of Initial Loss Recovery ($\delta(\Delta MSE)$)")
+        plt.show()
+
+    else: pass
+
+    print("\n{:30}{:.3e}".format("Maximum Stable Learning Rate:",lr_lspace[lr_argmin]))
+    
+    return lr_lspace[lr_argmin]
 
 #==============================================================================
