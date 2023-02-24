@@ -4,6 +4,7 @@
 # Import libraries and set flags
 
 import math
+import time
 import numpy as np
 import tensorflow as tf
 import matplotlib
@@ -78,38 +79,49 @@ def GetLearningRate(initial_lr,half_life,epoch):
     return current_lr
 
 #==============================================================================
-   
+# Define a function to calculate the standard deviation of points in 1-D
+
 def CalculateStandardDeviation(points):
 
+    # Compute standard deviation ignoring the dimensionality
     standard_deviation = np.std(points,axis=None)
     
     return standard_deviation
 
 #==============================================================================
-    
+# Define a function to calculate the pointcloud density of points in N-D    
+
 def CalculatePointCloudDensity(points):
     
+    # Extract the number of dimensions associated with the point cloud
     dimensions = points.shape[-1]
     
+    # Instantiate a KDTree object on the pointcloud data
     kd_tree = KDTree(points,leaf_size=20)
     
+    # Query the KDTree for the k-nearest neighbours data
     distances,neighbours = kd_tree.query(points,k=2**dimensions)
     
+    # Compute the radius of the furthest k-nearest point
     max_distances = np.amax(distances,axis=-1)
     
+    # Compute the density using circle, sphere or 4-ball volume
     if dimensions == 2:
         
+        # / (pi * r^2)
         density = np.average(1/(np.pi*(max_distances**2)))
 
     elif dimensions == 3:
         
+        # / (4/3 * pi * r^3) 
         density = np.average(3/(4*np.pi*(max_distances**3)))
         
     elif dimensions == 4:
         
+        # / (1/2 * pi^2 * r^4)
         density = np.average(2/((np.pi**2)*(max_distances**4)))
         
-    else: pass
+    else: return None
     
     return density
 
@@ -117,7 +129,17 @@ def CalculatePointCloudDensity(points):
 #==============================================================================
 # Define a function to perform/plot an initial learning rate optimisation study
 
-def LearningRateStudy(model,optimiser,dataset,lr_bounds,plot):
+def LRStudy(model,volume,values,bf_guess,lr_bounds,plot):
+    
+    # Import the 'MakeDataset' function from 'data_management.py'
+    from data_management import MakeDataset
+    
+    # Guess a usable batch size and create a temporary TF dataset 
+    batch_size = math.floor(bf_guess*values.size)
+    dataset = MakeDataset(volume=volume,values=values,batch_size=batch_size,repeat=False)
+    
+    # Create a temportary local training optimiser
+    optimiser = tf.keras.optimizers.Adam()
     
     # Create a exponentially (regularly) increasing array of learning rates
     lr_lspace = 10.0 ** np.linspace(lr_bounds[0],lr_bounds[1],25)
@@ -156,7 +178,7 @@ def LearningRateStudy(model,optimiser,dataset,lr_bounds,plot):
                         
             TrainStep(model=ModelClone,optimiser=optimiser,metric=lr_metric,volume_batch=volume_batch,values_batch=values_batch)
             
-            if batch == 256: break
+            if batch > len(dataset)/8: break
         ##
         
         # Fetch and store the performance metric
@@ -184,7 +206,7 @@ def LearningRateStudy(model,optimiser,dataset,lr_bounds,plot):
         
         # Plot 'lr_deltas' versus 'lr_space'
         fig, ax = plt.subplots(1,1,constrained_layout=True)
-        ax.plot(lr_lspace[:lr_argmin+1],lr_deltas[:lr_argmin+1],color="b",marker="o",fillstyle="full",markerfacecolor="b",zorder=2)
+        ax.plot(lr_lspace[:lr_argmin+1],lr_deltas[:lr_argmin+1],color="b",marker="o",fillstyle="full",markerfacecolor="w",zorder=2)
         ax.plot(lr_lspace[lr_argmin+0:],lr_deltas[lr_argmin+0:],color="b",marker="o",fillstyle="full",markerfacecolor="r",zorder=1)
         ax.set_xscale('log') 
         ax.set_title(r"Learning Rate Study: Initial Learning Rate Vs. Initial Loss Recovery")
@@ -194,7 +216,7 @@ def LearningRateStudy(model,optimiser,dataset,lr_bounds,plot):
         
         # Plot the gradient of 'lr_deltas' versus 'lr_space'
         fig, ax = plt.subplots(1,1,constrained_layout=True)
-        ax.plot(lr_lspace[:lr_argmin+1],np.gradient(lr_deltas)[:lr_argmin+1],color="b",marker="o",fillstyle="full",markerfacecolor="b",zorder=2)
+        ax.plot(lr_lspace[:lr_argmin+1],np.gradient(lr_deltas)[:lr_argmin+1],color="b",marker="o",fillstyle="full",markerfacecolor="w",zorder=2)
         ax.plot(lr_lspace[lr_argmin+0:],np.gradient(lr_deltas)[lr_argmin+0:],color="b",marker="o",fillstyle="full",markerfacecolor="r",zorder=1)
         ax.set_xscale('log')
         ax.set_title(r"Learning Rate Study: Initial Learning Rate Vs. Initial Loss Recovery")
@@ -210,18 +232,27 @@ def LearningRateStudy(model,optimiser,dataset,lr_bounds,plot):
 
 
 #==============================================================================
-# Define a function to perform/plot an initial learning rate optimisation study
+# Define a function to perform/plot a batch fraction optimisation study
 
-def BatchFractionStudy(model,optimiser,dataset,lr_bounds,plot):
+def BFStudy(model,volume,values,lr_guess,bf_bounds,plot):
+    
+    # Import the 'MakeDataset' function from 'data_management.py'
+    from data_management import MakeDataset
+    
+    # Create a temportary optimiser and specify the learning rate
+    optimiser = tf.keras.optimizers.Adam()
+    optimiser.lr.assign(lr_guess)
     
     # Create a exponentially (regularly) increasing array of learning rates
-    lr_lspace = 10.0 ** np.linspace(lr_bounds[0],lr_bounds[1],25)
+    bf_lspace = np.linspace(bf_bounds[0],bf_bounds[1],25)
     
     # Set a performance metric
-    lr_metric = tf.keras.metrics.MeanSquaredError()
+    bf_metric = tf.keras.metrics.MeanSquaredError()
     
-    # Create an empty list to store the first-pass training errors
-    lr_errors = []
+    # Create an empty list to store the first-pass training errors and time
+    bf_errors = []
+    bf_actual = []
+    bf_times  = []
     
     # Clone the original SquashNet model for this study
     ModelClone = tf.keras.models.clone_model(model=model)
@@ -230,9 +261,13 @@ def BatchFractionStudy(model,optimiser,dataset,lr_bounds,plot):
     initial_weights = [glorot_uniform()(w.shape) for w in ModelClone.get_weights()]
     
     # Iterate through the learning rates (including zero) for computing deltas
-    for learning_rate in np.append([0],lr_lspace):
+    for batch_fraction in bf_lspace:
         
-        print("\n{:30}{:.3e}".format("Current Learning Rate:",learning_rate))
+        # Calculate the nearest batch size and the actual batch fraction
+        batch_size = math.floor(batch_fraction*values.size)
+        bf_actual.append(batch_size/values.size)
+        
+        print("\n{:30}{:.3e}".format("Current Batch Fraction:",batch_fraction),end="")
         
         # Restore the initial weights for each subsequent pass
         ModelClone.set_weights(initial_weights)
@@ -241,31 +276,44 @@ def BatchFractionStudy(model,optimiser,dataset,lr_bounds,plot):
         tf.keras.backend.clear_session()
         
         # Reset the performance metric
-        lr_metric.reset_state()
+        bf_metric.reset_state()
         
-        # Update the learning rate
-        optimiser.lr.assign(learning_rate)  
+        # Guess a learning rate and create a temporary TF dataset 
+        dataset = MakeDataset(volume=volume,values=values,batch_size=batch_size,repeat=False)
+        
+        # Start timing
+        init_time_tick = time.time()
         
         # Iterate through each batch
         for batch, (volume_batch,values_batch) in enumerate(dataset):
-                        
-            TrainStep(model=ModelClone,optimiser=optimiser,metric=lr_metric,volume_batch=volume_batch,values_batch=values_batch)
             
-            if batch == 256: break
+            if batch ==1: 
+                init_time_tock = time.time()
+                time_time_tick = time.time()
+            else: pass
+                        
+            TrainStep(model=ModelClone,optimiser=optimiser,metric=bf_metric,volume_batch=volume_batch,values_batch=values_batch)
+            
+            if batch > len(dataset)/8: break
         ##
         
-        # Fetch and store the performance metric
-        lr_errors.append(lr_metric.result().numpy())
+        # Stop timing and append the time
+        time_time_tock = time.time()
+        bf_times.append(((init_time_tock-init_time_tick)+8*(time_time_tock-time_time_tick)))
         
-        print("{:30}{:.3f}".format("Mean-Squared Error:",lr_errors[-1]))
+        # Fetch and store the performance metric
+        bf_errors.append(bf_metric.result().numpy())
+        
+        print("{:30}{:.3f}".format("Mean-Squared Error:",bf_errors[-1]))
+        print("{:30}{:.3f}".format("Elapsed Time/Batch:",bf_times[-1]) )
+
+
         
     ##
     
-    # Compute the deltas relative to zero learning rate
-    lr_deltas = lr_errors[1:] - lr_errors[0]
-    
-    # Convert 'NaN' values to equal the zero-rate error
-    lr_deltas = np.nan_to_num(lr_deltas,nan=np.nanmax(lr_deltas))
+    bf_actual = np.array(bf_actual)
+    bf_errors = np.array(bf_errors)
+    bf_times = np.array(bf_times) / len(dataset)
     
     # Check if plot flag is raised
     if plot:
@@ -274,33 +322,50 @@ def BatchFractionStudy(model,optimiser,dataset,lr_bounds,plot):
         plt.style.use("Auxiliary_Scripts/plot.mplstyle")  
         params_plot = {'text.latex.preamble': [r'\usepackage{amsmath}',r'\usepackage{amssymb}'],'axes.grid': True}
         matplotlib.rcParams.update(params_plot)
-                
-        lr_argmin = lr_deltas.argmin()
-        
-        # Plot 'lr_deltas' versus 'lr_space'
-        fig, ax = plt.subplots(1,1,constrained_layout=True)
-        ax.plot(lr_lspace[:lr_argmin+1],lr_deltas[:lr_argmin+1],color="b",marker="o",fillstyle="full",markerfacecolor="b",zorder=2)
-        ax.plot(lr_lspace[lr_argmin+0:],lr_deltas[lr_argmin+0:],color="b",marker="o",fillstyle="full",markerfacecolor="r",zorder=1)
-        ax.set_xscale('log') 
-        ax.set_title(r"Learning Rate Study: Initial Learning Rate Vs. Initial Loss Recovery")
-        ax.set_xlabel(r"Initial Learning Rate")
-        ax.set_ylabel(r"Initial Loss Recovery ($\Delta MSE$)")
+                        
+        # Plot 'bf_errors' and 'bf_times' versus 'bf_actual'
+        fig, ax1 = plt.subplots(1,1,constrained_layout=True)
+        ax2 = ax1.twinx()
+        ax1.plot(bf_actual,bf_errors,color="b",marker="o",fillstyle="full",markerfacecolor="w",zorder=1)
+        ax2.plot(bf_actual,bf_times ,color="r",marker="o",fillstyle="full",markerfacecolor="w",zorder=2)
+        ax1.set_xscale('linear') 
+        ax1.set_title(r"Batch Fraction Study: B'Frac Vs. Init' Loss Recovery Vs. Time")
+        ax1.set_xlabel(r"Batch Fraction")
+        ax1.set_ylabel(r"Initial Loss Recovery ($\Delta MSE$)",color="b")
+        ax2.set_ylabel(r"Per-Batch Training TIme [s]",color="r")
         plt.show()
         
-        # Plot the gradient of 'lr_deltas' versus 'lr_space'
-        fig, ax = plt.subplots(1,1,constrained_layout=True)
-        ax.plot(lr_lspace[:lr_argmin+1],np.gradient(lr_deltas)[:lr_argmin+1],color="b",marker="o",fillstyle="full",markerfacecolor="b",zorder=2)
-        ax.plot(lr_lspace[lr_argmin+0:],np.gradient(lr_deltas)[lr_argmin+0:],color="b",marker="o",fillstyle="full",markerfacecolor="r",zorder=1)
-        ax.set_xscale('log')
-        ax.set_title(r"Learning Rate Study: Initial Learning Rate Vs. Initial Loss Recovery")
-        ax.set_xlabel(r"Initial Learning Rate")
-        ax.set_ylabel(r"Gradient of Initial Loss Recovery ($\delta(\Delta MSE)$)")
+        # Plot 'bf_errors * bf_times' versus 'bf_actual'
+        fig, ax1 = plt.subplots(1,1,constrained_layout=True)
+        ax1.plot(bf_actual,(bf_errors*bf_times),color="b",marker="o",fillstyle="full",markerfacecolor="w",zorder=1)
+        ax1.set_xscale('linear') 
+        ax1.set_title(r"Batch Fraction Study: B'Frac. Vs. Init' Loss Recovery Vs. Time")
+        ax1.set_xlabel(r"Batch Fraction")
+        ax1.set_ylabel(r"Initial Loss Recovery $\times$ Per-Batch Training Time [1/s]")
         plt.show()
-
+        
+        # Plot 'bf_errors^2 * bf_times' versus 'bf_actual'
+        fig, ax1 = plt.subplots(1,1,constrained_layout=True)
+        ax1.plot(bf_actual,(bf_errors*bf_errors*bf_times),color="b",marker="o",fillstyle="full",markerfacecolor="w",zorder=1)
+        ax1.set_xscale('linear') 
+        ax1.set_title(r"Batch Fraction Study: B'Frac. Vs. Init' Loss Recovery Vs. Time")
+        ax1.set_xlabel(r"Batch Fraction")
+        ax1.set_ylabel(r"Initial Loss Recovery$^2$ $\times$ Per-Batch Training Time [1/s]")
+        plt.show()
+        
+        # Plot 'bf_errors * bf_times^2' versus 'bf_actual'
+        fig, ax1 = plt.subplots(1,1,constrained_layout=True)
+        ax1.plot(bf_actual,(bf_errors*bf_times*bf_times),color="b",marker="o",fillstyle="full",markerfacecolor="w",zorder=1)
+        ax1.set_xscale('linear') 
+        ax1.set_title(r"Batch Fraction Study: B'Frac. Vs. Init' Loss Recovery Vs. Time")
+        ax1.set_xlabel(r"Batch Fraction")
+        ax1.set_ylabel(r"Initial Loss Recovery $\times$ Per-Batch Training Time$^2$ [1/s$^2$]")
+        plt.show()
+      
     else: pass
 
-    print("\n{:30}{:.3e}".format("Maximum Stable Learning Rate:",lr_lspace[lr_argmin]))
+    # print("\n{:30}{:.3e}".format("Maximum Stable Learning Rate:",lr_lspace[lr_argmin]))
     
-    return lr_lspace[lr_argmin]
+    return bf_actual,bf_errors,bf_times
 
 #==============================================================================

@@ -37,7 +37,8 @@ def compress(input_data_path,config_path,output_path,export_output):
         tf.config.experimental.set_memory_growth(gpus[0],True)
     else:        
         print("\n{:30}{} - {}".format("CUDA GPU(s) Detected:",len(gpus),"Hardware Acceleration Is Disabled"))
-        
+        return None
+    
     #==========================================================================
     # Check whether the input size exceeds available memory
     
@@ -87,19 +88,20 @@ def compress(input_data_path,config_path,output_path,export_output):
     
     #==========================================================================
     # Calculate statistics on the input volume
+    print("-"*80,"\nCALCULATING INPUT STATISTICS:")
     
     stats_flag = False
+    print("\n{:30}{}".format("Statistics Study Flag:",stats_flag))
     
-    if stats_flag:
+    if stats_flag:        
         values_standard_deviation = CalculateStandardDeviation(i_values.flat)
+        print("\n{:30}{}".format("Values Standard Deviation:",values_standard_deviation))
         volume_pointcloud_density = CalculatePointCloudDensity(i_volume.flat)
+        print("\n{:30}{}".format("Volume PointCloud Density:",volume_pointcloud_density))
     else: pass
-    
-    return i_volume,i_values
 
     #==========================================================================    
     # Configure network 
-    
     print("-"*80,"\nCONFIGURING NETWORK:")
     
     # Create a 'ConfigurationClass' object to store net parameters 
@@ -134,27 +136,32 @@ def compress(input_data_path,config_path,output_path,export_output):
     
     # Choose between batch fraction and size (for experiments only)
     if (network_cfg.batch_fraction):
+        print("\n{:30}{}".format("User Input Batch Fraction:",network_cfg.batch_fraction))
         network_cfg.batch_size = math.floor(network_cfg.batch_fraction*network_cfg.size)
         network_cfg.batch_fraction = (network_cfg.batch_size/network_cfg.size)
-    else: pass
-    
+    else: pass  
+
     # Generate a TF dataset to supply volume and values batches during training 
     dataset = MakeDataset(volume=i_volume,values=i_values,batch_size=network_cfg.batch_size,repeat=False)
-    # dataset = MakeDatasetFromGenerator(volume=i_volume,values=i_values,batch_size=network_cfg.batch_size,repeat=False)                      # <<<<<<<<<
     
     #==========================================================================
-    print("-"*80,"\nLEARNING RATE STUDY")
+    # Perform a-priori studies on batch fraction and initial learning rate
+    print("-"*80,"\nPERFORMING A-PRIORI STUDIES:")
     
-    lr_study_flag = False
-    
-    if lr_study_flag:
-        optimal_initial_lr = LearningRateStudy(model=SquashNet,optimiser=optimiser,dataset=dataset,lr_bounds=(-7.0,-1.0),plot=True)         
-    else: pass
-
     bf_study_flag = False
+    print("\n{:30}{}".format("Batch Fraction Study Flag:",bf_study_flag))
     
     if bf_study_flag:
-        pass
+        print("\nRunning Batch Fraction Study:")
+        bf_actual,bf_errors,bf_times = BFStudy(model=SquashNet,volume=i_volume,values=i_values,lr_guess=1.0e-4,bf_bounds=(1.0e-4,2.5e-3),plot=True)  
+    else: pass
+    
+    lr_study_flag = False
+    print("\n{:30}{}".format("Learning Rate Study Flag:",bf_study_flag))
+    
+    if lr_study_flag:
+        print("\nRunning Learning Rate Study:")
+        optimal_lr = LRStudy(model=SquashNet,volume=i_volume,values=i_values,bf_guess=5.0e-4,lr_bounds=(-7.000,-1.000),plot=True)         
     else: pass
     
     #==========================================================================
@@ -288,7 +295,7 @@ if __name__=="__main__":
     # config_path = sys.argv[1]
     
     # # Set input filepath
-    input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/passage.npy"
+    input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy"
     # input_data_path = sys.argv[2]
     
     # # Set output filepath
@@ -296,7 +303,7 @@ if __name__=="__main__":
     # output_path = sys.argv[3]
     
     # Execute compression
-    vol,val = compress(input_data_path=input_data_path,config_path=config_path,output_path=output_path,export_output=True)   
+    compress(input_data_path=input_data_path,config_path=config_path,output_path=output_path,export_output=True)   
 
 else: pass
 
