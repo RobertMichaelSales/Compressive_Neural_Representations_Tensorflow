@@ -1,6 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 15.02.2023  \\   Author: Robert Sales """
-
-# Changes made to lines 135/6 to print progress when training with new dataset.
+""" Created: 18.07.2022  \\  Updated: 24.02.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags

@@ -4,7 +4,7 @@
     "epochs": 30,
     "half_life": 3,
     "hidden_layers": 8,
-    "initial_lr": 0.0005,
+    "initial_lr": 0.005,
     "input_data_path": "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy",
     "min_neurons_per_layer": 1,
     "network_name": "test",
