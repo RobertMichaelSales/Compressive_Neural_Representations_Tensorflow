@@ -1,4 +1,4 @@
-""" Created: 15.11.2022  \\  Updated: 05.01.2023  \\   Author: Robert Sales """
+""" Created: 15.11.2022  \\  Updated: 09.02.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -9,22 +9,31 @@ import numpy as np
 # Define a function to decode the network layer dimensions (architecture) from
 
 def DecodeArchitecture(architecture_path):
+    
+    # Determine the number of bytes per value
+    bytes_per_value = len(np.array([1]).astype('uint16').tobytes())
 
     # Open the architecture file in 'read as binary' mode
     with open(architecture_path,"rb") as file:
-    
-        # Read the architecture file (everything in one pass)
-        layer_dimensions_as_bytestring = file.read()
         
-        # Convert the architecture bytestring into a Python list
-        layer_dimensions = np.frombuffer(layer_dimensions_as_bytestring,dtype=np.uint16).tolist()
+        # Read the total number of layer dimensions as bytestring
+        total_num_layers_as_bytestring = file.read(1*bytes_per_value)
+        total_num_layers = int(np.frombuffer(total_num_layers_as_bytestring,dtype='uint16'))
+        
+        # Read the list of network layer dimensions as bytestring
+        layer_dimensions_as_bytestring = file.read(total_num_layers*bytes_per_value)
+        layer_dimensions = list(np.frombuffer(layer_dimensions_as_bytestring,dtype=np.uint16))
+    
+        # Read the number of positional encoding frequencies as bytestring
+        frequencies_as_bytestring = file.read(1*bytes_per_value)
+        frequencies = int(np.frombuffer(frequencies_as_bytestring,dtype='uint16'))
         
         # Flush the buffer and close the file 
         file.flush()
         file.close()
     ##
     
-    return layer_dimensions
+    return layer_dimensions,frequencies
 
 #==============================================================================
 
@@ -37,7 +46,7 @@ def DecodeParameters(network,parameters_path):
     layer_names = sorted(list(layer_names),key=SortLayerNames)
     
     # Determine the number of bytes per value
-    bytes_per_float = len(np.array([1.0]).astype(np.float32).tobytes())
+    bytes_per_value = len(np.array([1.0]).astype('float32').tobytes())
     
     # Open the weights file in 'read as binary' mode
     with open(parameters_path,"rb") as file:
@@ -52,10 +61,10 @@ def DecodeParameters(network,parameters_path):
             layer = network.get_weight_paths()[layer_name].numpy()
             
             # Read the current layer weights bytestring
-            weights_as_bytestring = file.read(layer.size*bytes_per_float)    
+            weights_as_bytestring = file.read(layer.size*bytes_per_value)    
             
             # Convert the bytestring into a 1-d array
-            weights = np.frombuffer(weights_as_bytestring,dtype=np.float32)
+            weights = np.frombuffer(weights_as_bytestring,dtype='float32')
             
             # Resize the 1-d array according to layer.shape
             weights = np.reshape(weights,layer.shape,order="C")
@@ -65,10 +74,10 @@ def DecodeParameters(network,parameters_path):
         ##
         
         # Read the values bounds bytestring
-        bounds_as_bytestring = file.read(bytes_per_float+bytes_per_float)
+        bounds_as_bytestring = file.read(bytes_per_value+bytes_per_value)
         
         # Convert the bytestring into a 1-d array
-        values_bounds = np.frombuffer(bounds_as_bytestring,dtype=np.float32)
+        values_bounds = np.frombuffer(bounds_as_bytestring,dtype='float32')
         
         # Flush the buffer and close the file 
         file.flush()

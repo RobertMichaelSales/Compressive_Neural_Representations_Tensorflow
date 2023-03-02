@@ -1,0 +1,6 @@
+{
+    "frequencies": 0,
+    "hidden_layers": 8,
+    "network_name": "squashnet_test",
+    "target_compression_ratio": 100.0
+}

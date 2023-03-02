@@ -1,4 +1,4 @@
-""" Created: 30.11.2022  \\  Updated: 05.01.2023  \\   Author: Robert Sales """
+""" Created: 30.11.2022  \\  Updated: 17.01.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -15,15 +15,15 @@ import tensorflow as tf
 #==============================================================================
 # Import user-defined libraries 
 
-from data_management         import DataClass
-from network_cfguration   import ConfigurationClass
+from data_management_edited  import DataClass,MakeDataset,SaveData
+from network_configuration   import ConfigurationClass
 from network_encoder         import EncodeParameters,EncodeArchitecture
 from network_model           import ConstructNetwork
-from compress_utilities      import TrainStep,GetLearningRate,SignalToNoise,MakeDataset
+from compress_utilities      import TrainStep,GetLearningRate,SignalToNoise
 
 #==============================================================================
     
-def compress(volume_path,config_path,output_path,export_output):
+def compress(input_data_path,config_path,output_path,export_output):
     
     print("-"*80,"\nNEURCOMP: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
         
@@ -44,14 +44,19 @@ def compress(volume_path,config_path,output_path,export_output):
     
     print("-"*80,"\nINITIALISING DATA I/O:")
     
-    # Create 'DataClass' objects to store i/o data
-    i_data, o_data = DataClass(), DataClass()
+    # Create 'DataClass' objects to store i/o volume and values
+    i_volume = DataClass(data_type="volume")
+    i_values = DataClass(data_type="values")
+    o_volume = DataClass(data_type="volume")
+    o_values = DataClass(data_type="values")
     
     # Load and normalise input data
-    i_data.LoadData(volume_path=volume_path,i_dimensions=3,o_dimensions=1,normalise=True)
+    i_volume.LoadData(input_data_path=input_data_path,dimensions=(3,1),normalise=True)
+    i_values.LoadData(input_data_path=input_data_path,dimensions=(3,1),normalise=True)
     
     # Copy meta-data from the input
-    o_data.CopyMetaData(DataClassObject=i_data)
+    o_volume.CopyData(DataClassObject=i_volume)
+    o_values.CopyData(DataClassObject=i_values)
     
     #==========================================================================
     # Configure network 
@@ -62,7 +67,7 @@ def compress(volume_path,config_path,output_path,export_output):
     network_cfg = ConfigurationClass(config_path=config_path)
     
     # Generate the network structure based on the input dimensions
-    network_cfg.GenerateStructure(i_dimensions=i_data.i_dimensions,o_dimensions=i_data.o_dimensions,i_size=i_data.i_size)
+    network_cfg.GenerateStructure(i_dimensions=i_volume.dimensions,o_dimensions=i_values.dimensions,size=i_values.size)
     
     # Build NeurComp from the config information
     SquashNet = ConstructNetwork(layer_dimensions=network_cfg.layer_dimensions)
@@ -87,7 +92,7 @@ def compress(volume_path,config_path,output_path,export_output):
     print("-"*80,"\nCONFIGURING DATASET:")
     
     # Generate a TF dataset to supply volume and values batches during training 
-    dataset = i_data.MakeDataset(batch_size=network_cfg.batch_size,repeat=False)
+    dataset = MakeDataset(volume=i_volume,values=i_values,batch_size=network_cfg.batch_size,repeat=False)
         
     #==========================================================================
     # Compression loop
@@ -97,7 +102,7 @@ def compress(volume_path,config_path,output_path,export_output):
     training_data = {"epoch": [],"error": [],"time": [],"learning_rate": []}
     
     # Determine the number of batches per epoch and in total
-    batches_per_epoch = int(math.ceil(i_data.size/network_cfg.batch_size))
+    batches_per_epoch = int(math.ceil(i_values.size/network_cfg.batch_size))
     total_num_batches = int(network_cfg.epochs*batches_per_epoch)
         
     # Start the overall training timer
@@ -186,7 +191,7 @@ def compress(volume_path,config_path,output_path,export_output):
     print("\n",end="")
     
     # Extract value bounds
-    values_bounds = (i_data.values_max,i_data.values_min)
+    values_bounds = (i_values.max,i_values.min)
     
     # Save the parameters
     parameters_path = os.path.join(output_path,network_cfg.network_name,"parameters.bin")
@@ -210,14 +215,14 @@ def compress(volume_path,config_path,output_path,export_output):
     print("\n",end="")
 
     # Generate the output volume and calculate the PSNR
-    o_data.flat_values = SquashNet.predict(o_data.flat_volume,batch_size=network_cfg.batch_size,verbose="1")
-    o_data.values = np.reshape(o_data.flat_values,(o_data.volume.shape[:-1]+(1,)),order="C")
-    print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_data.values,pred=o_data.values)))
+    o_values.flat = SquashNet.predict(o_volume.flat,batch_size=network_cfg.batch_size,verbose="1")
+    o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(1,)),order="C")
+    print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_values.data,pred=o_values.data)))
 
     # Save the output volume to ".npy" and ".vtk" files
-    output_volume_path = os.path.join(output_path,network_cfg.network_name,"output_volume")
-    o_data.SaveData(output_volume_path=output_volume_path,reverse_normalise=True)
-    print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_volume_path.split("/")[-1]))
+    output_data_path = os.path.join(output_path,network_cfg.network_name,"output_volume")
+    SaveData(output_data_path=output_data_path,volume=o_volume,values=o_values,reverse_normalise=True)
+    print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1]))
     
     #==========================================================================
     print("-"*80,"\n")
