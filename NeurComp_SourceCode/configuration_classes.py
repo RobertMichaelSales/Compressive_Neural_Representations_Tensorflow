@@ -1,62 +1,79 @@
-""" Created: 18.07.2022  \\  Updated: 09.02.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 01.03.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
 
-import os, json
 import numpy as np
 
 #==============================================================================
-# Define a class for generating, managing and storing the network configuration
+# Define a class with dictionary functionality to store arbitrary attributes 
 
-class ConfigurationClass():
+class GenericConfigurationClass(dict):
     
     #==========================================================================
-    # Define the initialisation constructor function for 'NetworkConfigClass'
-    # Note: These are the only user-configurable hyperparameters
+    # Define the initialisation constructor function to convert a dictionary to
+    # an object: dictionary[key] = value --> object.key = value
 
-    def __init__(self,config_path):
+    def __init__(self,config_dict={}):
         
-        # If config file IS provided: 
-        if os.path.exists(config_path):
+        for key in config_dict.keys():
             
-            print("\n{:30}{}".format("Loaded network config:",config_path.split("/")[-1]))
-            
-            # Load config data file
-            with open(config_path) as config_file:
-                config_dictionary = json.load(config_file)
+            self.__setitem__(key,config_dict[key])
+    
+        return None
+    
+    #==========================================================================
+    # Redefine the method which handles/intercepts inexistent attribute lookups
+    
+    def __getattr__(self, key):
+        
+        raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__,key))
+        
+        # attribute = self.get(key)
+        
+        # return attribute
+    
+    #==========================================================================    
+    # Redefine the method that is called when attribute assignment is attempted
+    # on the class
+    
+    def __setattr__(self,key,value):
+        
+        self.__setitem__(key,value)
+        
+        return None
+    
+    #==========================================================================
+    # Redefine the method that is called when implementing assignment self[key]
+    # such that the class has dictionary functionality
+    
+    def __setitem__(self,key,value):
+        
+        super(GenericConfigurationClass,self).__setitem__(key,value)
+        self.__dict__.update({key:value})
+    
+        return None
+    
+    #==========================================================================
+    
+#==============================================================================
+# Define a class to manage the network configuration
 
-            # Set config attributes 
-            for attribute in config_dictionary.keys():
-                setattr(self,attribute,config_dictionary[attribute])
-                
-        # If config file NOT provided: 
-        else:
-            
-            print("\n{:30}{}".format("Loaded network config:","default"))
-               
-            # Set network hyperparameters (default)
-            self.network_name                       = "squashnet_default"
-            self.target_compression_ratio           = 50        
-            self.hidden_layers                      = 8
-            self.min_neurons_per_layer              = 10
-            self.frequencies                        = 0
-            
-            # Set training hyperparameters (default)
-            self.initial_lr                         = 5e-3
-            self.batch_size                         = 1024
-            self.batch_fraction                     = None
-            self.epochs                             = 1
-            self.half_life                          = 3
-            
-        print("\n{:30}{:.2f}".format("Target compression ratio:",self.target_compression_ratio))
+class NetworkConfigurationClass(GenericConfigurationClass):
+    
+    #==========================================================================
+    # Define the initialisation constructor function (with inheritance from the
+    # 'GenericConfigurationClass' class)
+
+    def __init__(self,config_dict={}):
+        
+        super().__init__(config_dict)
            
         return None
     
     #==========================================================================
     # Define a function to generate the network structure/dimensions from input
-    # dimensions, output dimensions and input size. The 'layer_dimensions' list
-    # has dimensions for each layer as its elements
+    # dimensions, output dimensions and input size.
     
     def GenerateStructure(self,i_dimensions,o_dimensions,size):
                 
@@ -87,12 +104,12 @@ class ConfigurationClass():
 
     #==========================================================================
     # Define a function to compute the minimum number of neurons needed by each 
-    # layer in to achieve (just exceed) the target compression ratio
+    # layer in order to achieve (just exceed) the target compression ratio
 
     def NeuronsPerLayer(self):
       
-        # Start searching from the minimum allowed number of neurons per layer
-        self.neurons_per_layer = self.min_neurons_per_layer
+        # Start searching from the minimum of 1 neuron per layer
+        self.neurons_per_layer = int(1)
           
         # Incriment neurons until the network capacity exceeds the target size
         while (self.TotalParameters() < self.target_size):
@@ -158,5 +175,8 @@ class ConfigurationClass():
                 self.num_of_parameters += (self.neurons_per_layer * self.neurons_per_layer) + self.neurons_per_layer        
                   
         return self.num_of_parameters
-
-#=============================================================================#
+    
+    #==========================================================================
+    
+    
+#==============================================================================   

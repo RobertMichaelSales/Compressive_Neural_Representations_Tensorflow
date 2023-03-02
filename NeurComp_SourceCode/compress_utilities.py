@@ -307,8 +307,6 @@ def BFStudy(model,volume,values,lr_guess,bf_bounds,plot):
         print("{:30}{:.3f}".format("Mean-Squared Error:",bf_errors[-1]))
         print("{:30}{:.3f}".format("Elapsed Time/Batch:",bf_times[-1]) )
 
-
-        
     ##
     
     bf_actual = np.array(bf_actual)
@@ -334,37 +332,8 @@ def BFStudy(model,volume,values,lr_guess,bf_bounds,plot):
         ax1.set_ylabel(r"Initial Loss Recovery ($\Delta MSE$)",color="b")
         ax2.set_ylabel(r"Per-Batch Training TIme [s]",color="r")
         plt.show()
-        
-        # Plot 'bf_errors * bf_times' versus 'bf_actual'
-        fig, ax1 = plt.subplots(1,1,constrained_layout=True)
-        ax1.plot(bf_actual,(bf_errors*bf_times),color="b",marker="o",fillstyle="full",markerfacecolor="w",zorder=1)
-        ax1.set_xscale('linear') 
-        ax1.set_title(r"Batch Fraction Study: B'Frac. Vs. Init' Loss Recovery Vs. Time")
-        ax1.set_xlabel(r"Batch Fraction")
-        ax1.set_ylabel(r"Initial Loss Recovery $\times$ Per-Batch Training Time [1/s]")
-        plt.show()
-        
-        # Plot 'bf_errors^2 * bf_times' versus 'bf_actual'
-        fig, ax1 = plt.subplots(1,1,constrained_layout=True)
-        ax1.plot(bf_actual,(bf_errors*bf_errors*bf_times),color="b",marker="o",fillstyle="full",markerfacecolor="w",zorder=1)
-        ax1.set_xscale('linear') 
-        ax1.set_title(r"Batch Fraction Study: B'Frac. Vs. Init' Loss Recovery Vs. Time")
-        ax1.set_xlabel(r"Batch Fraction")
-        ax1.set_ylabel(r"Initial Loss Recovery$^2$ $\times$ Per-Batch Training Time [1/s]")
-        plt.show()
-        
-        # Plot 'bf_errors * bf_times^2' versus 'bf_actual'
-        fig, ax1 = plt.subplots(1,1,constrained_layout=True)
-        ax1.plot(bf_actual,(bf_errors*bf_times*bf_times),color="b",marker="o",fillstyle="full",markerfacecolor="w",zorder=1)
-        ax1.set_xscale('linear') 
-        ax1.set_title(r"Batch Fraction Study: B'Frac. Vs. Init' Loss Recovery Vs. Time")
-        ax1.set_xlabel(r"Batch Fraction")
-        ax1.set_ylabel(r"Initial Loss Recovery $\times$ Per-Batch Training Time$^2$ [1/s$^2$]")
-        plt.show()
       
     else: pass
-
-    # print("\n{:30}{:.3e}".format("Maximum Stable Learning Rate:",lr_lspace[lr_argmin]))
     
     return bf_actual,bf_errors,bf_times
 

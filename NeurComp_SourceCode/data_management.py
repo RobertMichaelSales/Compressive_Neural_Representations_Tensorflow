@@ -27,7 +27,6 @@ class DataClass():
         # Set input exceeds memory
         self.exceeds_memory = exceeds_memory
     
-        
         return None
     
     #==========================================================================

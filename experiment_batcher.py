@@ -1,4 +1,4 @@
-""" Created: 10.11.2022  \\  Updated: 31.01.2023  \\   Author: Robert Sales """
+""" Created: 10.11.2022  \\  Updated: 01.03.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries
@@ -10,38 +10,60 @@ import numpy as np
 
 if __name__=="__main__":
     
-    # Set config filepath
-    config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/config.json"
-           
-    # Set input filepath
-    input_data_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/passage.npy"
-
-    # Set output filepath
-    output_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
+    # Set config filepaths
+    network_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/network_config.json"
+    runtime_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/runtime_config.json"
+    training_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/training_config.json"
+    
+    # Set experiment campaign name
+    campaign_name = "squashnet_test"
     
     # Iterate through all inputs
-    for target_compression_ratio in np.power(10,np.linspace(1,3,10)):
+    for x in [1]:
                        
         # Define the network config
-        config = {
-            "network_name"              : "squashnet_" + "compressratio_" + "{:.2f}_".format(target_compression_ratio) + (input_data_path.split("/")[-1].split(".")[0]),
-            "target_compression_ratio"  : target_compression_ratio,
+        network_config = {
+            "network_name"              : campaign_name + ""
             "hidden_layers"             : 8,
-            "min_neurons_per_layer"     : 10,
-            "initial_lr"                : 5e-3,
-            "batch_size"                : 1024,
-            "batch_fraction"            : 0.0005,
-            "epochs"                    : 30,
-            "half_life"                 : 3,
-            "input_data_path"           : input_data_path,
-            "frequencies"               : 0
+            "frequencies"               : 0,
+            "target_compression_ratio"  : 100.0,
             }
         
         # Save the network config
-        with open(config_path,"w") as config_file: json.dump(config,config_file,indent=4,sort_keys=True)
-         
+        with open(network_config_path,"w") as network_config_file: 
+            json.dump(network_config,network_config_file,indent=4,sort_keys=True)
+        
+        # Define the runtime config
+        runtime_config = {
+            "bf_study_flag"             : False,
+            "lr_study_flag"             : False,
+            "ensemble_flag"             : False,
+            "graph_flag"                : True,
+            "stats_flag"                : False,
+            "save_network_flag"         : True,
+            "save_outputs_flag"         : True,
+            "save_results_flag"         : True
+            }
+        
+        # Save the runtime config
+        with open(runtime_config_path,"w") as runtime_config_file: 
+            json.dump(runtime_config,runtime_config_file,indent=4,sort_keys=True)
+        
+        # Define the training config
+        training_config = {
+            "initial_lr"                : 5e-3,
+            "batch_size"                : 1024,
+            "batch_fraction"            : 0,
+            "epochs"                    : 30,
+            "half_life"                 : 3,            
+            }            
+        
+        # Save the training config
+        with open(training_config_path,"w") as training_config_file: 
+            json.dump(training_config,training_config_file,indent=4,sort_keys=True)
+
         # Run the compression experiment
-        runstring = "python NeurComp_SourceCode/compress_main.py" + " " + config_path + " " + input_data_path + " " + output_path
+        runstring = "python NeurComp_SourceCode/compress_main.py " + "'" + json.dumps(network_config) + "' '" + json.dumps(runtime_config) + "' '" + json.dumps(training_config) + "'"
         os.system(runstring)
         
 #==============================================================================
