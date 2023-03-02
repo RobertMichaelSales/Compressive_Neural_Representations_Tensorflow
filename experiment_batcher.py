@@ -23,7 +23,7 @@ if __name__=="__main__":
                        
         # Define the network config
         network_config = {
-            "network_name"              : campaign_name + ""
+            "network_name"              : campaign_name,
             "hidden_layers"             : 8,
             "frequencies"               : 0,
             "target_compression_ratio"  : 100.0,
@@ -54,7 +54,7 @@ if __name__=="__main__":
             "initial_lr"                : 5e-3,
             "batch_size"                : 1024,
             "batch_fraction"            : 0,
-            "epochs"                    : 30,
+            "epochs"                    : 2,
             "half_life"                 : 3,            
             }            
         

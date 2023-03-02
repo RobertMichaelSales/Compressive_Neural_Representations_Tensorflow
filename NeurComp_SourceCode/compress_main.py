@@ -20,7 +20,7 @@ from compress_utilities      import TrainStep,SignalToNoise,GetLearningRate,Calc
 
 #==============================================================================
 
-def compress(network_config,runtime_config,training_config,metadata_config,i_filepath,o_filepath):
+def compress(network_config,runtime_config,training_config,metadata_config,i_filepaths,o_filepath):
     
     print("-"*80,"\nSQUASHNET: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
     
@@ -317,7 +317,10 @@ if __name__=="__main__":
     o_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
 
     # Execute compression
-    compress(network_config=network_config,runtime_config=runtime_config,training_config=training_config,metadata_config=metadata_config,i_filepath=i_filepath,o_filepath=o_filepath)   
+    
+    for i in range(10):
+        compress(network_config=network_config,runtime_config=runtime_config,training_config=training_config,metadata_config=metadata_config,i_filepath=i_filepath,o_filepath=o_filepath)   
+    ##
 
 else: pass
 
