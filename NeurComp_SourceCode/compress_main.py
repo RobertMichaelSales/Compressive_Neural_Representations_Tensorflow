@@ -20,7 +20,7 @@ from compress_utilities      import TrainStep,SignalToNoise,GetLearningRate,Calc
 
 #==============================================================================
 
-def compress(network_config,runtime_config,training_config,metadata_config,i_filepaths,o_filepath):
+def compress(network_config,runtime_config,training_config,metadata_config,i_filepath,o_filepath,index):
     
     print("-"*80,"\nSQUASHNET: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
     
@@ -80,13 +80,13 @@ def compress(network_config,runtime_config,training_config,metadata_config,i_fil
     
     # Build NeurComp from the config information
     SquashNet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
-    
+                   
     # Set a training optimiser
     optimiser = tf.keras.optimizers.Adam()
     
     # Set a performance metric
     metric = tf.keras.metrics.MeanSquaredError()
-    
+        
     #==========================================================================
     # Configure output folder
     print("-"*80,"\nCONFIGURING FOLDERS:")
@@ -150,7 +150,7 @@ def compress(network_config,runtime_config,training_config,metadata_config,i_fil
     
     #==========================================================================
     # Training loop
-    
+
     print("-"*80,"\nCOMPRESSING DATA:")
         
     # Create a dictionary of lists to store training data
@@ -179,10 +179,11 @@ def compress(network_config,runtime_config,training_config,metadata_config,i_fil
         
         ## Iterate through each batch
         for batch, (volume_batch,values_batch) in enumerate(dataset):
-            
+             
             # Print the current batch number and run a training step
             print("\r{:30}{:04}/{:04}".format("Batch Number:",(batch+1),len(dataset)),end="") 
             TrainStep(model=SquashNet,optimiser=optimiser,metric=metric,volume_batch=volume_batch,values_batch=values_batch)
+            
         ##
         
         print("\n",end="")
@@ -269,7 +270,7 @@ def compress(network_config,runtime_config,training_config,metadata_config,i_fil
     
     #==========================================================================
     print("-"*80,"\n")
-   
+       
 #==============================================================================
 # Define the main function to run when file is invoked from within the terminal
 
@@ -318,8 +319,8 @@ if __name__=="__main__":
 
     # Execute compression
     
-    for i in range(10):
-        compress(network_config=network_config,runtime_config=runtime_config,training_config=training_config,metadata_config=metadata_config,i_filepath=i_filepath,o_filepath=o_filepath)   
+    for i in range(1):
+        compress(network_config=network_config,runtime_config=runtime_config,training_config=training_config,metadata_config=metadata_config,i_filepath=i_filepath,o_filepath=o_filepath,index=i)   
     ##
 
 else: pass
