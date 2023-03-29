@@ -109,7 +109,7 @@ class NetworkConfigurationClass(GenericConfigurationClass):
     def NeuronsPerLayer(self):
       
         # Start searching from the minimum of 1 neuron per layer
-        self.neurons_per_layer = int(1)
+        self.neurons_per_layer = int(self.minimum_neurons_per_layer)
           
         # Incriment neurons until the network capacity exceeds the target size
         while (self.TotalParameters() < self.target_size):

@@ -1,6 +1,7 @@
 {
     "frequencies": 0,
     "hidden_layers": 8,
-    "network_name": "squashnet_test",
-    "target_compression_ratio": 100.0
+    "network_name": "3d_",
+    "target_compression_ratio": 100.0,
+    "minimum_neurons_per_layer": 1
 }

@@ -1,4 +1,4 @@
-""" Created: 26.10.2022  \\  Updated: 24.02.2023  \\   Author: Robert Sales """
+""" Created: 26.10.2022  \\  Updated: 24.03.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -14,11 +14,39 @@ from sklearn.neighbors import KDTree
 from keras.initializers import glorot_uniform
 
 #==============================================================================
+
+class MeanSquaredErrorMetric(tf.keras.metrics.Metric):
+    
+    def __init__(self,name='mse_metric',**kwargs):
+        
+        super().__init__(name=name, **kwargs)
+        self.error_sum = self.add_weight(name='error_sum',initializer='zeros')
+        self.batch_num = self.add_weight(name='batch_num',initializer='zeros')
+        return None
+
+    def update_state(self,true,pred,weights):
+        
+        mse = tf.math.divide(tf.math.reduce_sum(tf.math.multiply(weights,tf.math.square(tf.math.subtract(pred,true)))),tf.reduce_sum(weights))
+        self.error_sum.assign_add(mse)
+        self.batch_num.assign_add(1.0)
+        return None
+    
+    def reset_state(self):
+        
+        self.error_sum.assign(0.0)
+        self.batch_num.assign(0.0)
+        return None
+    
+    def result(self):
+        
+        mse = self.error_sum/self.batch_num
+        return mse
+
+#==============================================================================
 # Define a function to perform training on batches of data within the main loop
 
-@tf.function
-def TrainStep(model,optimiser,metric,volume_batch,values_batch):
-    
+def TrainStep(model,optimiser,metric,volume_batch,values_batch,weights_batch):
+        
     # Open 'GradientTape' to record the operations run in each forward pass
     with tf.GradientTape() as tape:
         
@@ -26,8 +54,7 @@ def TrainStep(model,optimiser,metric,volume_batch,values_batch):
         values_predicted = model(volume_batch,training=True)
         
         # Compute the mean-squared error for the current mini-batch
-        mse = MeanSquaredError(values_batch,values_predicted)
-        
+        mse = MeanSquaredError(values_batch,values_predicted,weights_batch)
     ##
    
     # Determine the weight and bias gradients with respect to error
@@ -37,20 +64,30 @@ def TrainStep(model,optimiser,metric,volume_batch,values_batch):
     optimiser.apply_gradients(zip(gradients,model.trainable_variables))
             
     # Update the training metric
-    metric.update_state(values_batch,values_predicted)
-    
+    metric.update_state(values_batch,values_predicted,weights_batch)
+        
     return None
 
 #==============================================================================
 # Define a function that computes the mean squared loss on predictions 
 
 @tf.function
-def MeanSquaredError(true,pred):
-    
-    # Compute the mean squared error between signals
-    mse = tf.math.reduce_mean(tf.math.square(tf.math.subtract(pred,true)))
+def MeanSquaredError(true,pred,weights):
+        
+    # Compute the weighted mean squared error between signals
+    mse = tf.math.divide(tf.math.reduce_mean(tf.math.multiply(weights,tf.math.square(tf.math.subtract(pred,true)))),tf.reduce_sum(weights))                             
     
     return mse
+
+#==============================================================================
+# Define a function to calculate the current learning rate based on epoch/decay
+
+def GetLearningRate(initial_lr,half_life,epoch):
+    
+    # Decay learning rate following an exponentially decaying curve
+    current_lr = initial_lr / (2**(epoch//half_life))
+
+    return current_lr
 
 #==============================================================================
 # Define a function that computes the peak signal-to-noise ratio (PSNR) 
@@ -67,16 +104,6 @@ def SignalToNoise(true,pred):
     psnr = -20.0*(math.log10(math.sqrt(mse)/rng))
     
     return psnr
-
-#==============================================================================
-# Define a function to calculate the current learning rate based on epoch/decay
-
-def GetLearningRate(initial_lr,half_life,epoch):
-    
-    # Decay learning rate following an exponentially decaying curve
-    current_lr = initial_lr / (2**(epoch//half_life))
-
-    return current_lr
 
 #==============================================================================
 # Define a function to calculate the standard deviation of points in 1-D
@@ -125,18 +152,18 @@ def CalculatePointCloudDensity(points):
     
     return density
 
-
 #==============================================================================
 # Define a function to perform/plot an initial learning rate optimisation study
 
-def LRStudy(model,volume,values,bf_guess,lr_bounds,plot):
+def LRStudy(model,volume,values,weights,bf_guess,lr_bounds,plot):
     
     # Import the 'MakeDataset' function from 'data_management.py'
     from data_management import MakeDataset
+    TrainStepTFF = tf.function(TrainStep)
     
     # Guess a usable batch size and create a temporary TF dataset 
     batch_size = math.floor(bf_guess*values.size)
-    dataset = MakeDataset(volume=volume,values=values,batch_size=batch_size,repeat=False)
+    dataset = MakeDataset(volume=volume,values=values,weights=weights,batch_size=batch_size)
     
     # Create a temportary local training optimiser
     optimiser = tf.keras.optimizers.Adam()
@@ -145,7 +172,7 @@ def LRStudy(model,volume,values,bf_guess,lr_bounds,plot):
     lr_lspace = 10.0 ** np.linspace(lr_bounds[0],lr_bounds[1],25)
     
     # Set a performance metric
-    lr_metric = tf.keras.metrics.MeanSquaredError()
+    lr_metric = MeanSquaredErrorMetric()
     
     # Create an empty list to store the first-pass training errors
     lr_errors = []
@@ -174,9 +201,9 @@ def LRStudy(model,volume,values,bf_guess,lr_bounds,plot):
         optimiser.lr.assign(learning_rate)  
         
         # Iterate through each batch
-        for batch, (volume_batch,values_batch) in enumerate(dataset):
+        for batch, (volume_batch,values_batch,weights_batch) in enumerate(dataset):
                         
-            TrainStep(model=ModelClone,optimiser=optimiser,metric=lr_metric,volume_batch=volume_batch,values_batch=values_batch)
+            TrainStepTFF(model=ModelClone,optimiser=optimiser,metric=lr_metric,volume_batch=volume_batch,values_batch=values_batch,weights_batch=weights_batch)
             
             if batch > len(dataset)/8: break
         ##
@@ -234,10 +261,11 @@ def LRStudy(model,volume,values,bf_guess,lr_bounds,plot):
 #==============================================================================
 # Define a function to perform/plot a batch fraction optimisation study
 
-def BFStudy(model,volume,values,lr_guess,bf_bounds,plot):
+def BFStudy(model,volume,values,weights,lr_guess,bf_bounds,plot):
     
     # Import the 'MakeDataset' function from 'data_management.py'
     from data_management import MakeDataset
+    TrainStepTFF = tf.function(TrainStep)
     
     # Create a temportary optimiser and specify the learning rate
     optimiser = tf.keras.optimizers.Adam()
@@ -247,7 +275,7 @@ def BFStudy(model,volume,values,lr_guess,bf_bounds,plot):
     bf_lspace = np.linspace(bf_bounds[0],bf_bounds[1],25)
     
     # Set a performance metric
-    bf_metric = tf.keras.metrics.MeanSquaredError()
+    bf_metric = MeanSquaredErrorMetric()
     
     # Create an empty list to store the first-pass training errors and time
     bf_errors = []
@@ -279,20 +307,20 @@ def BFStudy(model,volume,values,lr_guess,bf_bounds,plot):
         bf_metric.reset_state()
         
         # Guess a learning rate and create a temporary TF dataset 
-        dataset = MakeDataset(volume=volume,values=values,batch_size=batch_size,repeat=False)
+        dataset = MakeDataset(volume=volume,values=values,weights=weights,batch_size=batch_size)
         
         # Start timing
         init_time_tick = time.time()
         
         # Iterate through each batch
-        for batch, (volume_batch,values_batch) in enumerate(dataset):
+        for batch, (volume_batch,values_batch,weights_batch) in enumerate(dataset):
             
             if batch ==1: 
                 init_time_tock = time.time()
                 time_time_tick = time.time()
             else: pass
-                        
-            TrainStep(model=ModelClone,optimiser=optimiser,metric=bf_metric,volume_batch=volume_batch,values_batch=values_batch)
+                      
+            TrainStepTFF(model=ModelClone,optimiser=optimiser,metric=bf_metric,volume_batch=volume_batch,values_batch=values_batch,weights_batch=weights_batch)
             
             if batch > len(dataset)/8: break
         ##
@@ -306,12 +334,20 @@ def BFStudy(model,volume,values,lr_guess,bf_bounds,plot):
         
         print("{:30}{:.3f}".format("Mean-Squared Error:",bf_errors[-1]))
         print("{:30}{:.3f}".format("Elapsed Time/Batch:",bf_times[-1]) )
-
+        
+        # import gc
+        # dataset_length = len(dataset)
+        # tf.keras.backend.clear_session()
+        # gc.collect()
+        # del dataset
+        
     ##
     
     bf_actual = np.array(bf_actual)
     bf_errors = np.array(bf_errors)
     bf_times = np.array(bf_times) / len(dataset)
+    # bf_times = np.array(bf_times) / dataset_length
+
     
     # Check if plot flag is raised
     if plot:
