@@ -21,32 +21,32 @@ class MeanSquaredErrorMetric(tf.keras.metrics.Metric):
         
         super().__init__(name=name, **kwargs)
         self.error_sum = self.add_weight(name='error_sum',initializer='zeros')
-        self.batch_num = self.add_weight(name='batch_num',initializer='zeros')
+        self.n_batches = self.add_weight(name='n_batches',initializer='zeros')
         return None
 
     def update_state(self,true,pred,weights):
-        
+                
         mse = tf.math.divide(tf.math.reduce_sum(tf.math.multiply(weights,tf.math.square(tf.math.subtract(pred,true)))),tf.reduce_sum(weights))
         self.error_sum.assign_add(mse)
-        self.batch_num.assign_add(1.0)
+        self.n_batches.assign_add(1.0)
         return None
     
     def reset_state(self):
         
         self.error_sum.assign(0.0)
-        self.batch_num.assign(0.0)
+        self.n_batches.assign(0.0)
         return None
     
     def result(self):
         
-        mse = self.error_sum/self.batch_num
+        mse = self.error_sum/self.n_batches
         return mse
 
 #==============================================================================
 # Define a function to perform training on batches of data within the main loop
 
 def TrainStep(model,optimiser,metric,volume_batch,values_batch,weights_batch):
-        
+            
     # Open 'GradientTape' to record the operations run in each forward pass
     with tf.GradientTape() as tape:
         
@@ -71,11 +71,10 @@ def TrainStep(model,optimiser,metric,volume_batch,values_batch,weights_batch):
 #==============================================================================
 # Define a function that computes the mean squared loss on predictions 
 
-@tf.function
 def MeanSquaredError(true,pred,weights):
         
     # Compute the weighted mean squared error between signals
-    mse = tf.math.divide(tf.math.reduce_mean(tf.math.multiply(weights,tf.math.square(tf.math.subtract(pred,true)))),tf.reduce_sum(weights))                             
+    mse = tf.math.divide(tf.math.reduce_sum(tf.math.multiply(weights,tf.math.square(tf.math.subtract(pred,true)))),tf.reduce_sum(weights))                             
     
     return mse
 
@@ -92,13 +91,13 @@ def GetLearningRate(initial_lr,half_life,epoch):
 #==============================================================================
 # Define a function that computes the peak signal-to-noise ratio (PSNR) 
 
-def SignalToNoise(true,pred):
+def SignalToNoise(true,pred,weights):
     
     # Compute the mean squared error between signals
-    mse = tf.math.reduce_mean(tf.math.square(tf.math.subtract(pred,true)))
-    
+    mse = MeanSquaredError(true,pred,weights)
+
     # Compute the range of the true signal
-    rng = abs(tf.math.reduce_max(true)-tf.math.reduce_min(true))
+    rng = abs(true.max()-true.min())
 
     # Compute the peak signal-to-noise ratio
     psnr = -20.0*(math.log10(math.sqrt(mse)/rng))
@@ -106,17 +105,9 @@ def SignalToNoise(true,pred):
     return psnr
 
 #==============================================================================
-# Define a function to calculate the standard deviation of points in 1-D
-
-def CalculateStandardDeviation(points):
-
-    # Compute standard deviation ignoring the dimensionality
-    standard_deviation = np.std(points,axis=None)
-    
-    return standard_deviation
-
-#==============================================================================
 # Define a function to calculate the pointcloud density of points in N-D    
+
+# Retired 03.03.2023 - This takes too long for even remotely large files
 
 def CalculatePointCloudDensity(points):
     
@@ -155,6 +146,11 @@ def CalculatePointCloudDensity(points):
 #==============================================================================
 # Define a function to perform/plot an initial learning rate optimisation study
 
+# if runtime_config.lr_study_flag:
+#     print("\nRunning Learning Rate Study:")
+#     LRStudy(model=SquashNet,volume=i_volume,values=i_values,weights=weights,bf_guess=5.0e-4,lr_bounds=(-7.000,-1.000),plot=True)         
+# else: pass
+
 def LRStudy(model,volume,values,weights,bf_guess,lr_bounds,plot):
     
     # Import the 'MakeDataset' function from 'data_management.py'
@@ -169,7 +165,7 @@ def LRStudy(model,volume,values,weights,bf_guess,lr_bounds,plot):
     optimiser = tf.keras.optimizers.Adam()
     
     # Create a exponentially (regularly) increasing array of learning rates
-    lr_lspace = 10.0 ** np.linspace(lr_bounds[0],lr_bounds[1],25)
+    lr_lspace = np.power(10,np.linspace(lr_bounds[0],lr_bounds[1],25))
     
     # Set a performance metric
     lr_metric = MeanSquaredErrorMetric()
@@ -261,6 +257,11 @@ def LRStudy(model,volume,values,weights,bf_guess,lr_bounds,plot):
 #==============================================================================
 # Define a function to perform/plot a batch fraction optimisation study
 
+# if runtime_config.bf_study_flag:
+#     print("\nRunning Batch Fraction Study:")
+#     BFStudy(model=SquashNet,volume=i_volume,values=i_values,weights=weights,lr_guess=1.0e-4,bf_bounds=(1.0e-4,2.5e-3),plot=True)  
+# else: pass
+
 def BFStudy(model,volume,values,weights,lr_guess,bf_bounds,plot):
     
     # Import the 'MakeDataset' function from 'data_management.py'
@@ -271,7 +272,7 @@ def BFStudy(model,volume,values,weights,lr_guess,bf_bounds,plot):
     optimiser = tf.keras.optimizers.Adam()
     optimiser.lr.assign(lr_guess)
     
-    # Create a exponentially (regularly) increasing array of learning rates
+    # Create a linearly, i.e. regularly, increasing array of learning rates
     bf_lspace = np.linspace(bf_bounds[0],bf_bounds[1],25)
     
     # Set a performance metric
@@ -335,11 +336,11 @@ def BFStudy(model,volume,values,weights,lr_guess,bf_bounds,plot):
         print("{:30}{:.3f}".format("Mean-Squared Error:",bf_errors[-1]))
         print("{:30}{:.3f}".format("Elapsed Time/Batch:",bf_times[-1]) )
         
-        # import gc
+        # import gc                                                             <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         # dataset_length = len(dataset)
         # tf.keras.backend.clear_session()
         # gc.collect()
-        # del dataset
+        # del dataset                                                           <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         
     ##
     
