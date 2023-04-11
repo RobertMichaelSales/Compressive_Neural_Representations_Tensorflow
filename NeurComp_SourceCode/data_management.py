@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 15.02.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 24.03.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -6,7 +6,7 @@
 import psutil
 import numpy as np
 import tensorflow as tf
-from pyevtk.hl import gridToVTK,unstructuredGridToVTK
+from pyevtk.hl import gridToVTK,pointsToVTK
 
 #==============================================================================
 # Define a class for managing datasets: i.e. loading, handling and storing data  
@@ -16,13 +16,13 @@ class DataClass():
     #==========================================================================
     # Define the initialisation constructor function for 'DataClass'   
 
-    def __init__(self,data_type,is_tabular,exceeds_memory):
+    def __init__(self,data_type,tabular,exceeds_memory):
         
         # Set the object data type
         self.data_type = data_type
         
         # Set input data structure
-        self.is_tabular = is_tabular
+        self.tabular = tabular
         
         # Set input exceeds memory
         self.exceeds_memory = exceeds_memory
@@ -38,31 +38,36 @@ class DataClass():
     # -> Note: Make sure the flattening takes place after normalisation
     
     def LoadData(self,input_data_path,columns,shape,dtype,normalise=True):
-        
+                
         # Unpack the columns for the coordinate axes and scalar fields
-        coord_columns,field_columns = columns
+        coord_columns,field_columns,weight_column = columns
                 
         # Load the full dataset then extract the desired volume tensor
         if (self.data_type=="volume"):     
             
             print("\n{:30}{}".format("Loaded volume:",input_data_path.split("/")[-1]))
+            print("{:30}{}".format("Fields:",coord_columns))
             self.dimensions = len(coord_columns)
             
-            if self.is_tabular:
+            if self.tabular:
                 
-                if self.exceeds_memory:
-                    self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,coord_columns].astype('float32')
-                else:
-                    self.data = np.load(input_data_path)[...,coord_columns].astype('float32')
-                ##
+                # if self.exceeds_memory:
+                #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,coord_columns].astype('float32')
+                # else:
+                #     self.data = np.load(input_data_path)[...,coord_columns].astype('float32')
+                # ##
+                
+                self.data = np.load(input_data_path)[...,coord_columns].astype('float32')
                 
             else: 
                 
-                if self.exceeds_memory:
-                    self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape).astype('float32')
-                else:
-                    self.data = np.load(input_data_path)[...,coord_columns].astype('float32')
-                ##
+                # if self.exceeds_memory:
+                #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape).astype('float32')
+                # else:
+                #     self.data = np.load(input_data_path)[...,coord_columns].astype('float32')
+                # ##
+                
+                self.data = np.load(input_data_path)[...,coord_columns].astype('float32')
             ##
         ##
             
@@ -70,25 +75,69 @@ class DataClass():
         if (self.data_type=="values"): 
             
             print("\n{:30}{}".format("Loaded values:",input_data_path.split("/")[-1]))
+            print("{:30}{}".format("Fields:",field_columns))
             self.dimensions = len(field_columns)
             
-            if self.is_tabular:
+            if self.tabular:
                 
-                if self.exceeds_memory:
-                    self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,field_columns].astype('float32')
-                else:
-                    self.data = np.load(input_data_path)[...,field_columns].astype('float32')
-                ##
+                # if self.exceeds_memory:
+                #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,field_columns].astype('float32')
+                # else:
+                #     self.data = np.load(input_data_path)[...,field_columns].astype('float32')
+                # ##
+                
+                self.data = np.load(input_data_path)[...,field_columns].astype('float32')
                 
             else: 
                 
-                if self.exceeds_memory:
-                    self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape).astype('float32')
-                else:
-                    self.data = np.load(input_data_path)[...,field_columns].astype('float32')
+                # if self.exceeds_memory:
+                #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape).astype('float32')
+                # else:
+                #     self.data = np.load(input_data_path)[...,field_columns].astype('float32')
+                # ##
+                
+                self.data = np.load(input_data_path)[...,field_columns].astype('float32')
+            ##     
+        ##           
+        
+        # Load the full dataset then extract the desired weight tensor
+        if (self.data_type=="weights"):
+            
+            print("\n{:30}{}".format("Loaded weights:",input_data_path.split("/")[-1]))
+            print("{:30}{}".format("Fields:",weight_column))
+            self.dimensions = len(weight_column)
+
+            if not self.dimensions: 
+                
+                self.data = np.array(None)
+                self.flat = np.array(None)
+                return None
+            
+            else: 
+            
+                if self.tabular:
+                    
+                    # if self.exceeds_memory:
+                    #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,field_columns].astype('float32')
+                    # else:
+                    #     self.data = np.load(input_data_path)[...,field_columns].astype('float32')
+                    # ##
+                    
+                    self.data = np.load(input_data_path)[...,weight_column].astype('float32')
+                    
+                else: 
+                    
+                    # if self.exceeds_memory:
+                    #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape).astype('float32')
+                    # else:
+                    #     self.data = np.load(input_data_path)[...,field_columns].astype('float32')
+                    # ##
+                    
+                    self.data = np.load(input_data_path)[...,weight_column].astype('float32')
                 ##
             ##     
-        ##             
+        ##        
+            
     
         # Determine the field resolution
         self.resolution = self.data.shape[:-1]
@@ -102,15 +151,23 @@ class DataClass():
         # Determine the minimum
         self.min = np.array([self.data[...,i].min() for i in range(self.dimensions)])
         
-        # Determine the average
+        # Determine the average 
         self.avg = (self.max+self.min)/2.0
         
         # Determine the range
         self.rng = abs(self.max-self.min)
- 
-        # Normalise each tensor field to the range [-1,+1]
+        
+        # Adjust zero-entries
+        self.rng[self.max==self.min] = 1.0        
+        
+        # Normalise each tensor field to the range [-1,+1] or [0,+1]
         if normalise:
-            self.data = 2.0*((self.data-self.avg)/(self.rng))        
+            if self.data_type in ["volume","values"]:
+                self.data = 2.0*((self.data-self.avg)/(self.rng))  
+            else:pass
+            if self.data_type in ["weights"]:
+                self.data = 0.5+((self.data-self.avg)/(self.rng)) + 1e-9
+            else:pass
         else: pass
     
         # Flatten each tensor fields into equal lists of vectors
@@ -139,8 +196,8 @@ class DataClass():
             else: pass
             
         return None
-        
-#==============================================================================
+
+#============================================================================== <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 # Define a function to create and return a 'tf.data.Dataset' dataset object
 
 # -> Note: 'AUTOTUNE' prompts 'tf.data' to tune the value  of 'buffer_size'
@@ -149,24 +206,22 @@ class DataClass():
 # -> Note: Moving 'dataset.cache()' up/down will reduce runtime performance
 # -> significantly
 
-
-def MakeDataset(volume,values,batch_size,repeat=False):
+def MakeDatasetFromTensorSlc(volume,values,weights,batch_size):
     
     print("\n{:30}{}{}".format("Made TF dataset:","batch_size = ",batch_size))
+    print("\n{:30}{}".format("Method:","tf.data.Dataset.from_tensor_slices()"))
+    
+    # Handle the case where there are no weights -> set them all to 1
+    if not weights.flat.any(): weights.flat = np.ones(shape=((np.prod(volume.resolution),)+(1,))).astype("float32")
         
     # Create a dataset whose elements are slices of the given tensors
-    dataset = tf.data.Dataset.from_tensor_slices((volume.flat,values.flat))
+    dataset = tf.data.Dataset.from_tensor_slices((volume.flat,values.flat,weights.flat))
     
     # Cache the elements of the dataset to increase runtime performance
     dataset = dataset.cache()
-    
-    # Makes the dataset infinitely iterable (i.e. infinitely repeating)
-    if repeat: 
-        dataset = dataset.repeat(count=None)
-    else: pass
 
     # Set the shuffle buffer size to equal the number of scalars
-    buffer_size = values.size
+    buffer_size = np.prod(values.resolution)
     
     # Randomly shuffle the elements of the cached dataset 
     dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
@@ -176,74 +231,73 @@ def MakeDataset(volume,values,batch_size,repeat=False):
     
     # Pre-fetch elements from the dataset to increase throughput
     dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
+    
+    # Assign a size attribute to store the batches per data pass
+    dataset.size = len(dataset)
             
     return dataset    
 
-# #==============================================================================
-# # Define a generator function to supply the dataset with a datastream of inputs
+#============================================================================== <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+# Define a generator function to supply the dataset with a stream of data pairs
 
-# # def CreateDataGen(data,columns):
+def GetDataGenerator(volume,values,weights):
     
-# #     # Unpack the columns for the coordinate axes and scalar fields
-# #     coord_columns,field_columns = columns
-    
-# #     def DataGen():
+    def DataGenerator():
         
-# #         for row in data:
+        for vol,val,wht in zip(volume,values,weights):
             
-# #             yield row[coord_columns],row[field_columns]
+            yield vol,val,wht
             
-# #     return DataGen
+    return DataGenerator
 
-# def CreateDataGen(volume,values):
-    
-#     def DataGen():
-        
-#         for vol,val in zip(volume,values):
-            
-#             yield vol,val
-            
-#     return DataGen
+#==============================================================================
+# Define a function to create and return a 'tf.data.Dataset' dataset object
 
-# #==============================================================================
+# -> Note: 'AUTOTUNE' prompts 'tf.data' to tune the value  of 'buffer_size'
+# -> dynamically at runtime
 
-# def MakeDatasetFromGenerator(volume,values,batch_size,repeat=False):
-    
-#     print("\n{:30}{}{}".format("Made TF dataset:","batch_size = ",batch_size))
-        
-#     # generator = CreateDataGen(data,columns)
-    
-#     # output_types = (tf.float32,tf.float32)
-    
-#     # output_shapes = (tf.TensorShape((len(columns[0]),)),tf.TensorShape(len(columns[1]),))
+# -> Note: Moving 'dataset.cache()' up/down will reduce runtime performance
+# -> significantly
 
-#     generator = CreateDataGen(volume.flat,values.flat)
+def MakeDatasetFromGenerator(volume,values,weights,batch_size):
     
-#     output_types = (tf.float32,tf.float32)
+    print("\n{:30}{}{}".format("Made TF dataset:","batch_size = ",batch_size))
+    print("\n{:30}{}".format("Method:","tf.data.Dataset.from_generator()"))
+    
+    # Handle the case where there are no weights -> set them all to 1
+    if not weights.flat.any(): weights.flat = np.ones(shape=((np.prod(volume.resolution),)+(1,))).astype("float32")
 
-#     output_shapes = (tf.TensorShape((volume.flat.shape[-1],)),tf.TensorShape(values.flat.shape[-1],))
-        
-#     dataset = tf.data.Dataset.from_generator(generator=generator,output_types=output_types,output_shapes=output_shapes)
+    # Get the data generator as an iterable and pass it its arguments
+    generator = GetDataGenerator(volume.flat,values.flat,weights.flat)
     
-#     dataset = dataset.cache()
+    # Set the expected output types
+    output_types = (tf.float32,tf.float32,tf.float32)
     
-#     if repeat: 
-#         dataset = dataset.repeat(count=None)
-#     else: pass
+    # Set the expected output shapes
+    output_shapes = (tf.TensorShape(volume.flat.shape[-1]),tf.TensorShape(values.flat.shape[-1]),tf.TensorShape(weights.flat.shape[-1]))
+    
+    # Create a dataset whose elements are retrieved via a data generator
+    dataset = tf.data.Dataset.from_generator(generator=generator,output_types=output_types,output_shapes=output_shapes)
+    
+    # Cache the elements of the dataset to increase runtime performance
+    dataset = dataset.cache()
 
-
-#     # buffer_size = min(data.shape[0]*len(columns[1]),int(1e6))                                                                       # <<<<<<<<<
+    # Set the shuffle buffer size to equal the number of scalars
+    buffer_size = np.prod(values.resolution)
     
-#     buffer_size = min(values.flat.shape[0],int(1e6))                                                                       # <<<<<<<<<
-
+    # Randomly shuffle the elements of the cached dataset 
+    dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
+          
+    # Concatenate elements of the dataset into mini-batches
+    dataset = dataset.batch(batch_size=batch_size,drop_remainder=True)
     
-#     dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
+    # Pre-fetch elements from the dataset to increase throughput
+    dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
+
+    # Assign a size attribute to store the batches per data pass
+    dataset.size = int(np.ceil(volume.flat.shape[0]/batch_size))
                 
-#     dataset = dataset.batch(batch_size=batch_size,drop_remainder=False)
-    
-#     dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
-            
-#     return dataset    
+    return dataset    
 
 #==============================================================================
 # Define a function to concatenate and save a scalar field to a '.npy' file
@@ -261,19 +315,30 @@ def SaveData(output_data_path,volume,values,reverse_normalise=True):
     # Save as Numpy file 
     np.save(output_data_path,np.concatenate((volume.data,values.data),axis=-1))
     
-    # Save as VTK file
+    # Create dictionaries for saving a VTK
     volume_list, values_dict = [],{}
     
+    # Check volume and values are both 3-D
+    if (volume.dimensions == values.dimensions == 3):
+        pass
+    else:
+        return None
+    ##
+        
     for dimension in range(volume.dimensions):
         volume_list.append(np.ascontiguousarray(volume.data[...,dimension]))
-        
+    ##
+    
     for dimension in range(values.dimensions):
         key = "field" + str(dimension)
         values_dict[key] = np.ascontiguousarray(values.data[...,dimension])
+    ##
     
-    if (volume.is_tabular == False) and (values.is_tabular == False):                                        
+    if (volume.tabular == values.tabular == False):                                        
         gridToVTK(output_data_path,*volume_list,pointData=values_dict)  
-    else: pass
+    else:
+        pointsToVTK(output_data_path,*volume_list,data=values_dict)
+    ##
         
     return None
 

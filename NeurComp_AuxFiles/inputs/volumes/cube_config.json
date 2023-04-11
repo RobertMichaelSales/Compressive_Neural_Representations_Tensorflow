@@ -1,0 +1,23 @@
+{
+    "columns": [
+        [
+            0,
+            1,
+            2
+        ],
+        [
+            3
+        ],
+        []
+    ],
+    "dtype": "float32",
+    "i_filepath": "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube.npy",
+    "normalise": true,
+    "shape": [
+        150,
+        150,
+        150,
+        4
+    ],
+    "tabular": false
+}

@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 01.03.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 31.03.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -82,7 +82,7 @@ class NetworkConfigurationClass(GenericConfigurationClass):
         self.o_dimensions = o_dimensions
         self.size = size
         
-        print("\n{:30}{}".format("Encoding Frequencies:",self.frequencies))
+        print("\n{:30}{}".format("Encoding frequencies:",self.frequencies))
         
         # Compute the neurons per layer as well as the overall network capacity
         self.target_size = int(self.size/self.target_compression_ratio)
@@ -109,7 +109,7 @@ class NetworkConfigurationClass(GenericConfigurationClass):
     def NeuronsPerLayer(self):
       
         # Start searching from the minimum of 1 neuron per layer
-        self.neurons_per_layer = int(1)
+        self.neurons_per_layer = int(self.minimum_neurons_per_layer)
           
         # Incriment neurons until the network capacity exceeds the target size
         while (self.TotalParameters() < self.target_size):

@@ -1,0 +1,23 @@
+{
+    "columns": [
+        [
+            0,
+            1,
+            2
+        ],
+        [
+            3
+        ],
+        []
+    ],
+    "dtype": "float32",
+    "i_filepath": "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/snips/jhtdb_isotropic1024coarse_pressure_snip4.npy",
+    "normalise": true,
+    "shape": [
+        256,
+        256,
+        256,
+        4
+    ],
+    "tabular": false
+}
