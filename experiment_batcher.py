@@ -20,29 +20,37 @@ if __name__=="__main__":
     training_config_path = config_dir_filepath + "training_config.json"
     
     # Set experiment input dataset
-    input_dataset_config_path = "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/snips/jhtdb_isotropic1024coarse_pressure_snip8_config.json"
+    input_dataset_config_path = "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/snips/jhtdb_isotropic1024coarse_pressure_snip4_config.json"
     with open(input_dataset_config_path) as input_dataset_config_file: dataset_config = json.load(input_dataset_config_file)
     with open(dataset_config_path,"w") as dataset_config_file: json.dump(dataset_config,dataset_config_file,indent=4,sort_keys=True)
     
-    # Set experiment id number
+    # Set experiment id number 
     experiment_id = 1;
+    
+    # Set counter and total
+    counter, total = 1, (5*7*7)
     
     # Iterate through all inputs
     for compression_ratio in np.power(10,np.linspace(np.log10(10),np.log10(1000),3)):
         
-        for learning_rate in np.power(10,np.linspace(np.log10(1e-7),np.log10(1e-1),9)):
+        for learning_rate in np.power(10,np.linspace(np.log10(1e-7),np.log10(1e-1),7)):
             
-            for batch_fraction in np.power(10,np.linspace(np.log10(1e-5),np.log10(1e-2),9)):            
+            for batch_fraction in np.power(10,np.linspace(np.log10(1e-4),np.log10(1e-2),7)):           
          
                 # Set experiment campaign name
                 campaign_name = "exp{:04d}_cr{:011.6f}_lr{:11.9f}_bf{:11.9f}".format(experiment_id,compression_ratio,learning_rate,batch_fraction)    
-                                
-                print(campaign_name)
-                       
+                    
+                # Print this experiment number
+                print("\n")
+                print("*"*80)
+                print("Experiment {}/{}: '{}'".format(counter,total,campaign_name))
+                print("*"*80)
+                print("\n")
+                
                 # Define the network config
                 network_config = {
                     "network_name"              : campaign_name,
-                    "hidden_layers"             : 8,
+                    "hidden_layers"             : 14,
                     "frequencies"               : 0,
                     "target_compression_ratio"  : compression_ratio,
                     "minimum_neurons_per_layer" : 1,
@@ -71,7 +79,7 @@ if __name__=="__main__":
                     "initial_lr"                : learning_rate,
                     "batch_size"                : 1024,
                     "batch_fraction"            : batch_fraction,
-                    "epochs"                    : 1,
+                    "epochs"                    : 30,
                     "half_life"                 : 2,            
                     }            
                 
@@ -82,11 +90,11 @@ if __name__=="__main__":
                 
                 # Define the output directory
                 o_filepath = dataset_config["i_filepath"].replace("Datasets","Experiments").replace("/snips","").replace(".npy","")
-                
+                                
                 # Run the compression experiment
                 runstring = "python NeurComp_SourceCode/compress_main.py " + "'" + json.dumps(network_config) + "' '" + json.dumps(dataset_config) + "' '" + json.dumps(runtime_config) + "' '" + json.dumps(training_config) + "' '" + o_filepath + "'"
                 os.system(runstring)
-                
+                counter = counter + 1
             ##
         ##
     ##

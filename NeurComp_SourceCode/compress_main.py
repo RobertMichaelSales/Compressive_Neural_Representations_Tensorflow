@@ -335,7 +335,6 @@ if __name__=="__main__":
         o_filepath = sys.argv[5]
     ##    
     
-    
     # Checkpoint checking in case execution fails
     checkpoint_filename = os.path.join(o_filepath,network_config.network_name,"checkpoint.txt")
 

@@ -1,7 +1,5 @@
 {
-    "bf_study_flag": false,
     "ensemble_flag": false,
-    "lr_study_flag": false,
     "save_network_flag": false,
     "save_outputs_flag": true,
     "save_results_flag": true
