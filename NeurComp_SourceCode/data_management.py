@@ -3,7 +3,6 @@
 #==============================================================================
 # Import libraries and set flags
 
-import psutil
 import numpy as np
 import tensorflow as tf
 from pyevtk.hl import gridToVTK,pointsToVTK

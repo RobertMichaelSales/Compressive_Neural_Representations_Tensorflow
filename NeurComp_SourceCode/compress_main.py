@@ -1,15 +1,10 @@
-""" Created: 18.07.2022  \\  Updated: 04.04.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 12.04.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
 
 import os, time, json, math, psutil, sys, gc
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-# os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-# os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
-# os.environ['TF_GPU_THREAD_COUNT'] = '1'
-
 gc.enable()
 
 import numpy as np
@@ -140,16 +135,8 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
 
     # Generate a TF dataset to supply volume and values batches during training 
     dataset = MakeDataset(volume=i_volume,values=i_values,weights=weights,batch_size=training_config.batch_size)
-    
-    #========================================================================== <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
-    
-    # if runtime_config.ensemble_flag and index:
         
-    #     print("\n\n\n\nLoading weights!!!!!")
-    #     SquashNet.set_weights(ensemble_output)
-    #     print("\n\n\n\nLoading weights!!!!!")
-        
-    #========================================================================== <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
+    #==========================================================================  
     # Training loop
     print("-"*80,"\nCOMPRESSING DATA:")
         
