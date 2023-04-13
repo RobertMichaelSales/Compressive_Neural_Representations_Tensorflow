@@ -3,7 +3,7 @@
 #==============================================================================
 # Import libraries and set flags
 
-import os, time, json, math, psutil, sys, gc
+import os, time, json, math, psutil, sys, gc, datetime
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 gc.enable()
 
@@ -17,13 +17,15 @@ from data_management         import DataClass,MakeDatasetFromTensorSlc,MakeDatas
 from network_encoder         import EncodeParameters,EncodeArchitecture
 from network_model           import ConstructNetwork
 from configuration_classes   import NetworkConfigurationClass,GenericConfigurationClass
-from compress_utilities      import TrainStep,SignalToNoise,GetLearningRate,MeanSquaredErrorMetric
+from compress_utilities      import TrainStep,SignalToNoise,GetLearningRate,MeanSquaredErrorMetric,Logger
 
 #==============================================================================
 
 def compress(network_config,dataset_config,runtime_config,training_config,o_filepath,index,ensemble_output):
     
-    print("-"*80,"\nSQUASHNET: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
+    print("-"*80,"\nSQUASHNET Mini: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
+    
+    print("\nDateTime: {}".format(datetime.datetime.now().strftime("%d %b %Y - %H:%M:%S")))
     
     #==========================================================================
     # Check whether hardware acceleration is enabled
@@ -39,6 +41,8 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         print("\n{:30}{} - {}".format("CUDA GPU(s) Detected:",len(gpus),"Hardware Acceleration Is Disabled"))
         raise SystemError("GPU device not found. Try restarting your system to resolve this error.")
     ##
+    
+    raise SystemError("GPU device not found. Try restarting your system to resolve this error.")
     
     #==========================================================================
     # Check whether the input size exceeds available memory
@@ -89,17 +93,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     # Calculate the standard deviation for the volume and values data
     volume_standard_deviation = np.std(i_volume.flat,axis=0).tolist()
     values_standard_deviation = np.std(i_values.flat,axis=0).tolist()
-    
-    #==========================================================================
-    # Configure output folder
-    print("-"*80,"\nINITIALISING OUTPUTS:")
-    
-    # Construct the output directory path/folder for all future saved files
-    output_directory = os.path.join(o_filepath,network_config.network_name)
-    if runtime_config.ensemble_flag: output_directory += str(index)
-    if not os.path.exists(output_directory): os.makedirs(output_directory)
-    print("\n{:30}{}".format("Created output directory:",output_directory))
-          
+              
     #==========================================================================
     # Configure network 
     print("-"*80,"\nCONFIGURING NETWORK:")
@@ -120,7 +114,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     TrainStepTFF = tf.function(TrainStep)
         
     # Save an image of the network graph (helpful to check)
-    tf.keras.utils.plot_model(model=SquashNet,to_file=os.path.join(output_directory,"network_graph.png"))
+    tf.keras.utils.plot_model(model=SquashNet,to_file=os.path.join(o_filepath,"network_graph.png"))
                 
     #==========================================================================
     # Configure dataset
@@ -168,7 +162,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         for batch, (volume_batch,values_batch,weights_batch) in enumerate(dataset):
             
             # Print the current batch number and run a training step
-            print("\r{:30}{:04}/{:04}".format("Batch number:",(batch+1),dataset.size),end="") 
+            if runtime_config.print_verbose: print("\r{:30}{:04}/{:04}".format("Batch number:",(batch+1),dataset.size),end="") 
             TrainStepTFF(model=SquashNet,optimiser=optimiser,metric=metric,volume_batch=volume_batch,values_batch=values_batch,weights_batch=weights_batch)
 
             if batch >= dataset.size: break
@@ -210,12 +204,12 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         print("\n",end="")
         
         # Save the parameters
-        parameters_path = os.path.join(output_directory,"parameters.bin")
+        parameters_path = os.path.join(o_filepath,"parameters.bin")
         EncodeParameters(network=SquashNet,parameters_path=parameters_path,values_bounds=(i_values.max,i_values.min))
         print("{:30}{}".format("Saved parameters to:",parameters_path.split("/")[-1]))
         
         # Save the architecture
-        architecture_path = os.path.join(output_directory,"architecture.bin")
+        architecture_path = os.path.join(o_filepath,"architecture.bin")
         EncodeArchitecture(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies,architecture_path=architecture_path)
         print("{:30}{}".format("Saved architecture to:",architecture_path.split("/")[-1]))
     else: pass
@@ -234,12 +228,12 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         training_data["psnr"].append(SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat))
             
         # Save o_volume and o_values to ".npy" and ".vtk" files
-        output_data_path = os.path.join(output_directory,"output_volume")
+        output_data_path = os.path.join(o_filepath,"output_volume")
         SaveData(output_data_path=output_data_path,volume=o_volume,values=o_values,reverse_normalise=True)
         print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1]))
         
         # Save i_volume and i_values to ".npy" and ".vtk" files
-        output_data_path = os.path.join(output_directory,"input_volume")
+        output_data_path = os.path.join(o_filepath,"input_volume")
         SaveData(output_data_path=output_data_path,volume=i_volume,values=i_values,reverse_normalise=True)
         print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1])) 
     else: pass    
@@ -252,12 +246,12 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         print("\n",end="")
         
         # Save the training data
-        training_data_path = os.path.join(output_directory,"training_data.json")
+        training_data_path = os.path.join(o_filepath,"training_data.json")
         with open(training_data_path,"w") as file: json.dump(training_data,file,indent=4,sort_keys=True)
         print("{:30}{}".format("Saved training data to:",training_data_path.split("/")[-1]))
     
         # Save the configuration
-        combined_config_path = os.path.join(output_directory,"config.json")
+        combined_config_path = os.path.join(o_filepath,"config.json")
         combined_config_dict = (network_config | training_config | runtime_config | dataset_config)
         with open(combined_config_path,"w") as file: json.dump(combined_config_dict,file,indent=4)
         print("{:30}{}".format("Saved configuration to:",combined_config_path.split("/")[-1]))
@@ -282,7 +276,7 @@ if __name__=="__main__":
             network_config = NetworkConfigurationClass(network_config_dictionary)
         ##   
         
-        dataset_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/volumes/cube_config.json"
+        dataset_config_path = "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/snips/jhtdb_isotropic1024coarse_pressure_snip8_config.json"
         
         with open(dataset_config_path) as dataset_config_file: 
             dataset_config_dictionary = json.load(dataset_config_file)
@@ -310,7 +304,7 @@ if __name__=="__main__":
         # Example: sys.argv[1] = '{"frequencies": 0,"hidden_layers": 8,"network_name": "squashnet_test","target_compression_ratio":100.0}'
         network_config = NetworkConfigurationClass(json.loads(sys.argv[1]))
     
-        # Example: sys.argv[2] = '{"columns": [[0, 1, 2], [3], []], "dtype": "float32", "i_filepath": "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/jhtdb_isotropic1024coarse_pressure.npy", "normalise": True, "shape": [1024, 1024, 1024, 4], "tabular": False}'
+        # Example: sys.argv[2] = '{"columns": [[0, 1, 2], [3], []], "dtype": "float32", "i_filepath": "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/snips/jhtdb_isotropic1024coarse_pressure_snip8.npy", "normalise": True, "shape": [128, 128, 128, 4], "tabular": False}'
         dataset_config = GenericConfigurationClass(json.loads(sys.argv[2]))
     
         # Example: sys.argv[3] = '{"bf_study_flag": False,"graph_flag": False,"lr_study_flag": False,"stats_flag": False}'
@@ -322,11 +316,20 @@ if __name__=="__main__":
         o_filepath = sys.argv[5]
     ##    
     
+    # Construct the output filepath for all future saved files
+    o_filepath = os.path.join(o_filepath,network_config.network_name)
+    if not os.path.exists(o_filepath): os.makedirs(o_filepath)
+    
     # Checkpoint checking in case execution fails
-    checkpoint_filename = os.path.join(o_filepath,network_config.network_name,"checkpoint.txt")
-
+    checkpoint_filename = os.path.join(o_filepath,"checkpoint.txt")
+    stdout_log_filename = os.path.join(o_filepath,"stdout_log.txt")
+    
+    # Run if checkpoint file doesnt already exist
     if not os.path.exists(checkpoint_filename): 
-
+        
+        # Start logging all print statements
+        sys.stdout = Logger(stdout_log_filename)   
+    
         # Define ensemble output weights
         ensemble_output = None
 
@@ -338,7 +341,7 @@ if __name__=="__main__":
         # Checkpoint creation after successful execution
         with open(checkpoint_filename, mode='w'): pass
 
-    else: pass
+    else: print("Checkpoint file '{}' already exists: skipping.".format(checkpoint_filename))
         
 else: pass
 

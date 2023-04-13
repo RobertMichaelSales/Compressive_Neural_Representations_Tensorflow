@@ -25,10 +25,10 @@ if __name__=="__main__":
     with open(dataset_config_path,"w") as dataset_config_file: json.dump(dataset_config,dataset_config_file,indent=4,sort_keys=True)
     
     # Set experiment id number 
-    experiment_id = 1;
+    experiment_id = 1
     
     # Set counter and total
-    counter, total = 1, (5*7*7)
+    counter, total = 1, (3*7*7)
     
     # Iterate through all inputs
     for compression_ratio in np.power(10,np.linspace(np.log10(10),np.log10(1000),3)):
@@ -63,9 +63,10 @@ if __name__=="__main__":
                                        
                 # Define the runtime config
                 runtime_config = {
+                    "print_verbose"             : False,
                     "ensemble_flag"             : False,
                     "save_network_flag"         : False,
-                    "save_outputs_flag"         : True,
+                    "save_outputs_flag"         : False,
                     "save_results_flag"         : True
                     }
                 
@@ -78,8 +79,8 @@ if __name__=="__main__":
                 training_config = {
                     "initial_lr"                : learning_rate,
                     "batch_size"                : 1024,
-                    "batch_fraction"            : batch_fraction,
-                    "epochs"                    : 30,
+                    "batch_fraction"            : 0.001,# batch_fraction,
+                    "epochs"                    : 0,
                     "half_life"                 : 2,            
                     }            
                 
@@ -90,11 +91,13 @@ if __name__=="__main__":
                 
                 # Define the output directory
                 o_filepath = dataset_config["i_filepath"].replace("Datasets","Experiments").replace("/snips","").replace(".npy","")
-                                
+                
                 # Run the compression experiment
                 runstring = "python NeurComp_SourceCode/compress_main.py " + "'" + json.dumps(network_config) + "' '" + json.dumps(dataset_config) + "' '" + json.dumps(runtime_config) + "' '" + json.dumps(training_config) + "' '" + o_filepath + "'"
                 os.system(runstring)
-                counter = counter + 1
+                counter = counter + 1 
+                
+                if counter > 2: raise SystemError
             ##
         ##
     ##

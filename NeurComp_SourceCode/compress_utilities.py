@@ -3,7 +3,7 @@
 #==============================================================================
 # Import libraries and set flags
 
-import math
+import math, sys
 import tensorflow as tf
 
 #==============================================================================
@@ -41,6 +41,38 @@ class MeanSquaredErrorMetric(tf.keras.metrics.Metric):
         
         mse = self.error_sum/self.n_batches
         return mse
+    
+    
+#==============================================================================
+# Define a console logger class to simultaneously log and print stdout messages
+
+class Logger():
+    
+    # Initialise internal states and open log file
+    def __init__(self, logfile):
+        
+        self.stdout = sys.stdout
+        self.txtlog = open(logfile,'w')
+
+    # Define a function to write to both stdout and txt
+    def write(self, text):
+        
+        self.stdout.write(text)
+        self.txtlog.write(text)
+        self.txtlog.flush()
+        
+    # Define a function to flush both stdout and txt streams
+    def flush(self):
+        
+        self.stdout.flush()
+        self.txtlog.flush()
+
+    # Define a function to close both stdout and txt streams
+    def close(self):
+        
+        self.stdout.close()
+        self.txtlog.close()
+        
 
 #==============================================================================
 # Define a function to perform training on batches of data within the main loop
