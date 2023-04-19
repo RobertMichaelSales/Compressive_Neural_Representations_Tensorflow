@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 12.04.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 19.04.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -41,9 +41,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         print("\n{:30}{} - {}".format("CUDA GPU(s) Detected:",len(gpus),"Hardware Acceleration Is Disabled"))
         raise SystemError("GPU device not found. Try restarting your system to resolve this error.")
     ##
-    
-    raise SystemError("GPU device not found. Try restarting your system to resolve this error.")
-    
+        
     #==========================================================================
     # Check whether the input size exceeds available memory
     print("-"*80,"\nCHECKING MEMORY REQUIREMENTS:")
@@ -197,6 +195,18 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     print("\n{:30}{:.2f} seconds".format("Training duration:",training_time))    
 
     #==========================================================================
+    # Finalise outputs    
+
+    # Generate the output volume and calculate the PSNR
+    o_values.flat = SquashNet.predict(o_volume.flat,batch_size=training_config.batch_size,verbose="1")
+    o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(1,)),order="C")
+    print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat)))
+    training_data["psnr"].append(SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat))
+    
+    # Pack the configuration dictionaries into just one
+    combined_config_dict = (network_config | training_config | runtime_config | dataset_config)
+
+    #==========================================================================
     # Save network 
     
     if runtime_config.save_network_flag:
@@ -221,12 +231,6 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         print("-"*80,"\nSAVING OUTPUTS:")
         print("\n",end="")
         
-        # Generate the output volume and calculate the PSNR
-        o_values.flat = SquashNet.predict(o_volume.flat,batch_size=training_config.batch_size,verbose="1")
-        o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(1,)),order="C")
-        print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat)))
-        training_data["psnr"].append(SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat))
-            
         # Save o_volume and o_values to ".npy" and ".vtk" files
         output_data_path = os.path.join(o_filepath,"output_volume")
         SaveData(output_data_path=output_data_path,volume=o_volume,values=o_values,reverse_normalise=True)
@@ -252,7 +256,6 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     
         # Save the configuration
         combined_config_path = os.path.join(o_filepath,"config.json")
-        combined_config_dict = (network_config | training_config | runtime_config | dataset_config)
         with open(combined_config_path,"w") as file: json.dump(combined_config_dict,file,indent=4)
         print("{:30}{}".format("Saved configuration to:",combined_config_path.split("/")[-1]))
     else: pass
@@ -260,7 +263,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     #==========================================================================
     print("-"*80,"\n")
         
-    return SquashNet.get_weights()
+    return None # SquashNet.get_weights()
        
 #==============================================================================
 # Define the main function to run when file is invoked from within the terminal
@@ -313,6 +316,7 @@ if __name__=="__main__":
         # Example: sys.argv[4] = '{"batch_fraction": 0,"batch_size": 1024,"epochs": 30,"half_life": 3,"initial_lr": 0.005}'
         training_config = GenericConfigurationClass(json.loads(sys.argv[4]))
         
+        # Example: sys.argv[4] = '/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs'
         o_filepath = sys.argv[5]
     ##    
     
