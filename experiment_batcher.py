@@ -1,27 +1,29 @@
-""" Created: 10.11.2022  \\  Updated: 04.04.2023  \\   Author: Robert Sales """
+""" Created: 10.11.2022  \\  Updated: 20.04.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries
 
-import os, json
+import os, json, sys
 import numpy as np
 
 #==============================================================================
 
-if __name__=="__main__":
+if __name__=="__main__": 
     
-    # Set config directory
+    # Set experiment inputs 
+    if (len(sys.argv) == 1):
+        input_dataset_config_path = "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/snips/jhtdb_isotropic1024coarse_pressure_snip8_config.json"
+    else:
+        input_dataset_config_path = sys.argv[1] 
+    ##
+    with open(input_dataset_config_path) as input_dataset_config_file: dataset_config = json.load(input_dataset_config_file)
+    
+    # Set experiment outputs
     config_dir_filepath  = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/"
-    
-    # Set config filepaths
     network_config_path  = config_dir_filepath + "network_config.json"
     dataset_config_path  = config_dir_filepath + "dataset_config.json"
     runtime_config_path  = config_dir_filepath + "runtime_config.json"
     training_config_path = config_dir_filepath + "training_config.json"
-    
-    # Set experiment input dataset
-    input_dataset_config_path = "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/snips/jhtdb_isotropic1024coarse_pressure_snip8_config.json"
-    with open(input_dataset_config_path) as input_dataset_config_file: dataset_config = json.load(input_dataset_config_file)
     with open(dataset_config_path,"w") as dataset_config_file: json.dump(dataset_config,dataset_config_file,indent=4,sort_keys=True)
     
     # Set experiment id number 
@@ -31,11 +33,11 @@ if __name__=="__main__":
     counter, total = 1, (3*7*7)
     
     # Iterate through all inputs
-    for compression_ratio in [100]: # np.power(10,np.linspace(np.log10(10),np.log10(1000),3)):
+    for compression_ratio in np.power(10,np.linspace(np.log10(10),np.log10(1000),3)):
         
-        for learning_rate in [0.001]: # np.power(10,np.linspace(np.log10(1e-7),np.log10(1e-1),7)):
+        for learning_rate in np.power(10,np.linspace(np.log10(1e-7),np.log10(1e-1),7)):
             
-            for batch_fraction in [0.0005]: # np.power(10,np.linspace(np.log10(1e-4),np.log10(1e-2),7)):           
+            for batch_fraction in np.power(10,np.linspace(np.log10(1e-4),np.log10(1e-2),7)):           
          
                 # Set experiment campaign name
                 campaign_name = "exp{:04d}_cr{:011.6f}_lr{:11.9f}_bf{:11.9f}".format(experiment_id,compression_ratio,learning_rate,batch_fraction)    
@@ -94,7 +96,10 @@ if __name__=="__main__":
                 
                 # Run the compression experiment
                 runstring = "python NeurComp_SourceCode/compress_main.py " + "'" + json.dumps(network_config) + "' '" + json.dumps(dataset_config) + "' '" + json.dumps(runtime_config) + "' '" + json.dumps(training_config) + "' '" + o_filepath + "'"
-                os.system(runstring)
+                
+                print(runstring,"\n"*5)
+                
+                # os.system(runstring)
                 counter = counter + 1 
                 
                 if counter > 2: raise SystemError
