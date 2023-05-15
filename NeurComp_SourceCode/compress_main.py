@@ -15,7 +15,10 @@ import tensorflow as tf
 
 from data_management         import DataClass,MakeDatasetFromTensorSlc,MakeDatasetFromGenerator,SaveData
 from network_encoder         import EncodeParameters,EncodeArchitecture
+
 from network_model           import ConstructNetwork
+# from network_model_subclassing import ConstructNetwork
+
 from configuration_classes   import NetworkConfigurationClass,GenericConfigurationClass
 from compress_utilities      import TrainStep,SignalToNoise,GetLearningRate,MeanSquaredErrorMetric,Logger
 
@@ -199,7 +202,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
 
     # Generate the output volume and calculate the PSNR
     o_values.flat = SquashNet.predict(o_volume.flat,batch_size=training_config.batch_size,verbose="1")
-    o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(1,)),order="C")
+    o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(o_values.dimensions,)),order="C")
     print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat)))
     training_data["psnr"].append(SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat))
     
@@ -207,7 +210,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     combined_config_dict = (network_config | training_config | runtime_config | dataset_config)
 
     #==========================================================================
-    # Save network 
+    # Save network
     
     if runtime_config.save_network_flag:
         print("-"*80,"\nSAVING NETWORK:")
@@ -263,7 +266,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     #==========================================================================
     print("-"*80,"\n")
         
-    return None # SquashNet.get_weights()
+    return SquashNet
        
 #==============================================================================
 # Define the main function to run when file is invoked from within the terminal
@@ -271,6 +274,9 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
 if __name__=="__main__":
     
     if (len(sys.argv) == 1):
+        
+        #======================================================================
+        # This block will run in the event that this script is called in an IDE
     
         network_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/network_config.json"
         
@@ -279,7 +285,7 @@ if __name__=="__main__":
             network_config = NetworkConfigurationClass(network_config_dictionary)
         ##   
         
-        dataset_config_path = "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/snips/jhtdb_isotropic1024coarse_pressure_snip8_config.json"
+        dataset_config_path = "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_velocity/snips/jhtdb_isotropic1024coarse_velocity_snip8_config.json"
         
         with open(dataset_config_path) as dataset_config_file: 
             dataset_config_dictionary = json.load(dataset_config_file)
@@ -301,37 +307,36 @@ if __name__=="__main__":
         ##
         
         o_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
-        
+                
     else: 
 
-        # Example: sys.argv[1] = '{"frequencies": 0,"hidden_layers": 8,"network_name": "squashnet_test","target_compression_ratio":100.0}'
-        network_config = NetworkConfigurationClass(json.loads(sys.argv[1]))
+        #======================================================================
+        # This block will run in the event that this script is run via terminal        
+
+        network_config  = NetworkConfigurationClass(json.loads(sys.argv[1]))
     
-        # Example: sys.argv[2] = '{"columns": [[0, 1, 2], [3], []], "dtype": "float32", "i_filepath": "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/snips/jhtdb_isotropic1024coarse_pressure_snip8.npy", "normalise": True, "shape": [128, 128, 128, 4], "tabular": False}'
-        dataset_config = GenericConfigurationClass(json.loads(sys.argv[2]))
+        dataset_config  = GenericConfigurationClass(json.loads(sys.argv[2]))
     
-        # Example: sys.argv[3] = '{"bf_study_flag": False,"graph_flag": False,"lr_study_flag": False,"stats_flag": False}'
-        runtime_config = GenericConfigurationClass(json.loads(sys.argv[3]))
+        runtime_config  = GenericConfigurationClass(json.loads(sys.argv[3]))
        
-        # Example: sys.argv[4] = '{"batch_fraction": 0,"batch_size": 1024,"epochs": 30,"half_life": 3,"initial_lr": 0.005}'
         training_config = GenericConfigurationClass(json.loads(sys.argv[4]))
         
-        # Example: sys.argv[4] = '/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs'
-        o_filepath = sys.argv[5]
-    ##    
+        o_filepath      = sys.argv[5]
+        
+    #==========================================================================
     
-    # Construct the output filepath for all future saved files
+    # Construct the output filepath
     o_filepath = os.path.join(o_filepath,network_config.network_name)
     if not os.path.exists(o_filepath): os.makedirs(o_filepath)
-    
-    # Checkpoint checking in case execution fails
+        
+    # Create checkpoint and stdout logging files in case execution fails
     checkpoint_filename = os.path.join(o_filepath,"checkpoint.txt")
     stdout_log_filename = os.path.join(o_filepath,"stdout_log.txt")
     
-    # Run if checkpoint file doesnt already exist
+    # Check if the checkpoint file already exists
     if not os.path.exists(checkpoint_filename): 
         
-        # Start logging all print statements
+        # Start logging all console i/o
         sys.stdout = Logger(stdout_log_filename)   
     
         # Define ensemble output weights
@@ -342,7 +347,7 @@ if __name__=="__main__":
             ensemble_output = compress(network_config=network_config,dataset_config=dataset_config,runtime_config=runtime_config,training_config=training_config,o_filepath=o_filepath,index=index,ensemble_output=ensemble_output)   
         ##
         
-        # Checkpoint creation after successful execution
+        # Create a checkpoint file after successful execution
         with open(checkpoint_filename, mode='w'): pass
 
     else: print("Checkpoint file '{}' already exists: skipping.".format(checkpoint_filename))

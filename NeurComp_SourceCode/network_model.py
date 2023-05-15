@@ -12,9 +12,11 @@ import tensorflow as tf
 
 def SineLayer(inputs,units,name):
     
-    # x1 = sin(W1*x0 + b1)
+    # Mathematically: x1 = sin(W1*x0 + b1)
     
-    x = tf.keras.layers.Dense(units=units,name=name+"_dense")(inputs)
+    # s = tf.Variable(initial_value=1.0,dtype=tf.float32,trainable=True,name=name+"_scale")
+    
+    x = tf.keras.layers.Dense(units=units,name=name+"_dense")(inputs) # (s*inputs)
     x = tf.math.sin(x)
     
     return x
@@ -24,10 +26,13 @@ def SineLayer(inputs,units,name):
 
 def SineBlock(inputs,units,name):
     
-    # x1 = (1/2) * (x0 + sin(w12*sin(w11*x0 + b11) + b12))
+    # Mathematically: x1 = (1/2) * (x0 + sin(w12*sin(w11*x0 + b11) + b12))
+    
+    # s1 = tf.Variable(initial_value=1.0,dtype=tf.float32,trainable=True,name=name+"_scale_a")
+    # s2 = tf.Variable(initial_value=1.0,dtype=tf.float32,trainable=True,name=name+"_scale_b")
         
-    sine_1 = tf.math.sin(tf.keras.layers.Dense(units=units,name=name+"_dense_a")(inputs))
-    sine_2 = tf.math.sin(tf.keras.layers.Dense(units=units,name=name+"_dense_b")(sine_1))
+    sine_1 = tf.math.sin(tf.keras.layers.Dense(units=units,name=name+"_dense_a")(inputs)) # (s1*inputs)
+    sine_2 = tf.math.sin(tf.keras.layers.Dense(units=units,name=name+"_dense_b")(sine_1)) # (s2*sine_1)
     
     x = tf.math.add(inputs,sine_2)
     
@@ -48,7 +53,6 @@ def PositionalEncoding(inputs,frequencies):
     # Create an empty list to fill with encoding functions
     encoding_functions = []
     
-        
     # Iterate through each of the frequency bands
     for fb in frequency_bands:
         
@@ -80,7 +84,6 @@ def ConstructNetwork(layer_dimensions,frequencies):
         if (layer == 0):                  
           
             input_layer = tf.keras.layers.Input(shape=(layer_dimensions[layer],),name="l{}_input".format(layer))
-            
             
             # Add positional encoding if 'frequencies' > 0
             if (frequencies > 0):

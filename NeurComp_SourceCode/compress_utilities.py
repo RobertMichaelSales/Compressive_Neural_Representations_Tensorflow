@@ -106,7 +106,7 @@ def TrainStep(model,optimiser,metric,volume_batch,values_batch,weights_batch):
 def MeanSquaredError(true,pred,weights):
         
     # Compute the weighted mean squared error between signals
-    mse = tf.math.divide(tf.math.reduce_sum(tf.math.multiply(weights,tf.math.square(tf.math.subtract(pred,true)))),tf.reduce_sum(weights))                             
+    mse = tf.math.divide(tf.math.reduce_sum(tf.math.multiply(weights,tf.math.square(tf.math.subtract(pred,true)))),tf.math.reduce_sum(weights))                             
     
     return mse
 

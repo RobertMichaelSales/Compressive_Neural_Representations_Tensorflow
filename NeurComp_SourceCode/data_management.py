@@ -136,7 +136,6 @@ class DataClass():
                 ##
             ##     
         ##        
-            
     
         # Determine the field resolution
         self.resolution = self.data.shape[:-1]
@@ -212,6 +211,9 @@ def MakeDatasetFromTensorSlc(volume,values,weights,batch_size):
     
     # Handle the case where there are no weights -> set them all to 1
     if not weights.flat.any(): weights.flat = np.ones(shape=((np.prod(volume.resolution),)+(1,))).astype("float32")
+    
+    # Extend the weights to apply to each element of the output vector
+    weights.flat = np.repeat(weights.flat,volume.dimensions,axis=-1)
         
     # Create a dataset whose elements are slices of the given tensors
     dataset = tf.data.Dataset.from_tensor_slices((volume.flat,values.flat,weights.flat))
@@ -236,18 +238,6 @@ def MakeDatasetFromTensorSlc(volume,values,weights,batch_size):
             
     return dataset    
 
-#============================================================================== <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-# Define a generator function to supply the dataset with a stream of data pairs
-
-def GetDataGenerator(volume,values,weights):
-    
-    def DataGenerator():
-        
-        for vol,val,wht in zip(volume,values,weights):
-            
-            yield vol,val,wht
-            
-    return DataGenerator
 
 #==============================================================================
 # Define a function to create and return a 'tf.data.Dataset' dataset object
@@ -265,6 +255,9 @@ def MakeDatasetFromGenerator(volume,values,weights,batch_size):
     
     # Handle the case where there are no weights -> set them all to 1
     if not weights.flat.any(): weights.flat = np.ones(shape=((np.prod(volume.resolution),)+(1,))).astype("float32")
+    
+    # Extend the weights to apply to each element of the output vector
+    weights.flat = np.repeat(weights.flat,volume.dimensions,axis=-1)
 
     # Get the data generator as an iterable and pass it its arguments
     generator = GetDataGenerator(volume.flat,values.flat,weights.flat)
@@ -297,6 +290,19 @@ def MakeDatasetFromGenerator(volume,values,weights,batch_size):
     dataset.size = int(np.ceil(volume.flat.shape[0]/batch_size))
                 
     return dataset    
+
+#============================================================================== <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+# Define a generator function to supply the dataset with a stream of data pairs
+
+def GetDataGenerator(volume,values,weights):
+    
+    def DataGenerator():
+        
+        for vol,val,wht in zip(volume,values,weights):
+            
+            yield vol,val,wht
+            
+    return DataGenerator
 
 #==============================================================================
 # Define a function to concatenate and save a scalar field to a '.npy' file

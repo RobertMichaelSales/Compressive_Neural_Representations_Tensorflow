@@ -2,6 +2,6 @@
     "ensemble_flag": false,
     "print_verbose": false,
     "save_network_flag": false,
-    "save_outputs_flag": false,
+    "save_outputs_flag": true,
     "save_results_flag": true
 }
