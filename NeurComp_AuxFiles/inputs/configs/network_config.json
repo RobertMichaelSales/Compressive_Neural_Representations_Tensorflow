@@ -1,7 +1,7 @@
 {
-    "frequencies": 0,
+    "frequencies": 10,
     "hidden_layers": 14,
     "minimum_neurons_per_layer": 1,
-    "network_name": "exp0001_0020",
+    "network_name": "frequencies_10",
     "target_compression_ratio": 100
 }
