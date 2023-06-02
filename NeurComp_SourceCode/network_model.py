@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 09.02.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 02.06.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -15,7 +15,7 @@ def SineLayer(inputs,units,name):
     # Mathematically: x1 = sin(W1*x0 + b1)
     
     # s = tf.Variable(initial_value=1.0,dtype=tf.float32,trainable=True,name=name+"_scale")
-    
+        
     x = tf.keras.layers.Dense(units=units,name=name+"_dense")(inputs) # (s*inputs)
     x = tf.math.sin(x)
     
@@ -30,7 +30,7 @@ def SineBlock(inputs,units,name):
     
     # s1 = tf.Variable(initial_value=1.0,dtype=tf.float32,trainable=True,name=name+"_scale_a")
     # s2 = tf.Variable(initial_value=1.0,dtype=tf.float32,trainable=True,name=name+"_scale_b")
-        
+            
     sine_1 = tf.math.sin(tf.keras.layers.Dense(units=units,name=name+"_dense_a")(inputs)) # (s1*inputs)
     sine_2 = tf.math.sin(tf.keras.layers.Dense(units=units,name=name+"_dense_b")(sine_1)) # (s2*sine_1)
     
@@ -60,7 +60,7 @@ def PositionalEncoding(inputs,frequencies):
         for pf in periodic_functions:
             
             # Append encoding lambda functions with arguments
-            encoding_functions.append(lambda x, pf=pf, fb=fb: pf(x*math.pi*fb))
+            encoding_functions.append(lambda x, pf=pf, fb=fb: pf(x*np.pi*fb))
        
         ##
         
@@ -75,7 +75,11 @@ def PositionalEncoding(inputs,frequencies):
 # Define a function that constructs the 'SIREN' network 
 
 def ConstructNetwork(layer_dimensions,frequencies):
+    
+    # Set python, numpy and tensorflow random seeds for the same initialisation
+    import random; tf.random.set_seed(123);np.random.seed(123);random.seed(123)
  
+    # Record the number of total network layers
     total_layers = len(layer_dimensions)
 
     for layer in np.arange(total_layers):

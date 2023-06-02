@@ -11,7 +11,7 @@
         []
     ],
     "dtype": "float32",
-    "i_filepath": "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/snips/jhtdb_isotropic1024coarse_pressure_snip8.npy",
+    "i_filepath": "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/crops/jhtdb_isotropic1024coarse_pressure_crop8.npy",
     "normalise": true,
     "shape": [
         128,

@@ -324,7 +324,7 @@ def SaveData(output_data_path,volume,values,reverse_normalise=True):
     volume_list, values_dict = [],{}
     
     # Check volume and values are both 3-D
-    if (volume.dimensions == values.dimensions == 3):
+    if (volume.dimensions == 3):
         pass
     else:
         return None

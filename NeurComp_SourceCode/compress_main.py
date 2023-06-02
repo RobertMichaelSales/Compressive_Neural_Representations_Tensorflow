@@ -104,7 +104,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     
     # Build NeurComp from the config information
     SquashNet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
-                   
+                      
     # Set a training optimiser
     optimiser = tf.keras.optimizers.Adam()
     
@@ -285,7 +285,7 @@ if __name__=="__main__":
             network_config = NetworkConfigurationClass(network_config_dictionary)
         ##   
         
-        dataset_config_path = "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_velocity/snips/jhtdb_isotropic1024coarse_velocity_snip8_config.json"
+        dataset_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/dataset_config.json"
         
         with open(dataset_config_path) as dataset_config_file: 
             dataset_config_dictionary = json.load(dataset_config_file)
@@ -307,7 +307,7 @@ if __name__=="__main__":
         ##
         
         o_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
-                
+        
     else: 
 
         #======================================================================

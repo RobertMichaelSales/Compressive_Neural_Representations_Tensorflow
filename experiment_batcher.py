@@ -18,7 +18,7 @@ if __name__=="__main__":
     
     # Set counter and total
     count = 1
-    total = 1*3*7*7
+    total = 1
     
     # Iterate through all inputs
     for input_dataset_config_path in input_dataset_config_paths:

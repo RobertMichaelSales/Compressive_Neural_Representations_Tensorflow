@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 09.02.2023  \\   Author: Robert Sales """
+""" Created: 01.05.2022  \\  Updated: 02.06.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -88,6 +88,9 @@ def PositionalEncoding(inputs,frequencies):
 # Define a function that creates a SIREN network using the Keras functional API
 
 def ConstructNetwork(layer_dimensions,frequencies):
+ 
+    # Set python, numpy and tensorflow random seeds for the same initialisation
+    import random; tf.random.set_seed(123);np.random.seed(123);random.seed(123)
  
     # Compute the total number of network layers
     total_layers = len(layer_dimensions)
