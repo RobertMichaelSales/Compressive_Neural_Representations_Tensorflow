@@ -1,100 +1,92 @@
-""" Created: 10.11.2022  \\  Updated: 04.04.2023  \\   Author: Robert Sales """
+""" Created: 10.11.2022  \\  Updated: 31.05.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries
 
-import os, json
+import os, json, sys, glob
 import numpy as np
 
 #==============================================================================
 
-if __name__=="__main__":
+if __name__=="__main__": 
+
+    # Set input data config options
+    input_dataset_config_paths = sorted(glob.glob("/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/crops/jhtdb_isotropic1024coarse_pressure_crop2_config.json"))
     
-    # Set config directory
-    config_dir_filepath  = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/"
-    
-    # Set config filepaths
-    network_config_path  = config_dir_filepath + "network_config.json"
-    dataset_config_path  = config_dir_filepath + "dataset_config.json"
-    runtime_config_path  = config_dir_filepath + "runtime_config.json"
-    training_config_path = config_dir_filepath + "training_config.json"
-    
-    # Set experiment input dataset
-    input_dataset_config_path = "/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/snips/jhtdb_isotropic1024coarse_pressure_snip4_config.json"
-    with open(input_dataset_config_path) as input_dataset_config_file: dataset_config = json.load(input_dataset_config_file)
-    with open(dataset_config_path,"w") as dataset_config_file: json.dump(dataset_config,dataset_config_file,indent=4,sort_keys=True)
-    
-    # Set experiment id number 
-    experiment_id = 1;
+    # Set experiment number
+    experiment_num = 1
     
     # Set counter and total
-    counter, total = 1, (5*7*7)
-    
-    # Iterate through all inputs
-    for compression_ratio in np.power(10,np.linspace(np.log10(10),np.log10(1000),3)):
+    count = 1
+    total = 1
         
-        for learning_rate in np.power(10,np.linspace(np.log10(1e-7),np.log10(1e-1),7)):
+    # Iterate through all inputs
+    for input_dataset_config_path in input_dataset_config_paths:
+    
+        for compression_ratio in np.array([50]):
             
-            for batch_fraction in np.power(10,np.linspace(np.log10(1e-4),np.log10(1e-2),7)):           
-         
-                # Set experiment campaign name
-                campaign_name = "exp{:04d}_cr{:011.6f}_lr{:11.9f}_bf{:11.9f}".format(experiment_id,compression_ratio,learning_rate,batch_fraction)    
+            for learning_rate in np.array([1e-3]):
+                
+                for batch_fraction in np.array([0]):     
                     
-                # Print this experiment number
-                print("\n")
-                print("*"*80)
-                print("Experiment {}/{}: '{}'".format(counter,total,campaign_name))
-                print("*"*80)
-                print("\n")
-                
-                # Define the network config
-                network_config = {
-                    "network_name"              : campaign_name,
-                    "hidden_layers"             : 14,
-                    "frequencies"               : 0,
-                    "target_compression_ratio"  : compression_ratio,
-                    "minimum_neurons_per_layer" : 1,
-                    }
-                
-                # Save the network config
-                with open(network_config_path,"w") as network_config_file: 
-                    json.dump(network_config,network_config_file,indent=4,sort_keys=True)
+                    for frequencies in np.array([0]):
+                        
+                        for hidden_layers in np.array([14]):
+             
+                            # Set experiment campaign name
+                            campaign_name = "exp{:03d}_cr{:011.6f}_lr{:11.9f}_bf{:11.9f}_fr{:03d}_hl{:03d}".format(experiment_num,compression_ratio,learning_rate,batch_fraction,frequencies,hidden_layers)    
+                            
+                            # Print this experiment number
+                            print("\n");print("*"*80);print("Experiment {}/{}: '{}'".format(count,total,campaign_name));print("*"*80);print("\n")
+                            
+                            # Define the dataset config
+                            with open(input_dataset_config_path) as input_dataset_config_file: dataset_config = json.load(input_dataset_config_file)
+                            
+                            # Define the network config
+                            network_config = {
+                                "network_name"              : campaign_name,
+                                "hidden_layers"             : int(hidden_layers),
+                                "frequencies"               : int(frequencies),
+                                "target_compression_ratio"  : float(compression_ratio),
+                                "minimum_neurons_per_layer" : 1,
+                                }
+                                                   
+                            # Define the runtime config
+                            runtime_config = {
+                                "cache_dataset"             : False,
+                                "print_verbose"             : True,
+                                "ensemble_flag"             : False,
+                                "shuffle_dataset"           : True,
+                                "save_network_flag"         : False,
+                                "save_outputs_flag"         : True,
+                                "save_results_flag"         : True,
+                                "save_spectra_flag"         : True,
+                                }
+                            
+                            # Define the training config
+                            training_config = {
+                                "initial_lr"                : float(learning_rate),
+                                "batch_size"                : 1024*16,
+                                "batch_fraction"            : float(batch_fraction),
+                                "epochs"                    : 30,
+                                "half_life"                 : 2,            
+                                }            
+                            
+                            # Define the output directory
+                            o_filepath = "/Data/Compression_Experiments/nir_experiments/" + os.path.join(*dataset_config["i_filepath"].split("/")[3:]).replace(".npy","")
+                            
+                            # Run the compression experiment
+                            runstring = "python NeurComp_SourceCode/compress_main.py " + "'" + json.dumps(network_config) + "' '" + json.dumps(dataset_config) + "' '" + json.dumps(runtime_config) + "' '" + json.dumps(training_config) + "' '" + o_filepath + "'"
+                            os.system(runstring)
+                            
+                            # Render the results in ParaView
+                            runstring = ""
+                            os.system(runstring)
+                            
+                            count = count + 1 
+                        ##
+                    ##
                 ##
-                                       
-                # Define the runtime config
-                runtime_config = {
-                    "ensemble_flag"             : False,
-                    "save_network_flag"         : False,
-                    "save_outputs_flag"         : True,
-                    "save_results_flag"         : True
-                    }
-                
-                # Save the runtime config
-                with open(runtime_config_path,"w") as runtime_config_file: 
-                    json.dump(runtime_config,runtime_config_file,indent=4,sort_keys=True)
-                ##
-                
-                # Define the training config
-                training_config = {
-                    "initial_lr"                : learning_rate,
-                    "batch_size"                : 1024,
-                    "batch_fraction"            : batch_fraction,
-                    "epochs"                    : 30,
-                    "half_life"                 : 2,            
-                    }            
-                
-                # Save the training config
-                with open(training_config_path,"w") as training_config_file: 
-                    json.dump(training_config,training_config_file,indent=4,sort_keys=True)
-                ##
-                
-                # Define the output directory
-                o_filepath = dataset_config["i_filepath"].replace("Datasets","Experiments").replace("/snips","").replace(".npy","")
-                                
-                # Run the compression experiment
-                runstring = "python NeurComp_SourceCode/compress_main.py " + "'" + json.dumps(network_config) + "' '" + json.dumps(dataset_config) + "' '" + json.dumps(runtime_config) + "' '" + json.dumps(training_config) + "' '" + o_filepath + "'"
-                os.system(runstring)
-                counter = counter + 1
             ##
         ##
     ##
