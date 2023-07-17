@@ -4,6 +4,7 @@
 # Import libraries and set flags
 
 import math, sys
+import numpy as np
 import tensorflow as tf
 
 #==============================================================================
@@ -132,7 +133,7 @@ def SignalToNoise(true,pred,weights):
     rng = abs(true.max()-true.min())
 
     # Compute the peak signal-to-noise ratio
-    psnr = -20.0*(math.log10(math.sqrt(mse)/rng))
+    psnr = -20.0*(np.log10(np.sqrt(mse)/rng))
     
     return psnr
 

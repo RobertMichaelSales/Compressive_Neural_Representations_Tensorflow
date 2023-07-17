@@ -204,31 +204,34 @@ class DataClass():
 # -> Note: Moving 'dataset.cache()' up/down will reduce runtime performance
 # -> significantly
 
-def MakeDatasetFromTensorSlc(volume,values,weights,batch_size):
-    
-    print("\n{:30}{}{}".format("Made TF dataset:","batch_size = ",batch_size))
-    print("\n{:30}{}".format("Method:","tf.data.Dataset.from_tensor_slices()"))
-    
+def MakeDatasetFromTensorSlc(volume,values,weights,batch_size,cache_dataset):
+        
     # Handle the case where there are no weights -> set them all to 1
     if not weights.flat.any(): weights.flat = np.ones(shape=((np.prod(volume.resolution),)+(1,))).astype("float32")
     
     # Extend the weights to apply to each element of the output vector
-    weights.flat = np.repeat(weights.flat,volume.dimensions,axis=-1)
-        
+    weights.flat = np.repeat(weights.flat,values.dimensions,axis=-1)     
+    
+    # Convert all numpy arrays to tensorflow tensors, then pre-shuffle
+    shuffle_order = tf.random.shuffle(tf.range(start=0,limit=values.size,delta=1,dtype=tf.int32))
+    volume_flat = tf.gather(tf.convert_to_tensor(volume.flat),  shuffle_order)
+    values_flat = tf.gather(tf.convert_to_tensor(values.flat),  shuffle_order)
+    weights_flat = tf.gather(tf.convert_to_tensor(weights.flat),shuffle_order)
+    
     # Create a dataset whose elements are slices of the given tensors
-    dataset = tf.data.Dataset.from_tensor_slices((volume.flat,values.flat,weights.flat))
+    dataset = tf.data.Dataset.from_tensor_slices((volume_flat,values_flat,weights_flat))
     
     # Cache the elements of the dataset to increase runtime performance
-    dataset = dataset.cache()
+    if cache_dataset: dataset = dataset.cache()
 
     # Set the shuffle buffer size to equal the number of scalars
-    buffer_size = np.prod(values.resolution)
+    # buffer_size = np.prod(values.resolution)
     
     # Randomly shuffle the elements of the cached dataset 
-    dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
+    # dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=False)
                 
     # Concatenate elements of the dataset into mini-batches
-    dataset = dataset.batch(batch_size=batch_size,drop_remainder=False)
+    dataset = dataset.batch(batch_size=batch_size,drop_remainder=False,num_parallel_calls=tf.data.AUTOTUNE)
     
     # Pre-fetch elements from the dataset to increase throughput
     dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
@@ -237,7 +240,6 @@ def MakeDatasetFromTensorSlc(volume,values,weights,batch_size):
     dataset.size = len(dataset)
             
     return dataset    
-
 
 #==============================================================================
 # Define a function to create and return a 'tf.data.Dataset' dataset object
@@ -248,19 +250,16 @@ def MakeDatasetFromTensorSlc(volume,values,weights,batch_size):
 # -> Note: Moving 'dataset.cache()' up/down will reduce runtime performance
 # -> significantly
 
-def MakeDatasetFromGenerator(volume,values,weights,batch_size):
-    
-    print("\n{:30}{}{}".format("Made TF dataset:","batch_size = ",batch_size))
-    print("\n{:30}{}".format("Method:","tf.data.Dataset.from_generator()"))
+def MakeDatasetFromGenerator(volume,values,weights,batch_size,cache_dataset):
     
     # Handle the case where there are no weights -> set them all to 1
     if not weights.flat.any(): weights.flat = np.ones(shape=((np.prod(volume.resolution),)+(1,))).astype("float32")
     
     # Extend the weights to apply to each element of the output vector
-    weights.flat = np.repeat(weights.flat,volume.dimensions,axis=-1)
+    weights.flat = np.repeat(weights.flat,values.dimensions,axis=-1)
 
     # Get the data generator as an iterable and pass it its arguments
-    generator = GetDataGenerator(volume.flat,values.flat,weights.flat)
+    generator = GetDataGenerator(tf.convert_to_tensor(volume.flat),tf.convert_to_tensor(values.flat),tf.convert_to_tensor(weights.flat))
     
     # Set the expected output types
     output_types = (tf.float32,tf.float32,tf.float32)
@@ -272,16 +271,16 @@ def MakeDatasetFromGenerator(volume,values,weights,batch_size):
     dataset = tf.data.Dataset.from_generator(generator=generator,output_types=output_types,output_shapes=output_shapes)
     
     # Cache the elements of the dataset to increase runtime performance
-    dataset = dataset.cache()
+    if cache_dataset: dataset = dataset.cache()
 
     # Set the shuffle buffer size to equal the number of scalars
-    buffer_size = np.prod(values.resolution)
+    # buffer_size = np.prod(values.resolution)
     
     # Randomly shuffle the elements of the cached dataset 
-    dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
-          
+    # dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
+                
     # Concatenate elements of the dataset into mini-batches
-    dataset = dataset.batch(batch_size=batch_size,drop_remainder=True)
+    dataset = dataset.batch(batch_size=batch_size,drop_remainder=False,num_parallel_calls=tf.data.AUTOTUNE)
     
     # Pre-fetch elements from the dataset to increase throughput
     dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
@@ -346,5 +345,32 @@ def SaveData(output_data_path,volume,values,reverse_normalise=True):
     ##
         
     return None
+
+#==============================================================================
+
+def Benchmark(dataset, num_epochs=2):
+    
+    import time
+    
+    # Start timing the entire training loop
+    time_total_tick = time.perf_counter()
+    
+    for epoch_num in range(num_epochs):
+        
+        # Start timing the epoch training loop
+        time_epoch_tick = time.perf_counter()
+        
+        # Performing an artificial training step
+        for sample in dataset: time.sleep(0.001)
+
+        # Stop timing the epoch training loop
+        time_epoch_tock = time.perf_counter()
+        
+        print("Epoch time:",time_epoch_tock-time_epoch_tick)
+        
+    # Stop timing the entire training loop
+    time_total_tock = time.perf_counter()
+    
+    print("Total time:",time_total_tock-time_total_tick)
 
 #=============================================================================#

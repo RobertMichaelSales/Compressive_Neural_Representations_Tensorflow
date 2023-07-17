@@ -10,22 +10,22 @@ gc.enable()
 import numpy as np
 import tensorflow as tf
 
+tf.compat.v1.ConfigProto.force_gpu_compatible=True
+
 #==============================================================================
 # Import user-defined libraries 
 
+from data_complexity         import SaveSpectrum
 from data_management         import DataClass,MakeDatasetFromTensorSlc,MakeDatasetFromGenerator,SaveData
 from network_encoder         import EncodeParameters,EncodeArchitecture
-
 from network_model           import ConstructNetwork
-# from network_model_subclassing import ConstructNetwork
-
 from configuration_classes   import NetworkConfigurationClass,GenericConfigurationClass
 from compress_utilities      import TrainStep,SignalToNoise,GetLearningRate,MeanSquaredErrorMetric,Logger
 
 #==============================================================================
 
 def compress(network_config,dataset_config,runtime_config,training_config,o_filepath,index,ensemble_output):
-    
+        
     print("-"*80,"\nSQUASHNET Mini: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
     
     print("\nDateTime: {}".format(datetime.datetime.now().strftime("%d %b %Y - %H:%M:%S")))
@@ -63,7 +63,6 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     
     # Determine whether data exceeds memory and choose how to load the dataset
     dataset_exceeds_memory = (input_file_size > min(available_memory,threshold_memory))
-    MakeDataset = MakeDatasetFromGenerator if dataset_exceeds_memory else MakeDatasetFromTensorSlc
     
     #==========================================================================
     # Initialise i/o 
@@ -128,15 +127,19 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         training_config.batch_fraction = (training_config.batch_size/i_values.size) 
     else: pass  
 
+    print("\n{:30}{}{}".format("Batch:","batch_size = ",training_config.batch_size))
+    print("\n{:30}{}{}".format("Cache:","cache_dataset = ",runtime_config.cache_dataset))
+    print("\n{:30}{}{}".format("Shuffle:","shuffle_dataset = ",runtime_config.shuffle_dataset))
+    
     # Generate a TF dataset to supply volume and values batches during training 
-    dataset = MakeDataset(volume=i_volume,values=i_values,weights=weights,batch_size=training_config.batch_size)
-        
+    dataset = MakeDatasetFromTensorSlc(volume=i_volume,values=i_values,weights=weights,batch_size=training_config.batch_size,cache_dataset=runtime_config.cache_dataset)
+    
     #==========================================================================  
     # Training loop
     print("-"*80,"\nCOMPRESSING DATA:")
         
     # Create a dictionary of lists to store training data
-    training_data = {"epoch":[],"error":[],"time":[],"learning_rate":[],"psnr":[],"dataset_exceeds_memory": dataset_exceeds_memory,"vol_std":volume_standard_deviation,"val_std":values_standard_deviation}
+    training_data = {"epoch":[],"error":[],"time":[],"learning_rate":[],"psnr":[],"vol_std":volume_standard_deviation,"val_std":values_standard_deviation}
 
     # Start the overall training timer
     training_time_tick = time.time()
@@ -145,7 +148,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     for epoch in range(training_config.epochs):
         
         print("\n",end="")
-        
+                        
         # Store and print the current epoch number
         training_data["epoch"].append(float(epoch))
         print("{:30}{:02}/{:02}".format("Epoch:",epoch,training_config.epochs))
@@ -167,8 +170,9 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
             TrainStepTFF(model=SquashNet,optimiser=optimiser,metric=metric,volume_batch=volume_batch,values_batch=values_batch,weights_batch=weights_batch)
 
             if batch >= dataset.size: break
+            
         ##
-
+        
         print("\n",end="")
         
         # End the epoch time and store the elapsed time 
@@ -190,6 +194,14 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
             runtime_config.save_outputs_flag = False
             break
         else: pass
+    
+        # Make a new dataset instance, garbage collect
+        if runtime_config.shuffle_dataset and (epoch != (training_config.epochs-1)):
+            del(dataset); gc.collect()
+            dataset = MakeDatasetFromTensorSlc(volume=i_volume,values=i_values,weights=weights,batch_size=training_config.batch_size,cache_dataset=runtime_config.cache_dataset)
+            print("\n{:30}".format("Reshuffling dataset"))
+        else: pass
+   
     ##   
  
     # End the overall training timer
@@ -200,9 +212,11 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     #==========================================================================
     # Finalise outputs    
 
-    # Generate the output volume and calculate the PSNR
+    # Generate the output volume
     o_values.flat = SquashNet.predict(o_volume.flat,batch_size=training_config.batch_size,verbose="1")
     o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(o_values.dimensions,)),order="C")
+    
+    # Calculate and report PSNR
     print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat)))
     training_data["psnr"].append(SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat))
     
@@ -234,17 +248,35 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         print("-"*80,"\nSAVING OUTPUTS:")
         print("\n",end="")
         
-        # Save o_volume and o_values to ".npy" and ".vtk" files
-        output_data_path = os.path.join(o_filepath,"output_volume")
-        SaveData(output_data_path=output_data_path,volume=o_volume,values=o_values,reverse_normalise=True)
-        print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1]))
-        
         # Save i_volume and i_values to ".npy" and ".vtk" files
-        output_data_path = os.path.join(o_filepath,"input_volume")
+        output_data_path = os.path.join(o_filepath,"i_volume")
         SaveData(output_data_path=output_data_path,volume=i_volume,values=i_values,reverse_normalise=True)
         print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1])) 
+        
+        # Save o_volume and o_values to ".npy" and ".vtk" files
+        output_data_path = os.path.join(o_filepath,"o_volume")
+        SaveData(output_data_path=output_data_path,volume=o_volume,values=o_values,reverse_normalise=True)
+        print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1]))        
     else: pass    
+
+    #==========================================================================
+    # Save spectra
     
+    if runtime_config.save_spectra_flag:
+        print("-"*80,"\nSAVING SPECTRA:")
+        print("\n",end="")
+        
+        # Save the i_values spectrum to ".npy" and ".vtk" files
+        output_data_path = os.path.join(o_filepath,"i_spectrum")
+        SaveSpectrum(output_data_path=output_data_path,values=i_values,maximum=i_values.max,minimum=i_values.min)
+        print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1])) 
+        
+        # Save the o_values spectrum to ".npy" and ".vtk" files
+        output_data_path = os.path.join(o_filepath,"o_spectrum")
+        SaveSpectrum(output_data_path=output_data_path,values=o_values,maximum=i_values.max,minimum=i_values.min)
+        print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1])) 
+    else: pass    
+
     #==========================================================================
     # Save results
     
@@ -324,7 +356,7 @@ if __name__=="__main__":
         o_filepath      = sys.argv[5]
         
     #==========================================================================
-    
+
     # Construct the output filepath
     o_filepath = os.path.join(o_filepath,network_config.network_name)
     if not os.path.exists(o_filepath): os.makedirs(o_filepath)

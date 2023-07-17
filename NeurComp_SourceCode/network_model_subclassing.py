@@ -14,7 +14,7 @@ class SineLayer(tf.keras.layers.Layer):
     
     def __init__(self,units,name):
         super(SineLayer,self).__init__(name=name)
-        omega = 1.0
+        omega = 30.0
         
         # Create learnable scale parameter(s) ('omega' from NeurComp)
         self.scale_1 = tf.Variable(initial_value=omega,dtype="float32",trainable=False)
@@ -36,7 +36,7 @@ class SineBlock(tf.keras.layers.Layer):
     
     def __init__(self,units,name):
         super(SineBlock,self).__init__(name=name)
-        omega = 1.0
+        omega = 30.0
         
         # Create learnable scale parameter(s) ('omega' from NeurComp)
         self.scale_1 = tf.Variable(initial_value=omega,dtype="float32",trainable=False)
