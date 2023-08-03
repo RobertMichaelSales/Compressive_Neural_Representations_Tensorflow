@@ -1,4 +1,4 @@
-""" Created: 10.11.2022  \\  Updated: 31.05.2023  \\   Author: Robert Sales """
+""" Created: 10.11.2022  \\  Updated: 17.07.2023  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries
@@ -11,7 +11,7 @@ import numpy as np
 if __name__=="__main__": 
 
     # Set input data config options
-    input_dataset_config_paths = sorted(glob.glob("/Data/Compression_Datasets/jhtdb_isotropic1024coarse_pressure/crops/jhtdb_isotropic1024coarse_pressure_crop2_config.json"))
+    input_dataset_config_paths = sorted(glob.glob("/Data/Compression_Datasets/jhtdb_buoyancydriventurbulence_pressure_complexity/snapshot_*/jhtdb_buoyancydriventurbulence_pressure_512_config.json"))
     
     # Set experiment number
     experiment_num = 1
@@ -54,7 +54,7 @@ if __name__=="__main__":
                             # Define the runtime config
                             runtime_config = {
                                 "cache_dataset"             : False,
-                                "print_verbose"             : True,
+                                "print_verbose"             : False,
                                 "ensemble_flag"             : False,
                                 "shuffle_dataset"           : True,
                                 "save_network_flag"         : False,
@@ -66,7 +66,7 @@ if __name__=="__main__":
                             # Define the training config
                             training_config = {
                                 "initial_lr"                : float(learning_rate),
-                                "batch_size"                : 1024*16,
+                                "batch_size"                : 512*8*8,
                                 "batch_fraction"            : float(batch_fraction),
                                 "epochs"                    : 30,
                                 "half_life"                 : 2,            
@@ -79,11 +79,20 @@ if __name__=="__main__":
                             runstring = "python NeurComp_SourceCode/compress_main.py " + "'" + json.dumps(network_config) + "' '" + json.dumps(dataset_config) + "' '" + json.dumps(runtime_config) + "' '" + json.dumps(training_config) + "' '" + o_filepath + "'"
                             os.system(runstring)
                             
+                            # Define the plotting config
+                            plotting_config = {
+                                "filepath"                  : os.path.join(o_filepath,campaign_name),
+                                "render_isom"               : True,
+                                "render_orth"               : True,
+                                "render_zoom"               : float(1.0),                           
+                                }                            
+                            
                             # Render the results in ParaView
-                            runstring = ""
-                            os.system(runstring)
+                            runstring = "pvpython ParaView_SourceCode/plot_volumes.py " + "'" + json.dumps(plotting_config) + "'"
+                            # os.system(runstring)
                             
                             count = count + 1 
+                            
                         ##
                     ##
                 ##
