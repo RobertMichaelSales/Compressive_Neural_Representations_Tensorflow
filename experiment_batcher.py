@@ -25,74 +25,77 @@ if __name__=="__main__":
     
         for compression_ratio in np.array([50]):
             
-            for learning_rate in np.array([1e-3]):
-                
-                for batch_fraction in np.array([0]):     
+            for quantisation_factor in np.array([1,2,4]):
+            
+                for learning_rate in np.array([1e-3]):
                     
-                    for frequencies in np.array([0]):
+                    for batch_fraction in np.array([0]):     
                         
-                        for hidden_layers in np.array([14]):
-             
-                            # Set experiment campaign name
-                            campaign_name = "exp{:03d}_cr{:011.6f}_lr{:11.9f}_bf{:11.9f}_fr{:03d}_hl{:03d}".format(experiment_num,compression_ratio,learning_rate,batch_fraction,frequencies,hidden_layers)    
+                        for frequencies in np.array([0]):
                             
-                            # Print this experiment number
-                            print("\n");print("*"*80);print("Experiment {}/{}: '{}'".format(count,total,campaign_name));print("*"*80);print("\n")
-                            
-                            # Define the dataset config
-                            with open(input_dataset_config_path) as input_dataset_config_file: dataset_config = json.load(input_dataset_config_file)
-                            
-                            # Define the network config
-                            network_config = {
-                                "network_name"              : campaign_name,
-                                "hidden_layers"             : int(hidden_layers),
-                                "frequencies"               : int(frequencies),
-                                "target_compression_ratio"  : float(compression_ratio),
-                                "minimum_neurons_per_layer" : 1,
-                                }
-                                                   
-                            # Define the runtime config
-                            runtime_config = {
-                                "cache_dataset"             : False,
-                                "print_verbose"             : False,
-                                "ensemble_flag"             : False,
-                                "shuffle_dataset"           : True,
-                                "save_network_flag"         : False,
-                                "save_outputs_flag"         : True,
-                                "save_results_flag"         : True,
-                                "save_spectra_flag"         : True,
-                                }
-                            
-                            # Define the training config
-                            training_config = {
-                                "initial_lr"                : float(learning_rate),
-                                "batch_size"                : 512*8*8,
-                                "batch_fraction"            : float(batch_fraction),
-                                "epochs"                    : 30,
-                                "half_life"                 : 2,            
-                                }            
-                            
-                            # Define the output directory
-                            o_filepath = "/Data/Compression_Experiments/nir_experiments/" + os.path.join(*dataset_config["i_filepath"].split("/")[3:]).replace(".npy","")
-                            
-                            # Run the compression experiment
-                            runstring = "python NeurComp_SourceCode/compress_main.py " + "'" + json.dumps(network_config) + "' '" + json.dumps(dataset_config) + "' '" + json.dumps(runtime_config) + "' '" + json.dumps(training_config) + "' '" + o_filepath + "'"
-                            os.system(runstring)
-                            
-                            # Define the plotting config
-                            plotting_config = {
-                                "filepath"                  : os.path.join(o_filepath,campaign_name),
-                                "render_isom"               : True,
-                                "render_orth"               : True,
-                                "render_zoom"               : float(1.0),                           
-                                }                            
-                            
-                            # Render the results in ParaView
-                            runstring = "pvpython ParaView_SourceCode/plot_volumes.py " + "'" + json.dumps(plotting_config) + "'"
-                            # os.system(runstring)
-                            
-                            count = count + 1 
-                            
+                            for hidden_layers in np.array([14]):
+                 
+                                # Set experiment campaign name
+                                campaign_name = "exp{:03d}_cr{:011.6f}_lr{:11.9f}_bf{:11.9f}_fr{:03d}_hl{:03d}_qf{:03d}".format(experiment_num,compression_ratio,learning_rate,batch_fraction,frequencies,hidden_layers,quantisation_factor)    
+                                
+                                # Print this experiment number
+                                print("\n");print("*"*80);print("Experiment {}/{}: '{}'".format(count,total,campaign_name));print("*"*80);print("\n")
+                                
+                                # Define the dataset config
+                                with open(input_dataset_config_path) as input_dataset_config_file: dataset_config = json.load(input_dataset_config_file)
+                                
+                                # Define the network config
+                                network_config = {
+                                    "network_name"              : campaign_name,
+                                    "hidden_layers"             : int(hidden_layers),
+                                    "frequencies"               : int(frequencies),
+                                    "target_compression_ratio"  : float(compression_ratio),
+                                    "minimum_neurons_per_layer" : 1,
+                                    "quantisation_factor"       : int(quantisation_factor),
+                                    }
+                                                       
+                                # Define the runtime config
+                                runtime_config = {
+                                    "cache_dataset"             : False,
+                                    "print_verbose"             : False,
+                                    "ensemble_flag"             : False,
+                                    "shuffle_dataset"           : True,
+                                    "save_network_flag"         : False,
+                                    "save_outputs_flag"         : True,
+                                    "save_results_flag"         : True,
+                                    "save_spectra_flag"         : True,
+                                    }
+                                
+                                # Define the training config
+                                training_config = {
+                                    "initial_lr"                : float(learning_rate),
+                                    "batch_size"                : 512*8*8,
+                                    "batch_fraction"            : float(batch_fraction),
+                                    "epochs"                    : 30,
+                                    "half_life"                 : 2,            
+                                    }            
+                                
+                                # Define the output directory
+                                o_filepath = "/Data/Compression_Experiments/nir_experiments/" + os.path.join(*dataset_config["i_filepath"].split("/")[3:]).replace(".npy","")
+                                
+                                # Run the compression experiment
+                                runstring = "python NeurComp_SourceCode/compress_main.py " + "'" + json.dumps(network_config) + "' '" + json.dumps(dataset_config) + "' '" + json.dumps(runtime_config) + "' '" + json.dumps(training_config) + "' '" + o_filepath + "'"
+                                os.system(runstring)
+                                
+                                # Define the plotting config
+                                plotting_config = {
+                                    "filepath"                  : os.path.join(o_filepath,campaign_name),
+                                    "render_isom"               : True,
+                                    "render_orth"               : True,
+                                    "render_zoom"               : float(1.0),                           
+                                    }                            
+                                
+                                # Render the results in ParaView
+                                runstring = "pvpython ParaView_SourceCode/plot_volumes.py " + "'" + json.dumps(plotting_config) + "'"
+                                # os.system(runstring)
+                                
+                                count = count + 1 
+                                
                         ##
                     ##
                 ##

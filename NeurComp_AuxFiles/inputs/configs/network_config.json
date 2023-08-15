@@ -1,7 +1,8 @@
 {
-    "frequencies": 8,
+    "frequencies": 0,
     "hidden_layers": 14,
     "minimum_neurons_per_layer": 1,
     "network_name": "test_profiling",
-    "target_compression_ratio": 50
+    "target_compression_ratio": 50,
+    "bits_per_neuron": 16
 }

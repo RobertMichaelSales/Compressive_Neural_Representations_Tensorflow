@@ -138,3 +138,60 @@ def SignalToNoise(true,pred,weights):
     return psnr
 
 #==============================================================================
+
+def QuantiseParameters(original_weights,bits_per_neuron):
+
+    quantised_parameters = []    
+    
+    # Find the min/max values of weights
+    min_w = min([x.min() for x in original_weights if x.ndim == 2])
+    max_w = min([x.max() for x in original_weights if x.ndim == 2])
+    
+    # Find the min/max values of biases
+    min_b = min([x.min() for x in original_weights if x.ndim == 1])
+    max_b = min([x.max() for x in original_weights if x.ndim == 1])
+
+    # Iterate through all parameter matrices
+    for index,original_parameter in enumerate(original_weights):
+        
+        # Weights
+        if original_parameter.ndim == 2:
+        
+            # Normalise each matrix to [0,1]
+            normalised_parameter = (original_parameter - min_w) / (max_w - min_w)
+            
+            # Round to nearest tenable value
+            quantised_parameter  = (np.round(normalised_parameter*(2**bits_per_neuron))) / (2**bits_per_neuron)
+            
+            # Rescale each to original range
+            rescaled_parameter   = (quantised_parameter * (max_w - min_w)) + min_w
+            
+            # Append to the new_weights list
+            quantised_parameters.append(rescaled_parameter.astype(np.float32))
+            
+        ##
+        
+        # Biases
+        if original_parameter.ndim == 1:
+            
+            # Normalise each matrix to [0,1]
+            normalised_parameter = (original_parameter - min_b) / (max_b - min_b)
+            
+            # Round to nearest tenable value
+            quantised_parameter  = (np.round(normalised_parameter*(2**bits_per_neuron))) / (2**bits_per_neuron)
+            
+            # Rescale each to original range
+            rescaled_parameter   = (quantised_parameter * (max_b - min_b)) + min_b
+            
+            # Append to the new_weights list
+            quantised_parameters.append(rescaled_parameter.astype(np.float32))
+            
+        ##
+    
+    ##
+        
+    return quantised_parameters
+
+#==============================================================================
+
+

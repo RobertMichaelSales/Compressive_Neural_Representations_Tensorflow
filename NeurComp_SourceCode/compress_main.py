@@ -20,7 +20,7 @@ from data_management         import DataClass,MakeDatasetFromTensorSlc,MakeDatas
 from network_encoder         import EncodeParameters,EncodeArchitecture
 from network_model           import ConstructNetwork
 from configuration_classes   import NetworkConfigurationClass,GenericConfigurationClass
-from compress_utilities      import TrainStep,SignalToNoise,GetLearningRate,MeanSquaredErrorMetric,Logger
+from compress_utilities      import TrainStep,SignalToNoise,GetLearningRate,MeanSquaredErrorMetric,Logger,QuantiseParameters
 
 #==============================================================================
 
@@ -210,6 +210,15 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     print("\n{:30}{:.2f} seconds".format("Training duration:",training_time))    
 
     #==========================================================================
+    # Quantise network parameters
+    
+    if (network_config.bits_per_neuron <= 32): 
+        print("{:30}{:}".format("Quantising Weights:","bits_per_neuron = {}".format(network_config.bits_per_neuron)))
+        quantised_weights = QuantiseParameters(SquashNet.get_weights(),network_config.bits_per_neuron)
+        SquashNet.set_weights(quantised_weights)
+    else: pass
+        
+    #==========================================================================
     # Finalise outputs    
 
     # Generate the output volume
@@ -356,7 +365,7 @@ if __name__=="__main__":
         o_filepath      = sys.argv[5]
         
     #==========================================================================
-
+    
     # Construct the output filepath
     o_filepath = os.path.join(o_filepath,network_config.network_name)
     if not os.path.exists(o_filepath): os.makedirs(o_filepath)
