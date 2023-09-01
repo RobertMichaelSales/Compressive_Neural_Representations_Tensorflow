@@ -23,10 +23,7 @@ import os
 def ParaviewLoadData(filename,variable):
     
     # create a new 'XML Structured Grid Reader'
-    if ".vts" in filename: volume = XMLStructuredGridReader(FileName=filename)
-    
-    # create a new 'XML Unstructured Grid Reader'
-    if ".vtu" in filename: volume = XMLUnstructuredGridReader(FileName=filename)
+    volume = XMLStructuredGridReader(FileName=filename)
     
     # get the range of the pointdata
     volume_range = volume.PointData[variable].GetRange()
