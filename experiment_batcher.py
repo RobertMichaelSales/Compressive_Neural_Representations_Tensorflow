@@ -11,19 +11,19 @@ import numpy as np
 if __name__=="__main__": 
 
     # Set input data config options
-    input_dataset_config_paths = sorted(glob.glob("/Data/Compression_Datasets/jhtdb_channelflow_pressure/crops/jhtdb_channelflow_pressure_crop4_config.json"))
+    input_dataset_config_paths = sorted(glob.glob("/Data/Compression_Datasets/sales_isotropic1024coarse_pressure/3D/*/*_config.json"))
             
     # Set experiment number
     experiment_num = 1
     
     # Set counter and total
     count = 1
-    total = 1*20*1*1*1*1*1
+    total = 78*1*1*1*1*1*1
         
     # Iterate through all inputs
     for input_dataset_config_path in input_dataset_config_paths:
     
-        for compression_ratio in np.array([5,10,15,20,25,30,35,40,45,50,60,70,80,90,100,125,150,200,300,400]):
+        for compression_ratio in np.array([25]):
             
             for bits_per_neuron in np.array([32]):
             
@@ -92,7 +92,7 @@ if __name__=="__main__":
                                 
                                 # Render the results in ParaView
                                 runstring = "pvpython ParaView_SourceCode/plot_volumes.py " + "'" + json.dumps(plotting_config) + "'"
-                                os.system(runstring)
+                                # os.system(runstring)
                                 
                                 count = count + 1 
                                 
