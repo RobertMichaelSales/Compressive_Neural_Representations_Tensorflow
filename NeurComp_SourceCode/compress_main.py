@@ -10,8 +10,6 @@ gc.enable()
 import numpy as np
 import tensorflow as tf
 
-tf.compat.v1.ConfigProto.force_gpu_compatible=True
-
 #==============================================================================
 # Import user-defined libraries 
 

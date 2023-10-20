@@ -11,14 +11,14 @@ import numpy as np
 if __name__=="__main__": 
 
     # Set input data config options
-    input_dataset_config_paths = sorted(glob.glob("/Data/Compression_Datasets/sales_isotropic1024coarse_pressure/3D/*/*_config.json"))
+    input_dataset_config_paths = sorted(glob.glob("/Data/Compression_Datasets/sales_isotropic1024coarse_pressure/2D/butterworth_extended//*_config.json"))
             
     # Set experiment number
     experiment_num = 1
     
     # Set counter and total
     count = 1
-    total = 78*1*1*1*1*1*1
+    total = len(input_dataset_config_paths)*1*1*1*1*1*1
         
     # Iterate through all inputs
     for input_dataset_config_path in input_dataset_config_paths:
@@ -69,7 +69,7 @@ if __name__=="__main__":
                                 # Define the training config
                                 training_config = {
                                     "initial_lr"                : float(learning_rate),
-                                    "batch_size"                : 4096,
+                                    "batch_size"                : 256,
                                     "batch_fraction"            : float(batch_fraction),
                                     "epochs"                    : 30,
                                     "half_life"                 : 2,            
