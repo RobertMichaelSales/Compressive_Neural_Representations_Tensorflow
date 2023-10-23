@@ -11,19 +11,19 @@ import numpy as np
 if __name__=="__main__": 
 
     # Set input data config options
-    input_dataset_config_paths = sorted(glob.glob("/Data/Compression_Datasets/sales_isotropic1024coarse_pressure/2D/butterworth_extended//*_config.json"))
+    input_dataset_config_paths = sorted(glob.glob("/Data/Compression_Datasets/sales_isotropic1024coarse_pressure/3D/crop4/butterworth_extended/*_config.json"))
             
     # Set experiment number
     experiment_num = 1
     
     # Set counter and total
     count = 1
-    total = len(input_dataset_config_paths)*1*1*1*1*1*1
+    total = len(input_dataset_config_paths)*2*1*1*1*2*1
         
     # Iterate through all inputs
     for input_dataset_config_path in input_dataset_config_paths:
     
-        for compression_ratio in np.array([25]):
+        for compression_ratio in np.array([25,100]):
             
             for bits_per_neuron in np.array([32]):
             
@@ -31,7 +31,7 @@ if __name__=="__main__":
                     
                     for batch_fraction in np.array([0]):     
                         
-                        for frequencies in np.array([0]):
+                        for frequencies in np.array([0,10]):
                             
                             for hidden_layers in np.array([14]):
                  
@@ -69,7 +69,7 @@ if __name__=="__main__":
                                 # Define the training config
                                 training_config = {
                                     "initial_lr"                : float(learning_rate),
-                                    "batch_size"                : 256,
+                                    "batch_size"                : 1024,
                                     "batch_fraction"            : float(batch_fraction),
                                     "epochs"                    : 30,
                                     "half_life"                 : 2,            
@@ -92,7 +92,7 @@ if __name__=="__main__":
                                 
                                 # Render the results in ParaView
                                 runstring = "pvpython ParaView_SourceCode/plot_volumes.py " + "'" + json.dumps(plotting_config) + "'"
-                                # os.system(runstring)
+                                os.system(runstring)
                                 
                                 count = count + 1 
                                 
