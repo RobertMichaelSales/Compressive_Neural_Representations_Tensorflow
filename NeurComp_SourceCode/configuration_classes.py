@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 31.03.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 05.02.2024  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -94,19 +94,21 @@ class NetworkConfigurationClass(GenericConfigurationClass):
         
         print("\n{:30}{}".format("Encoding frequencies:",self.frequencies))
         
-        # Compute the neurons per layer as well as the overall network capacity
+        # Compute the target network capacity
         self.target_size = int(self.size/self.target_compression_ratio)
+        
+        # Compute the number of neurons per layer
         self.neurons_per_layer = self.NeuronsPerLayer() 
         self.num_of_parameters = self.TotalParameters()
+        
+        # Compute the actual compression ratio
         self.actual_compression_ratio = self.size/self.num_of_parameters
         
         print("\n{:30}{:.2f}".format("Actual compression ratio:",self.actual_compression_ratio))
         
         # Specify the network architecture as a list of layer dimensions
-        self.layer_dimensions = []   
-        self.layer_dimensions.extend([self.i_dimensions])  
-        self.layer_dimensions.extend([self.neurons_per_layer]*self.hidden_layers)  
-        self.layer_dimensions.extend([self.o_dimensions]) 
+        self.layer_dimensions = [self.i_dimensions] + ([self.neurons_per_layer]*self.hidden_layers) + [self.o_dimensions]
+
         
         print("\n{:30}{}".format("Network dimensions:",self.layer_dimensions))
 
@@ -158,17 +160,19 @@ class NetworkConfigurationClass(GenericConfigurationClass):
             if (layer==0):                             
                 
                 # Determine the input and output dimensions of each layer
-
                 if (self.frequencies > 0):
                     i_dimensions = self.i_dimensions * self.frequencies * 2
                 else:
                     i_dimensions = self.i_dimensions
+                ##
                           
                 o_dimensions = self.neurons_per_layer
                   
                 # Add parameters from the weight matrix and bias vector
                 self.num_of_parameters += (i_dimensions * o_dimensions) + o_dimensions
           
+            ##
+            
             # [sine_block -> output_layer]
             elif (layer==self.total_layers-1):     
     
@@ -178,15 +182,21 @@ class NetworkConfigurationClass(GenericConfigurationClass):
                   
                 # Add parameters from the weight matrix and bias vector
                 self.num_of_parameters += (i_dimensions * o_dimensions) + o_dimensions 
+                
+            ##
           
             # [sine_layer/block -> sine_block]
-            else:                         
+            else:        
+
+                # Determine the input and output dimensions of each layer
+                i_dimensions = self.neurons_per_layer
+                o_dimensions = self.neurons_per_layer                 
                 
                 # Add parameters from the 1st weight matrix and bias vector
-                self.num_of_parameters += (self.neurons_per_layer * self.neurons_per_layer) + self.neurons_per_layer
+                self.num_of_parameters += (i_dimensions * o_dimensions) + o_dimensions 
                 
                 # Add parameters from the 2nd weight matrix and bias vector
-                self.num_of_parameters += (self.neurons_per_layer * self.neurons_per_layer) + self.neurons_per_layer        
+                self.num_of_parameters += (i_dimensions * o_dimensions) + o_dimensions 
                 
             ##
             

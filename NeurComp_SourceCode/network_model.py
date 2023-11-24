@@ -79,7 +79,7 @@ def ConstructNetwork(layer_dimensions,frequencies):
     # Set python, numpy and tensorflow random seeds for the same initialisation
     import random; tf.random.set_seed(123);np.random.seed(123);random.seed(123)
  
-    # Record the number of total network layers
+    # Compute the number of total network layers
     total_layers = len(layer_dimensions)
 
     for layer in range(total_layers):
