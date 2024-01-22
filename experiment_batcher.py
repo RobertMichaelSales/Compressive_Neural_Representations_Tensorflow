@@ -11,19 +11,21 @@ import numpy as np
 if __name__=="__main__": 
 
     # Set input data config options
-    input_dataset_config_paths = sorted(glob.glob("/Data/Compression_Datasets/sales_isotropic1024coarse_pressure/3D/crop4/butterworth_extended/*_config.json"))
-            
+    input_dataset_config_paths = sorted(glob.glob("/Data/Compression_Datasets/wheeler_desktop_dns/processed/block_4_*_config.json"))
+        
+    input_dataset_config_paths = [x for x in input_dataset_config_paths  if "block_4_v_config" in x or "block_4_p_config" in x]
+    
     # Set experiment number
-    experiment_num = 1
+    experiment_num = 4
     
     # Set counter and total
     count = 1
-    total = len(input_dataset_config_paths)*2*1*1*1*2*1
+    total = len(input_dataset_config_paths)*11*1*1*1*1*1
         
     # Iterate through all inputs
     for input_dataset_config_path in input_dataset_config_paths:
     
-        for compression_ratio in np.array([25,100]):
+        for compression_ratio in np.array([20,40,60,80,100,150,200,250,300,350,400]):
             
             for bits_per_neuron in np.array([32]):
             
@@ -31,7 +33,7 @@ if __name__=="__main__":
                     
                     for batch_fraction in np.array([0]):     
                         
-                        for frequencies in np.array([0,10]):
+                        for frequencies in np.array([0]):
                             
                             for hidden_layers in np.array([14]):
                  
@@ -69,7 +71,7 @@ if __name__=="__main__":
                                 # Define the training config
                                 training_config = {
                                     "initial_lr"                : float(learning_rate),
-                                    "batch_size"                : 1024,
+                                    "batch_size"                : 4096,
                                     "batch_fraction"            : float(batch_fraction),
                                     "epochs"                    : 30,
                                     "half_life"                 : 2,            
@@ -91,8 +93,8 @@ if __name__=="__main__":
                                     }                            
                                 
                                 # Render the results in ParaView
-                                runstring = "pvpython ParaView_SourceCode/plot_volumes.py " + "'" + json.dumps(plotting_config) + "'"
-                                os.system(runstring)
+                                # runstring = "pvpython ParaView_SourceCode/plot_volumes.py " + "'" + json.dumps(plotting_config) + "'"
+                                # os.system(runstring)
                                 
                                 count = count + 1 
                                 

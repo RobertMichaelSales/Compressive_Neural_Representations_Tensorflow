@@ -149,7 +149,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
                         
         # Store and print the current epoch number
         training_data["epoch"].append(float(epoch))
-        print("{:30}{:02}/{:02}".format("Epoch:",epoch,training_config.epochs))
+        
         
         # Determine, update, store and print the learning rate 
         learning_rate = GetLearningRate(initial_lr=training_config.initial_lr,half_life=training_config.half_life,epoch=epoch)
