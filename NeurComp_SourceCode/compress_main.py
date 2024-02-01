@@ -1,5 +1,5 @@
 """ Created: 18.07.2022  \\  Updated: 19.04.2023  \\   Author: Robert Sales """
-
+aararara
 #==============================================================================
 # Import libraries and set flags
 
@@ -52,7 +52,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     print("\n{:30}{:.3f} GigaBytes".format("Available Memory:",(available_memory/1e9)))
     
     # Set and display threshold memory (software limit)
-    threshold_memory = int(20*1e9)
+    threshold_memory = int(16*1e9)
     print("\n{:30}{:.3f} GigaBytes".format("Threshold Memory:",(threshold_memory/1e9)))
     
     # Get and display input file size
@@ -99,7 +99,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     # Generate the network structure based on the input dimensions
     network_config.GenerateStructure(i_dimensions=i_volume.dimensions,o_dimensions=i_values.dimensions,size=i_values.size)
     
-    # Build NeurComp from the config information
+    # Build SquashNet from the config information
     SquashNet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
                       
     # Set a training optimiser
@@ -150,7 +150,6 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         # Store and print the current epoch number
         training_data["epoch"].append(float(epoch))
         
-        
         # Determine, update, store and print the learning rate 
         learning_rate = GetLearningRate(initial_lr=training_config.initial_lr,half_life=training_config.half_life,epoch=epoch)
         optimiser.lr.assign(learning_rate)
@@ -194,6 +193,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         else: pass
     
         # Make a new dataset instance, garbage collect
+        # This deals with memory leaking from shuffles
         if runtime_config.shuffle_dataset and (epoch != (training_config.epochs-1)):
             del(dataset); gc.collect()
             dataset = MakeDatasetFromTensorSlc(volume=i_volume,values=i_values,weights=weights,batch_size=training_config.batch_size,cache_dataset=runtime_config.cache_dataset)

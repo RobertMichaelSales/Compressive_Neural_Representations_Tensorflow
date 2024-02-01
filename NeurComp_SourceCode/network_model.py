@@ -82,7 +82,7 @@ def ConstructNetwork(layer_dimensions,frequencies):
     # Record the number of total network layers
     total_layers = len(layer_dimensions)
 
-    for layer in np.arange(total_layers):
+    for layer in range(total_layers):
           
         # Add the input layer and the first sine layer
         if (layer == 0):                  

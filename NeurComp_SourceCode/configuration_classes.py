@@ -22,6 +22,8 @@ class GenericConfigurationClass(dict):
     
         return None
     
+    ##
+    
     #==========================================================================
     # Redefine the method which handles/intercepts inexistent attribute lookups
     
@@ -29,9 +31,9 @@ class GenericConfigurationClass(dict):
         
         raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__,key))
         
-        # attribute = self.get(key)
+        return None
         
-        # return attribute
+    ##
     
     #==========================================================================    
     # Redefine the method that is called when attribute assignment is attempted
@@ -42,6 +44,8 @@ class GenericConfigurationClass(dict):
         self.__setitem__(key,value)
         
         return None
+    
+    ##
     
     #==========================================================================
     # Redefine the method that is called when implementing assignment self[key]
@@ -54,7 +58,11 @@ class GenericConfigurationClass(dict):
     
         return None
     
+    ##
+    
     #==========================================================================
+    
+##    
     
 #==============================================================================
 # Define a class to manage the network configuration
@@ -70,6 +78,8 @@ class NetworkConfigurationClass(GenericConfigurationClass):
         super().__init__(config_dict)
            
         return None
+    
+    ##
     
     #==========================================================================
     # Define a function to generate the network structure/dimensions from input
@@ -101,6 +111,8 @@ class NetworkConfigurationClass(GenericConfigurationClass):
         print("\n{:30}{}".format("Network dimensions:",self.layer_dimensions))
 
         return None
+    
+    ##
 
     #==========================================================================
     # Define a function to compute the minimum number of neurons needed by each 
@@ -119,6 +131,8 @@ class NetworkConfigurationClass(GenericConfigurationClass):
         self.neurons_per_layer = self.neurons_per_layer - 1
         
         return self.neurons_per_layer
+    
+    ##
     
     #==========================================================================
     # Define a function to calculate the total number of network parameters for
@@ -173,10 +187,17 @@ class NetworkConfigurationClass(GenericConfigurationClass):
                 
                 # Add parameters from the 2nd weight matrix and bias vector
                 self.num_of_parameters += (self.neurons_per_layer * self.neurons_per_layer) + self.neurons_per_layer        
+                
+            ##
+            
+        ##
                   
         return self.num_of_parameters
     
+    ##
+    
     #==========================================================================
     
+##   
     
 #==============================================================================   
