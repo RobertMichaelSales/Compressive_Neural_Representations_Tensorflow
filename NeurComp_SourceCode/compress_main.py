@@ -1,5 +1,5 @@
 """ Created: 18.07.2022  \\  Updated: 19.04.2023  \\   Author: Robert Sales """
-aararara
+
 #==============================================================================
 # Import libraries and set flags
 

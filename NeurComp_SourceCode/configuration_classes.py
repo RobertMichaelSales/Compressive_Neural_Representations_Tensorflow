@@ -5,6 +5,8 @@
 
 import numpy as np
 
+AssertionError("UPDATE THIS FILE TO ACCOUNT FOR ADDED FOURIER FREQUENCIES")
+
 #==============================================================================
 # Define a class with dictionary functionality to store arbitrary attributes 
 
