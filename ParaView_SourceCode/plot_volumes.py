@@ -205,9 +205,12 @@ def ParaviewRender(volume,volume_range,savename,render_isom,render_orth,render_z
     
     #==========================================================================
     
+    # delete render view
     Delete(render_view)
 
     return None
+
+##
     
 #==============================================================================
 

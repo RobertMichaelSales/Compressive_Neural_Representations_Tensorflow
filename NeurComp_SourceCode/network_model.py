@@ -3,7 +3,6 @@
 #==============================================================================
 # Import libraries and set flags
 
-import math
 import numpy as np
 import tensorflow as tf
 
@@ -13,11 +12,8 @@ import tensorflow as tf
 def SineLayer(inputs,units,name):
     
     # Mathematically: x1 = sin(W1*x0 + b1)
-    
-    # s = tf.Variable(initial_value=1.0,dtype=tf.float32,trainable=True,name=name+"_scale")
-        
-    x = tf.keras.layers.Dense(units=units,name=name+"_dense")(inputs) # (s*inputs)
-    x = tf.math.sin(x)
+            
+    x = tf.math.sin(tf.keras.layers.Dense(units=units,name=name+"_dense")(inputs)) # (s*inputs)
     
     return x
 
@@ -27,9 +23,6 @@ def SineLayer(inputs,units,name):
 def SineBlock(inputs,units,name):
     
     # Mathematically: x1 = (1/2) * (x0 + sin(w12*sin(w11*x0 + b11) + b12))
-    
-    # s1 = tf.Variable(initial_value=1.0,dtype=tf.float32,trainable=True,name=name+"_scale_a")
-    # s2 = tf.Variable(initial_value=1.0,dtype=tf.float32,trainable=True,name=name+"_scale_b")
             
     sine_1 = tf.math.sin(tf.keras.layers.Dense(units=units,name=name+"_dense_a")(inputs)) # (s1*inputs)
     sine_2 = tf.math.sin(tf.keras.layers.Dense(units=units,name=name+"_dense_b")(sine_1)) # (s2*sine_1)
@@ -37,7 +30,6 @@ def SineBlock(inputs,units,name):
     x = tf.math.add(inputs,sine_2)
     
     return x
-
 
 #==============================================================================
 # Define the positional encoding layer (from the Neural Radiance Fields paper)
@@ -82,6 +74,7 @@ def ConstructNetwork(layer_dimensions,frequencies):
     # Compute the number of total network layers
     total_layers = len(layer_dimensions)
 
+    # Iterate through network layers
     for layer in range(total_layers):
           
         # Add the input layer and the first sine layer
@@ -105,6 +98,10 @@ def ConstructNetwork(layer_dimensions,frequencies):
         else:
             
             x = SineBlock(inputs=x,units=layer_dimensions[layer],name="l{}_sineblock".format(layer))
+            
+        ##
+    
+    ##
     
     # Create the network model
     NeurComp = tf.keras.Model(inputs=input_layer,outputs=output_layer)

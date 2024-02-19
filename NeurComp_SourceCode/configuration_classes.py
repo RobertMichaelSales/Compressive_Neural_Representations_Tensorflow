@@ -5,8 +5,6 @@
 
 import numpy as np
 
-AssertionError("UPDATE THIS FILE TO ACCOUNT FOR ADDED FOURIER FREQUENCIES")
-
 #==============================================================================
 # Define a class with dictionary functionality to store arbitrary attributes 
 
@@ -93,25 +91,32 @@ class NetworkConfigurationClass(GenericConfigurationClass):
         self.i_dimensions = i_dimensions
         self.o_dimensions = o_dimensions
         self.size = size
-        
-        print("\n{:30}{}".format("Encoding frequencies:",self.frequencies))
-        
+                
         # Compute the target network capacity
         self.target_size = int(self.size/self.target_compression_ratio)
         
-        # Compute the number of neurons per layer
+        # Compute the widths of hidden layers
         self.neurons_per_layer = self.NeuronsPerLayer() 
+        
+        # Compute the network's total capacity
         self.num_of_parameters = self.TotalParameters()
         
         # Compute the actual compression ratio
         self.actual_compression_ratio = self.size/self.num_of_parameters
         
-        print("\n{:30}{:.2f}".format("Actual compression ratio:",self.actual_compression_ratio))
-        
         # Specify the network architecture as a list of layer dimensions
         self.layer_dimensions = [self.i_dimensions] + ([self.neurons_per_layer]*self.hidden_layers) + [self.o_dimensions]
 
+        # Print the network's actual compression ratio
+        print("\n{:30}{:.2f}".format("Actual compression ratio:",self.actual_compression_ratio))
         
+        # Print the network's target compression ratio
+        print("\n{:30}{:.2f}".format("Target compression ratio:",self.target_compression_ratio))
+
+        # Print the network's encoding Frequencies
+        print("\n{:30}{}".format("Encoding frequencies:",self.frequencies))
+
+        # Print the network's layer dimensions
         print("\n{:30}{}".format("Network dimensions:",self.layer_dimensions))
 
         return None
@@ -129,7 +134,10 @@ class NetworkConfigurationClass(GenericConfigurationClass):
           
         # Incriment neurons until the network capacity exceeds the target size
         while (self.TotalParameters() < self.target_size):
+            
             self.neurons_per_layer = self.neurons_per_layer + 1
+            
+        ##
           
         # Determine the first neuron count that exceeds the target compression
         self.neurons_per_layer = self.neurons_per_layer - 1
@@ -140,7 +148,11 @@ class NetworkConfigurationClass(GenericConfigurationClass):
     
     #==========================================================================
     # Define a function to calculate the total number of network parameters for
-    # a given network architecture (i.e. layer dimensions/neurons)
+    # a siren network architecture (i.e. layer dimensions/neurons)
+    
+    # Note - total_layers is '+2' because the first sine layer, which is needed
+    # to make sure that the residual tensors are of the same shape, and because 
+    # the total_layers actually means "total blocks" in reality.
     
     # The network structure can be summarised as follows:
     # [input_layer      -> sine_layer] + 
