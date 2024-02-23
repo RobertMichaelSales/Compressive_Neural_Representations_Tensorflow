@@ -14,7 +14,7 @@ import tensorflow as tf
 # Import user-defined libraries 
 
 from data_complexity         import SaveSpectrum
-from data_management         import DataClass,MakeDatasetFromTensorSlc,MakeDatasetFromGenerator,SaveData
+from data_management         import DataClass,MakeDatasetFromTensorSlc,SaveData
 from network_encoder         import EncodeParameters,EncodeArchitecture
 from network_model           import ConstructNetwork
 from configuration_classes   import NetworkConfigurationClass,GenericConfigurationClass
@@ -61,7 +61,8 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     
     # Determine whether data exceeds memory and choose how to load the dataset
     dataset_exceeds_memory = (input_file_size > min(available_memory,threshold_memory))
-    
+    print("\n{:30}{}".format("Dataset Exceeds Memory:",dataset_exceeds_memory))
+
     #==========================================================================
     # Initialise i/o 
     print("-"*80,"\nINITIALISING INPUTS:")
