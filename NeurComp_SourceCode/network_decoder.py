@@ -36,7 +36,6 @@ def DecodeArchitecture(architecture_path):
     return layer_dimensions,frequencies
 
 #==============================================================================
-
 # Define a function to decode the weights/biases of each layer
 
 def DecodeParameters(network,parameters_path):
