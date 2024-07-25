@@ -39,34 +39,34 @@ class DataClass():
     def LoadData(self,input_data_path,columns,shape,dtype,normalise=True):
                 
         # Unpack the columns for the coordinate axes and scalar fields
-        coord_columns,field_columns,weight_column = columns
+        volume_columns,values_columns,weight_column = columns
                 
         # Load the full dataset then extract the desired volume tensor
         if (self.data_type=="volume"):     
             
             print("\n{:30}{}".format("Loaded volume:",input_data_path.split("/")[-1]))
-            print("{:30}{}".format("Fields:",coord_columns))
-            self.dimensions = len(coord_columns)
+            print("{:30}{}".format("Fields:",volume_columns))
+            self.dimensions = len(volume_columns)
             
             if self.tabular:
                 
                 # if self.exceeds_memory:
-                #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,coord_columns].astype('float32')
+                #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,volume_columns].astype('float32')
                 # else:
-                #     self.data = np.load(input_data_path)[...,coord_columns].astype('float32')
+                #     self.data = np.load(input_data_path)[...,volume_columns].astype('float32')
                 # ##
                 
-                self.data = np.load(input_data_path)[...,coord_columns].astype('float32')
+                self.data = np.load(input_data_path)[...,volume_columns].astype('float32')
                 
             else: 
                 
                 # if self.exceeds_memory:
                 #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape).astype('float32')
                 # else:
-                #     self.data = np.load(input_data_path)[...,coord_columns].astype('float32')
+                #     self.data = np.load(input_data_path)[...,volume_columns].astype('float32')
                 # ##
                 
-                self.data = np.load(input_data_path)[...,coord_columns].astype('float32')
+                self.data = np.load(input_data_path)[...,volume_columns].astype('float32')
             ##
         ##
             
@@ -74,28 +74,28 @@ class DataClass():
         if (self.data_type=="values"): 
             
             print("\n{:30}{}".format("Loaded values:",input_data_path.split("/")[-1]))
-            print("{:30}{}".format("Fields:",field_columns))
-            self.dimensions = len(field_columns)
+            print("{:30}{}".format("Fields:",values_columns))
+            self.dimensions = len(values_columns)
             
             if self.tabular:
                 
                 # if self.exceeds_memory:
-                #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,field_columns].astype('float32')
+                #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,values_columns].astype('float32')
                 # else:
-                #     self.data = np.load(input_data_path)[...,field_columns].astype('float32')
+                #     self.data = np.load(input_data_path)[...,values_columns].astype('float32')
                 # ##
                 
-                self.data = np.load(input_data_path)[...,field_columns].astype('float32')
+                self.data = np.load(input_data_path)[...,values_columns].astype('float32')
                 
             else: 
                 
                 # if self.exceeds_memory:
                 #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape).astype('float32')
                 # else:
-                #     self.data = np.load(input_data_path)[...,field_columns].astype('float32')
+                #     self.data = np.load(input_data_path)[...,values_columns].astype('float32')
                 # ##
                 
-                self.data = np.load(input_data_path)[...,field_columns].astype('float32')
+                self.data = np.load(input_data_path)[...,values_columns].astype('float32')
             ##     
         ##           
         
@@ -117,9 +117,9 @@ class DataClass():
                 if self.tabular:
                     
                     # if self.exceeds_memory:
-                    #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,field_columns].astype('float32')
+                    #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,values_columns].astype('float32')
                     # else:
-                    #     self.data = np.load(input_data_path)[...,field_columns].astype('float32')
+                    #     self.data = np.load(input_data_path)[...,values_columns].astype('float32')
                     # ##
                     
                     self.data = np.load(input_data_path)[...,weight_column].astype('float32')
@@ -129,7 +129,7 @@ class DataClass():
                     # if self.exceeds_memory:
                     #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape).astype('float32')
                     # else:
-                    #     self.data = np.load(input_data_path)[...,field_columns].astype('float32')
+                    #     self.data = np.load(input_data_path)[...,values_columns].astype('float32')
                     # ##
                     
                     self.data = np.load(input_data_path)[...,weight_column].astype('float32')
@@ -195,7 +195,7 @@ class DataClass():
             
         return None
 
-#============================================================================== <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#==============================================================================
 # Define a function to create and return a 'tf.data.Dataset' dataset object
 
 # -> Note: 'AUTOTUNE' prompts 'tf.data' to tune the value  of 'buffer_size'

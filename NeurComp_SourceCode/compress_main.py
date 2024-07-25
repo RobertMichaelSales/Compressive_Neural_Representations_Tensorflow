@@ -24,7 +24,7 @@ from compress_utilities      import TrainStep,SignalToNoise,GetLearningRate,Mean
 
 def compress(network_config,dataset_config,runtime_config,training_config,o_filepath,index,ensemble_output):
         
-    print("-"*80,"\nSQUASHNET Mini: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
+    print("-"*80,"\nSDFNet: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
     
     print("\nDateTime: {}".format(datetime.datetime.now().strftime("%d %b %Y - %H:%M:%S")))
     
@@ -75,7 +75,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     i_values = DataClass(data_type="values",tabular=dataset_config.tabular,exceeds_memory=dataset_exceeds_memory)
     i_values.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,shape=dataset_config.shape,dtype=dataset_config.dtype,normalise=dataset_config.normalise)
 
-    # Create 'DataClass' objects to store the input weights for training loss
+    # Create 'DataClass' objects to store the input weights, for training loss
     weights = DataClass(data_type="weights",tabular=dataset_config.tabular,exceeds_memory=dataset_exceeds_memory)
     weights.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,shape=dataset_config.shape,dtype=dataset_config.dtype,normalise=dataset_config.normalise )
 
@@ -100,8 +100,8 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     # Generate the network structure based on the input dimensions
     network_config.GenerateStructure(i_dimensions=i_volume.dimensions,o_dimensions=i_values.dimensions,size=i_values.size)
     
-    # Build SquashNet from the config information
-    SquashNet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
+    # Build SDFNet from the config information
+    SDFNet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
                       
     # Set a training optimiser
     optimiser = tf.keras.optimizers.Adam()
@@ -113,7 +113,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     TrainStepTFF = tf.function(TrainStep)
         
     # Save an image of the network graph (helpful to check)
-    tf.keras.utils.plot_model(model=SquashNet,to_file=os.path.join(o_filepath,"network_graph.png"))
+    tf.keras.utils.plot_model(model=SDFNet,to_file=os.path.join(o_filepath,"network_graph.png"))
                 
     #==========================================================================
     # Configure dataset
@@ -166,7 +166,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
             
             # Print the current batch number and run a training step
             if runtime_config.print_verbose: print("\r{:30}{:04}/{:04}".format("Batch number:",(batch+1),dataset.size),end="") 
-            TrainStepTFF(model=SquashNet,optimiser=optimiser,metric=metric,volume_batch=volume_batch,values_batch=values_batch,weights_batch=weights_batch)
+            TrainStepTFF(model=SDFNet,optimiser=optimiser,metric=metric,volume_batch=volume_batch,values_batch=values_batch,weights_batch=weights_batch)
 
             if batch >= dataset.size: break
             
@@ -214,15 +214,15 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     
     if (network_config.bits_per_neuron <= 32): 
         print("{:30}{:}".format("Quantising Weights:","bits_per_neuron = {}".format(network_config.bits_per_neuron)))
-        quantised_weights = QuantiseParameters(SquashNet.get_weights(),network_config.bits_per_neuron)
-        SquashNet.set_weights(quantised_weights)
+        quantised_weights = QuantiseParameters(SDFNet.get_weights(),network_config.bits_per_neuron)
+        SDFNet.set_weights(quantised_weights)
     else: pass
         
     #==========================================================================
     # Finalise outputs    
 
     # Generate the output volume
-    o_values.flat = SquashNet.predict(o_volume.flat,batch_size=training_config.batch_size,verbose="1")
+    o_values.flat = SDFNet.predict(o_volume.flat,batch_size=training_config.batch_size,verbose="1")
     o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(o_values.dimensions,)),order="C")
     
     # Calculate and report PSNR
@@ -241,7 +241,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         
         # Save the parameters
         parameters_path = os.path.join(o_filepath,"parameters.bin")
-        EncodeParameters(network=SquashNet,parameters_path=parameters_path,values_bounds=(i_values.max,i_values.min))
+        EncodeParameters(network=SDFNet,parameters_path=parameters_path,values_bounds=(i_values.max,i_values.min))
         print("{:30}{}".format("Saved parameters to:",parameters_path.split("/")[-1]))
         
         # Save the architecture
@@ -307,7 +307,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     #==========================================================================
     print("-"*80,"\n")
         
-    return SquashNet
+    return SDFNet
        
 #==============================================================================
 # Define the main function to run when file is invoked from within the terminal
