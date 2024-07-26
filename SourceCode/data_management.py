@@ -22,9 +22,6 @@ class DataClass():
         
         # Set input data structure
         self.tabular = tabular
-        
-        # Set input exceeds memory
-        self.exceeds_memory = exceeds_memory
     
         return None
     
@@ -42,32 +39,13 @@ class DataClass():
         volume_columns,values_columns,weight_column = columns
                 
         # Load the full dataset then extract the desired volume tensor
-        if (self.data_type=="volume"):     
+        if (self.data_type=="volume"):    
             
             print("\n{:30}{}".format("Loaded volume:",input_data_path.split("/")[-1]))
             print("{:30}{}".format("Fields:",volume_columns))
             self.dimensions = len(volume_columns)
+            self.data = np.load(input_data_path)[...,volume_columns].astype('float32')
             
-            if self.tabular:
-                
-                # if self.exceeds_memory:
-                #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,volume_columns].astype('float32')
-                # else:
-                #     self.data = np.load(input_data_path)[...,volume_columns].astype('float32')
-                # ##
-                
-                self.data = np.load(input_data_path)[...,volume_columns].astype('float32')
-                
-            else: 
-                
-                # if self.exceeds_memory:
-                #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape).astype('float32')
-                # else:
-                #     self.data = np.load(input_data_path)[...,volume_columns].astype('float32')
-                # ##
-                
-                self.data = np.load(input_data_path)[...,volume_columns].astype('float32')
-            ##
         ##
             
         # Load the entire data block then extract the values tensor
@@ -76,27 +54,8 @@ class DataClass():
             print("\n{:30}{}".format("Loaded values:",input_data_path.split("/")[-1]))
             print("{:30}{}".format("Fields:",values_columns))
             self.dimensions = len(values_columns)
+            self.data = np.load(input_data_path)[...,values_columns].astype('float32')
             
-            if self.tabular:
-                
-                # if self.exceeds_memory:
-                #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,values_columns].astype('float32')
-                # else:
-                #     self.data = np.load(input_data_path)[...,values_columns].astype('float32')
-                # ##
-                
-                self.data = np.load(input_data_path)[...,values_columns].astype('float32')
-                
-            else: 
-                
-                # if self.exceeds_memory:
-                #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape).astype('float32')
-                # else:
-                #     self.data = np.load(input_data_path)[...,values_columns].astype('float32')
-                # ##
-                
-                self.data = np.load(input_data_path)[...,values_columns].astype('float32')
-            ##     
         ##           
         
         # Load the full dataset then extract the desired weight tensor
@@ -113,27 +72,9 @@ class DataClass():
                 return None
             
             else: 
-            
-                if self.tabular:
-                    
-                    # if self.exceeds_memory:
-                    #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape)[...,values_columns].astype('float32')
-                    # else:
-                    #     self.data = np.load(input_data_path)[...,values_columns].astype('float32')
-                    # ##
-                    
-                    self.data = np.load(input_data_path)[...,weight_column].astype('float32')
-                    
-                else: 
-                    
-                    # if self.exceeds_memory:
-                    #     self.data = np.lib.format.open_memmap(filename=input_data_path,mode="r",dtype=dtype,shape=shape).astype('float32')
-                    # else:
-                    #     self.data = np.load(input_data_path)[...,values_columns].astype('float32')
-                    # ##
-                    
-                    self.data = np.load(input_data_path)[...,weight_column].astype('float32')
-                ##
+        
+                self.data = np.load(input_data_path)[...,weight_column].astype('float32')
+                
             ##     
         ##        
     

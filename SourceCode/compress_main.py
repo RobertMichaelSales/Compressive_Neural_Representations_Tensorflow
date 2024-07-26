@@ -13,18 +13,17 @@ import tensorflow as tf
 #==============================================================================
 # Import user-defined libraries 
 
-from data_complexity         import SaveSpectrum
 from data_management         import DataClass,MakeDatasetFromTensorSlc,SaveData
-from network_encoder         import EncodeParameters,EncodeArchitecture
+from network_encoder         import EncodeArchitecture,EncodeParameters
 from network_model           import ConstructNetwork
-from configuration_classes   import NetworkConfigurationClass,GenericConfigurationClass
-from compress_utilities      import TrainStep,SignalToNoise,GetLearningRate,MeanSquaredErrorMetric,Logger,QuantiseParameters
+from configuration_classes   import GenericConfigurationClass,NetworkConfigurationClass
+from compress_utilities      import TrainStep,GetLearningRate,MeanSquaredErrorMetric,Logger,SignalToNoise,QuantiseParameters
 
 #==============================================================================
 
-def compress(network_config,dataset_config,runtime_config,training_config,o_filepath,index,ensemble_output):
+def compress(network_config,dataset_config,runtime_config,training_config,o_filepath):
         
-    print("-"*80,"\nISONet: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
+    print("-"*80,"\nISONet: IMPLICIT NEURAL COMPRESSIVE VOLUME REPRESENTATIONS (by Rob Sales)")
     
     print("\nDateTime: {}".format(datetime.datetime.now().strftime("%d %b %Y - %H:%M:%S")))
     
@@ -62,29 +61,30 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     # Determine whether data exceeds memory and choose how to load the dataset
     dataset_exceeds_memory = (input_file_size > min(available_memory,threshold_memory))
     print("\n{:30}{}".format("Dataset Exceeds Memory:",dataset_exceeds_memory))
+    if dataset_exceeds_memory: raise MemoryError("Dataset exceeds available/threshold memory: Compression has been halted to protect the user's OS.")
 
     #==========================================================================
     # Initialise i/o 
     print("-"*80,"\nINITIALISING INPUTS:")
     
     # Create 'DataClass' objects to store the input volume, load and normalise
-    i_volume = DataClass(data_type="volume",tabular=dataset_config.tabular,exceeds_memory=dataset_exceeds_memory)
+    i_volume = DataClass(data_type="volume",tabular=dataset_config.tabular)
     i_volume.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,shape=dataset_config.shape,dtype=dataset_config.dtype,normalise=dataset_config.normalise)
     
     # Create 'DataClass' objects to store the input values, load and normalise
-    i_values = DataClass(data_type="values",tabular=dataset_config.tabular,exceeds_memory=dataset_exceeds_memory)
+    i_values = DataClass(data_type="values",tabular=dataset_config.tabular)
     i_values.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,shape=dataset_config.shape,dtype=dataset_config.dtype,normalise=dataset_config.normalise)
 
     # Create 'DataClass' objects to store the input weights, for training loss
-    weights = DataClass(data_type="weights",tabular=dataset_config.tabular,exceeds_memory=dataset_exceeds_memory)
+    weights = DataClass(data_type="weights",tabular=dataset_config.tabular)
     weights.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,shape=dataset_config.shape,dtype=dataset_config.dtype,normalise=dataset_config.normalise )
 
     # Create 'DataClass' objects to store the output volume, copy input data
-    o_volume = DataClass(data_type="volume",tabular=dataset_config.tabular,exceeds_memory=dataset_exceeds_memory)
+    o_volume = DataClass(data_type="volume",tabular=dataset_config.tabular)
     o_volume.CopyData(DataClassObject=i_volume,exception_keys=[])
     
     # Create 'DataClass' objects to store the output values, copy input data
-    o_values = DataClass(data_type="values",tabular=dataset_config.tabular,exceeds_memory=dataset_exceeds_memory)
+    o_values = DataClass(data_type="values",tabular=dataset_config.tabular)
     o_values.CopyData(DataClassObject=i_values,exception_keys=["flat","data"])  
     
     #==========================================================================
@@ -190,6 +190,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         if np.isnan(error): 
             print("{:30}{:}".format("Early stopping:","Error has diverged")) 
             runtime_config.save_network_flag = False
+            runtime_config.encode_network_flag = False
             runtime_config.save_outputs_flag = False
             break
         else: pass
@@ -230,16 +231,12 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     training_data["psnr"].append(SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat))
 
     #==========================================================================
-    # Save network
+    # Encode network
     
-    if runtime_config.save_network_flag:
+    if runtime_config.encode_network_flag:
         print("-"*80,"\nSAVING NETWORK:")
         print("\n",end="")
-        
-        # Save the architecture and parameters to JSON
-        full_network_path =  os.path.join(o_filepath,"network.json")
-        # TO BE ADDED
-        
+                
         # Encode the parameters to binary
         parameters_path = os.path.join(o_filepath,"parameters.bin")
         EncodeParameters(network=ISONet,parameters_path=parameters_path,values_bounds=(i_values.max,i_values.min))
@@ -267,24 +264,6 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         output_data_path = os.path.join(o_filepath,"o_volume")
         SaveData(output_data_path=output_data_path,volume=o_volume,values=o_values,reverse_normalise=True)
         print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1]))        
-    else: pass    
-
-    #==========================================================================
-    # Save spectra
-    
-    if runtime_config.save_spectra_flag:
-        print("-"*80,"\nSAVING SPECTRA:")
-        print("\n",end="")
-        
-        # Save the i_values spectrum to ".npy" and ".vtk" files
-        output_data_path = os.path.join(o_filepath,"i_spectrum")
-        SaveSpectrum(output_data_path=output_data_path,values=i_values,maximum=i_values.max,minimum=i_values.min)
-        print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1])) 
-        
-        # Save the o_values spectrum to ".npy" and ".vtk" files
-        output_data_path = os.path.join(o_filepath,"o_spectrum")
-        SaveSpectrum(output_data_path=output_data_path,values=o_values,maximum=i_values.max,minimum=i_values.min)
-        print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1])) 
     else: pass    
 
     #==========================================================================
@@ -384,13 +363,11 @@ if __name__=="__main__":
         # Start logging all console i/o
         sys.stdout = Logger(stdout_log_filename)   
     
-        # Define ensemble output weights
-        ensemble_output = None
-
         # Execute compression
-        for index in range(1):
-            ensemble_output = compress(network_config=network_config,dataset_config=dataset_config,runtime_config=runtime_config,training_config=training_config,o_filepath=o_filepath,index=index,ensemble_output=ensemble_output)   
-        ##
+        ISONet = compress(network_config=network_config,dataset_config=dataset_config,runtime_config=runtime_config,training_config=training_config,o_filepath=o_filepath)           
+        
+        # Save the model for JS conversion
+        # tf.saved_model.save(ISONet,os.path.join(o_filepath,"SavedModel"))
         
         # Create a checkpoint file after successful execution
         with open(checkpoint_filename, mode='w'): pass

@@ -57,24 +57,24 @@ if __name__=="__main__":
                                 
                                 # Define the network config
                                 network_config = {
-                                    "network_name"              : campaign_name,
+                                    "network_name"              : str(campaign_name),
                                     "hidden_layers"             : int(hidden_layers),
                                     "frequencies"               : int(frequencies),
                                     "target_compression_ratio"  : float(compression_ratio),
-                                    "minimum_neurons_per_layer" : 1,
                                     "bits_per_neuron"           : int(bits_per_neuron),
                                     }
                                                        
                                 # Define the runtime config
                                 runtime_config = {
-                                    "cache_dataset"             : False,
-                                    "print_verbose"             : False,
-                                    "ensemble_flag"             : False,
-                                    "shuffle_dataset"           : True,
-                                    "save_network_flag"         : True,
-                                    "save_outputs_flag"         : True,
-                                    "save_results_flag"         : True,
-                                    "save_spectra_flag"         : True,
+                                    "cache_dataset"             : bool(False),
+                                    "print_verbose"             : bool(False),
+                                    "ensemble_flag"             : bool(False),
+                                    "shuffle_dataset"           : bool(True),
+                                    "save_network_flag"         : bool(True),
+                                    "encode_network_flag"       : bool(False),
+                                    "save_outputs_flag"         : bool(True),
+                                    "save_results_flag"         : bool(True),
+                                    "save_spectra_flag"         : bool(True),
                                     }
                                 
                                 # Define the training config
@@ -90,7 +90,7 @@ if __name__=="__main__":
                                 o_filepath = "/Data/ISO_Compression_Experiments/nir_experiments/" + os.path.join(*dataset_config["i_filepath"].split("/")[3:]).replace(".npy","")
                                 
                                 # Run the compression experiment
-                                runstring = "python NeurComp_SourceCode/compress_main.py " + "'" + json.dumps(network_config) + "' '" + json.dumps(dataset_config) + "' '" + json.dumps(runtime_config) + "' '" + json.dumps(training_config) + "' '" + o_filepath + "'"
+                                runstring = "python SourceCode/compress_main.py " + "'" + json.dumps(network_config) + "' '" + json.dumps(dataset_config) + "' '" + json.dumps(runtime_config) + "' '" + json.dumps(training_config) + "' '" + o_filepath + "'"
                                 # os.system(runstring)
                                 
                                 # Define the plotting config
@@ -102,7 +102,7 @@ if __name__=="__main__":
                                     }                            
                                 
                                 # Render the results in ParaView
-                                runstring = "pvpython ParaView_SourceCode/plot_volumes.py " + "'" + json.dumps(plotting_config) + "'"
+                                runstring = "pvpython ParaView/plot_volumes.py " + "'" + json.dumps(plotting_config) + "'"
                                 # os.system(runstring)
                                 
                                 count = count + 1 
