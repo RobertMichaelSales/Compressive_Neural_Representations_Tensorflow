@@ -46,7 +46,7 @@ def EncodeArchitecture(layer_dimensions,frequencies,architecture_path):
 
 # Note: The np.method '.tobytes()' returns the same bytestring as 'struct.pack'
 
-def EncodeParameters(network,parameters_path,values_bounds):
+def EncodeParameters(network,parameters_path,original_values_bounds):
     
     # Extract a sorted list of the names of each layer in the network
     layer_names = network.get_weight_paths().keys()
@@ -71,14 +71,14 @@ def EncodeParameters(network,parameters_path,values_bounds):
             file.write(weights_as_bytestring)
         ##
             
-        # Convert value bounds to a numpy array
-        bounds = np.array(values_bounds).astype('float32')
+        # Convert original value bounds to a numpy array
+        original_values_bounds = np.array(original_values_bounds).astype('float32')
         
-        # Serialise value bounds into a string of bytes
-        bounds_as_bytestring = bounds.tobytes(order="C")
+        # Serialise original value bounds into a string of bytes
+        original_bounds_as_bytestring = original_values_bounds.tobytes(order="C")
         
-        # Write 'bounds_as_bytestring' to file
-        file.write(bounds_as_bytestring)
+        # Write 'original_bounds_as_bytestring' to file
+        file.write(original_bounds_as_bytestring)
                 
         # Flush the buffer and close the file 
         file.flush()

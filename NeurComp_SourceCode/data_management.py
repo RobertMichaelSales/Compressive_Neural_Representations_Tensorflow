@@ -242,68 +242,6 @@ def MakeDatasetFromTensorSlc(volume,values,weights,batch_size,cache_dataset):
     return dataset    
 
 #==============================================================================
-# Define a function to create and return a 'tf.data.Dataset' dataset object
-
-# -> Note: 'AUTOTUNE' prompts 'tf.data' to tune the value  of 'buffer_size'
-# -> dynamically at runtime
-
-# -> Note: Moving 'dataset.cache()' up/down will reduce runtime performance
-# -> significantly
-
-def MakeDatasetFromGenerator(volume,values,weights,batch_size,cache_dataset):
-    
-    # Handle the case where there are no weights -> set them all to 1
-    if not weights.flat.any(): weights.flat = np.ones(shape=((np.prod(volume.resolution),)+(1,))).astype("float32")
-    
-    # Extend the weights to apply to each element of the output vector
-    weights.flat = np.repeat(weights.flat,values.dimensions,axis=-1)
-
-    # Get the data generator as an iterable and pass it its arguments
-    generator = GetDataGenerator(tf.convert_to_tensor(volume.flat),tf.convert_to_tensor(values.flat),tf.convert_to_tensor(weights.flat))
-    
-    # Set the expected output types
-    output_types = (tf.float32,tf.float32,tf.float32)
-    
-    # Set the expected output shapes
-    output_shapes = (tf.TensorShape(volume.flat.shape[-1]),tf.TensorShape(values.flat.shape[-1]),tf.TensorShape(weights.flat.shape[-1]))
-    
-    # Create a dataset whose elements are retrieved via a data generator
-    dataset = tf.data.Dataset.from_generator(generator=generator,output_types=output_types,output_shapes=output_shapes)
-    
-    # Cache the elements of the dataset to increase runtime performance
-    if cache_dataset: dataset = dataset.cache()
-
-    # Set the shuffle buffer size to equal the number of scalars
-    # buffer_size = np.prod(values.resolution)
-    
-    # Randomly shuffle the elements of the cached dataset 
-    # dataset = dataset.shuffle(buffer_size=buffer_size,reshuffle_each_iteration=True)
-                
-    # Concatenate elements of the dataset into mini-batches
-    dataset = dataset.batch(batch_size=batch_size,drop_remainder=False,num_parallel_calls=tf.data.AUTOTUNE)
-    
-    # Pre-fetch elements from the dataset to increase throughput
-    dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
-
-    # Assign a size attribute to store the batches per data pass
-    dataset.size = int(np.ceil(volume.flat.shape[0]/batch_size))
-                
-    return dataset    
-
-#============================================================================== <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-# Define a generator function to supply the dataset with a stream of data pairs
-
-def GetDataGenerator(volume,values,weights):
-    
-    def DataGenerator():
-        
-        for vol,val,wht in zip(volume,values,weights):
-            
-            yield vol,val,wht
-            
-    return DataGenerator
-
-#==============================================================================
 # Define a function to concatenate and save a scalar field to a '.npy' file
 
 # -> Note: 'volume' and 'values' must be reshaped to match the input shapes

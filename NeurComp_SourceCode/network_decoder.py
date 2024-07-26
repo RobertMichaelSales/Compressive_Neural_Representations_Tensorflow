@@ -73,17 +73,17 @@ def DecodeParameters(network,parameters_path):
         ##
         
         # Read the values bounds bytestring
-        bounds_as_bytestring = file.read(bytes_per_value+bytes_per_value)
+        original_bounds_as_bytestring = file.read(bytes_per_value+bytes_per_value)
         
         # Convert the bytestring into a 1-d array
-        values_bounds = np.frombuffer(bounds_as_bytestring,dtype='float32')
+        original_values_bounds = np.frombuffer(original_bounds_as_bytestring,dtype='float32')
         
         # Flush the buffer and close the file 
         file.flush()
         file.close()   
     ##
     
-    return parameters,values_bounds
+    return parameters,original_values_bounds
 
 #==============================================================================
 # Define a function to assign the weights/biases of each layer

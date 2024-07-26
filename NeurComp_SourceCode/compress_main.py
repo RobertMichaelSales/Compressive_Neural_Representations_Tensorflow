@@ -24,7 +24,7 @@ from compress_utilities      import TrainStep,SignalToNoise,GetLearningRate,Mean
 
 def compress(network_config,dataset_config,runtime_config,training_config,o_filepath,index,ensemble_output):
         
-    print("-"*80,"\nSDFNet: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
+    print("-"*80,"\nISONet: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
     
     print("\nDateTime: {}".format(datetime.datetime.now().strftime("%d %b %Y - %H:%M:%S")))
     
@@ -100,8 +100,8 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     # Generate the network structure based on the input dimensions
     network_config.GenerateStructure(i_dimensions=i_volume.dimensions,o_dimensions=i_values.dimensions,size=i_values.size)
     
-    # Build SDFNet from the config information
-    SDFNet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
+    # Build ISONet from the config information
+    ISONet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
                       
     # Set a training optimiser
     optimiser = tf.keras.optimizers.Adam()
@@ -113,7 +113,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     TrainStepTFF = tf.function(TrainStep)
         
     # Save an image of the network graph (helpful to check)
-    tf.keras.utils.plot_model(model=SDFNet,to_file=os.path.join(o_filepath,"network_graph.png"))
+    tf.keras.utils.plot_model(model=ISONet,to_file=os.path.join(o_filepath,"network_graph.png"))
                 
     #==========================================================================
     # Configure dataset
@@ -166,7 +166,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
             
             # Print the current batch number and run a training step
             if runtime_config.print_verbose: print("\r{:30}{:04}/{:04}".format("Batch number:",(batch+1),dataset.size),end="") 
-            TrainStepTFF(model=SDFNet,optimiser=optimiser,metric=metric,volume_batch=volume_batch,values_batch=values_batch,weights_batch=weights_batch)
+            TrainStepTFF(model=ISONet,optimiser=optimiser,metric=metric,volume_batch=volume_batch,values_batch=values_batch,weights_batch=weights_batch)
 
             if batch >= dataset.size: break
             
@@ -214,23 +214,20 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     
     if (network_config.bits_per_neuron <= 32): 
         print("{:30}{:}".format("Quantising Weights:","bits_per_neuron = {}".format(network_config.bits_per_neuron)))
-        quantised_weights = QuantiseParameters(SDFNet.get_weights(),network_config.bits_per_neuron)
-        SDFNet.set_weights(quantised_weights)
+        quantised_weights = QuantiseParameters(ISONet.get_weights(),network_config.bits_per_neuron)
+        ISONet.set_weights(quantised_weights)
     else: pass
         
     #==========================================================================
     # Finalise outputs    
 
     # Generate the output volume
-    o_values.flat = SDFNet.predict(o_volume.flat,batch_size=training_config.batch_size,verbose="1")
+    o_values.flat = ISONet.predict(o_volume.flat,batch_size=training_config.batch_size,verbose="1")
     o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(o_values.dimensions,)),order="C")
     
     # Calculate and report PSNR
     print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat)))
     training_data["psnr"].append(SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat))
-    
-    # Pack the configuration dictionaries into just one
-    combined_config_dict = (network_config | training_config | runtime_config | dataset_config)
 
     #==========================================================================
     # Save network
@@ -239,12 +236,16 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         print("-"*80,"\nSAVING NETWORK:")
         print("\n",end="")
         
-        # Save the parameters
+        # Save the architecture and parameters to JSON
+        full_network_path =  os.path.join(o_filepath,"network.json")
+        # TO BE ADDED
+        
+        # Encode the parameters to binary
         parameters_path = os.path.join(o_filepath,"parameters.bin")
-        EncodeParameters(network=SDFNet,parameters_path=parameters_path,values_bounds=(i_values.max,i_values.min))
+        EncodeParameters(network=ISONet,parameters_path=parameters_path,values_bounds=(i_values.max,i_values.min))
         print("{:30}{}".format("Saved parameters to:",parameters_path.split("/")[-1]))
         
-        # Save the architecture
+        # Encode the architecture to binary
         architecture_path = os.path.join(o_filepath,"architecture.bin")
         EncodeArchitecture(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies,architecture_path=architecture_path)
         print("{:30}{}".format("Saved architecture to:",architecture_path.split("/")[-1]))
@@ -289,6 +290,9 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     #==========================================================================
     # Save results
     
+    # Pack the configuration dictionaries into just one
+    combined_config_dict = (network_config | training_config | runtime_config | dataset_config)
+    
     if runtime_config.save_results_flag:
         print("-"*80,"\nSAVING RESULTS:")        
         print("\n",end="")
@@ -307,7 +311,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     #==========================================================================
     print("-"*80,"\n")
         
-    return SDFNet
+    return ISONet
        
 #==============================================================================
 # Define the main function to run when file is invoked from within the terminal
