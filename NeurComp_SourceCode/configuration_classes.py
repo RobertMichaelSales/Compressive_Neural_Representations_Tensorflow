@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 31.03.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 05.02.2024  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -22,6 +22,8 @@ class GenericConfigurationClass(dict):
     
         return None
     
+    ##
+    
     #==========================================================================
     # Redefine the method which handles/intercepts inexistent attribute lookups
     
@@ -29,9 +31,9 @@ class GenericConfigurationClass(dict):
         
         raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__,key))
         
-        # attribute = self.get(key)
+        return None
         
-        # return attribute
+    ##
     
     #==========================================================================    
     # Redefine the method that is called when attribute assignment is attempted
@@ -42,6 +44,8 @@ class GenericConfigurationClass(dict):
         self.__setitem__(key,value)
         
         return None
+    
+    ##
     
     #==========================================================================
     # Redefine the method that is called when implementing assignment self[key]
@@ -54,7 +58,11 @@ class GenericConfigurationClass(dict):
     
         return None
     
+    ##
+    
     #==========================================================================
+    
+##    
     
 #==============================================================================
 # Define a class to manage the network configuration
@@ -71,6 +79,8 @@ class NetworkConfigurationClass(GenericConfigurationClass):
            
         return None
     
+    ##
+    
     #==========================================================================
     # Define a function to generate the network structure/dimensions from input
     # dimensions, output dimensions and input size.
@@ -81,26 +91,37 @@ class NetworkConfigurationClass(GenericConfigurationClass):
         self.i_dimensions = i_dimensions
         self.o_dimensions = o_dimensions
         self.size = size
-        
-        print("\n{:30}{}".format("Encoding frequencies:",self.frequencies))
-        
-        # Compute the neurons per layer as well as the overall network capacity
+                
+        # Compute the target network capacity
         self.target_size = int(self.size/self.target_compression_ratio)
+        
+        # Compute the widths of hidden layers
         self.neurons_per_layer = self.NeuronsPerLayer() 
+        
+        # Compute the network's total capacity
         self.num_of_parameters = self.TotalParameters()
+        
+        # Compute the actual compression ratio
         self.actual_compression_ratio = self.size/self.num_of_parameters
         
+        # Specify the network architecture as a list of layer dimensions
+        self.layer_dimensions = [self.i_dimensions] + ([self.neurons_per_layer]*self.hidden_layers) + [self.o_dimensions]
+
+        # Print the network's actual compression ratio
         print("\n{:30}{:.2f}".format("Actual compression ratio:",self.actual_compression_ratio))
         
-        # Specify the network architecture as a list of layer dimensions
-        self.layer_dimensions = []   
-        self.layer_dimensions.extend([self.i_dimensions])  
-        self.layer_dimensions.extend([self.neurons_per_layer]*self.hidden_layers)  
-        self.layer_dimensions.extend([self.o_dimensions]) 
-        
+        # Print the network's target compression ratio
+        print("\n{:30}{:.2f}".format("Target compression ratio:",self.target_compression_ratio))
+
+        # Print the network's encoding Frequencies
+        print("\n{:30}{}".format("Encoding frequencies:",self.frequencies))
+
+        # Print the network's layer dimensions
         print("\n{:30}{}".format("Network dimensions:",self.layer_dimensions))
 
         return None
+    
+    ##
 
     #==========================================================================
     # Define a function to compute the minimum number of neurons needed by each 
@@ -113,16 +134,25 @@ class NetworkConfigurationClass(GenericConfigurationClass):
           
         # Incriment neurons until the network capacity exceeds the target size
         while (self.TotalParameters() < self.target_size):
+            
             self.neurons_per_layer = self.neurons_per_layer + 1
+            
+        ##
           
         # Determine the first neuron count that exceeds the target compression
         self.neurons_per_layer = self.neurons_per_layer - 1
         
         return self.neurons_per_layer
     
+    ##
+    
     #==========================================================================
     # Define a function to calculate the total number of network parameters for
-    # a given network architecture (i.e. layer dimensions/neurons)
+    # a siren network architecture (i.e. layer dimensions/neurons)
+    
+    # Note - total_layers is '+2' because the first sine layer, which is needed
+    # to make sure that the residual tensors are of the same shape, and because 
+    # the total_layers actually means "total blocks" in reality.
     
     # The network structure can be summarised as follows:
     # [input_layer      -> sine_layer] + 
@@ -144,17 +174,19 @@ class NetworkConfigurationClass(GenericConfigurationClass):
             if (layer==0):                             
                 
                 # Determine the input and output dimensions of each layer
-
                 if (self.frequencies > 0):
                     i_dimensions = self.i_dimensions * self.frequencies * 2
                 else:
                     i_dimensions = self.i_dimensions
+                ##
                           
                 o_dimensions = self.neurons_per_layer
                   
                 # Add parameters from the weight matrix and bias vector
                 self.num_of_parameters += (i_dimensions * o_dimensions) + o_dimensions
           
+            ##
+            
             # [sine_block -> output_layer]
             elif (layer==self.total_layers-1):     
     
@@ -164,19 +196,32 @@ class NetworkConfigurationClass(GenericConfigurationClass):
                   
                 # Add parameters from the weight matrix and bias vector
                 self.num_of_parameters += (i_dimensions * o_dimensions) + o_dimensions 
+                
+            ##
           
             # [sine_layer/block -> sine_block]
-            else:                         
+            else:        
+
+                # Determine the input and output dimensions of each layer
+                i_dimensions = self.neurons_per_layer
+                o_dimensions = self.neurons_per_layer                 
                 
                 # Add parameters from the 1st weight matrix and bias vector
-                self.num_of_parameters += (self.neurons_per_layer * self.neurons_per_layer) + self.neurons_per_layer
+                self.num_of_parameters += (i_dimensions * o_dimensions) + o_dimensions 
                 
                 # Add parameters from the 2nd weight matrix and bias vector
-                self.num_of_parameters += (self.neurons_per_layer * self.neurons_per_layer) + self.neurons_per_layer        
+                self.num_of_parameters += (i_dimensions * o_dimensions) + o_dimensions 
+                
+            ##
+            
+        ##
                   
         return self.num_of_parameters
     
+    ##
+    
     #==========================================================================
     
+##   
     
 #==============================================================================   

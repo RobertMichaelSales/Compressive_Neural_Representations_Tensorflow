@@ -10,23 +10,21 @@ gc.enable()
 import numpy as np
 import tensorflow as tf
 
-tf.compat.v1.ConfigProto.force_gpu_compatible=True
-
 #==============================================================================
 # Import user-defined libraries 
 
 from data_complexity         import SaveSpectrum
-from data_management         import DataClass,MakeDatasetFromTensorSlc,MakeDatasetFromGenerator,SaveData
+from data_management         import DataClass,MakeDatasetFromTensorSlc,SaveData
 from network_encoder         import EncodeParameters,EncodeArchitecture
 from network_model           import ConstructNetwork
 from configuration_classes   import NetworkConfigurationClass,GenericConfigurationClass
-from compress_utilities      import TrainStep,SignalToNoise,GetLearningRate,MeanSquaredErrorMetric,Logger
+from compress_utilities      import TrainStep,SignalToNoise,GetLearningRate,MeanSquaredErrorMetric,Logger,QuantiseParameters
 
 #==============================================================================
 
 def compress(network_config,dataset_config,runtime_config,training_config,o_filepath,index,ensemble_output):
         
-    print("-"*80,"\nSQUASHNET Mini: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
+    print("-"*80,"\nISONet: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
     
     print("\nDateTime: {}".format(datetime.datetime.now().strftime("%d %b %Y - %H:%M:%S")))
     
@@ -54,7 +52,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     print("\n{:30}{:.3f} GigaBytes".format("Available Memory:",(available_memory/1e9)))
     
     # Set and display threshold memory (software limit)
-    threshold_memory = int(20*1e9)
+    threshold_memory = int(16*1e9)
     print("\n{:30}{:.3f} GigaBytes".format("Threshold Memory:",(threshold_memory/1e9)))
     
     # Get and display input file size
@@ -63,7 +61,8 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     
     # Determine whether data exceeds memory and choose how to load the dataset
     dataset_exceeds_memory = (input_file_size > min(available_memory,threshold_memory))
-    
+    print("\n{:30}{}".format("Dataset Exceeds Memory:",dataset_exceeds_memory))
+
     #==========================================================================
     # Initialise i/o 
     print("-"*80,"\nINITIALISING INPUTS:")
@@ -76,7 +75,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     i_values = DataClass(data_type="values",tabular=dataset_config.tabular,exceeds_memory=dataset_exceeds_memory)
     i_values.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,shape=dataset_config.shape,dtype=dataset_config.dtype,normalise=dataset_config.normalise)
 
-    # Create 'DataClass' objects to store the input weights for training loss
+    # Create 'DataClass' objects to store the input weights, for training loss
     weights = DataClass(data_type="weights",tabular=dataset_config.tabular,exceeds_memory=dataset_exceeds_memory)
     weights.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,shape=dataset_config.shape,dtype=dataset_config.dtype,normalise=dataset_config.normalise )
 
@@ -101,8 +100,8 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     # Generate the network structure based on the input dimensions
     network_config.GenerateStructure(i_dimensions=i_volume.dimensions,o_dimensions=i_values.dimensions,size=i_values.size)
     
-    # Build NeurComp from the config information
-    SquashNet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
+    # Build ISONet from the config information
+    ISONet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
                       
     # Set a training optimiser
     optimiser = tf.keras.optimizers.Adam()
@@ -114,7 +113,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     TrainStepTFF = tf.function(TrainStep)
         
     # Save an image of the network graph (helpful to check)
-    tf.keras.utils.plot_model(model=SquashNet,to_file=os.path.join(o_filepath,"network_graph.png"))
+    tf.keras.utils.plot_model(model=ISONet,to_file=os.path.join(o_filepath,"network_graph.png"))
                 
     #==========================================================================
     # Configure dataset
@@ -151,7 +150,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
                         
         # Store and print the current epoch number
         training_data["epoch"].append(float(epoch))
-        print("{:30}{:02}/{:02}".format("Epoch:",epoch,training_config.epochs))
+        print("{:30}{}/{}".format("Epoch:",(epoch+1),training_config.epochs))
         
         # Determine, update, store and print the learning rate 
         learning_rate = GetLearningRate(initial_lr=training_config.initial_lr,half_life=training_config.half_life,epoch=epoch)
@@ -167,7 +166,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
             
             # Print the current batch number and run a training step
             if runtime_config.print_verbose: print("\r{:30}{:04}/{:04}".format("Batch number:",(batch+1),dataset.size),end="") 
-            TrainStepTFF(model=SquashNet,optimiser=optimiser,metric=metric,volume_batch=volume_batch,values_batch=values_batch,weights_batch=weights_batch)
+            TrainStepTFF(model=ISONet,optimiser=optimiser,metric=metric,volume_batch=volume_batch,values_batch=values_batch,weights_batch=weights_batch)
 
             if batch >= dataset.size: break
             
@@ -196,6 +195,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         else: pass
     
         # Make a new dataset instance, garbage collect
+        # This deals with memory leaking from shuffles
         if runtime_config.shuffle_dataset and (epoch != (training_config.epochs-1)):
             del(dataset); gc.collect()
             dataset = MakeDatasetFromTensorSlc(volume=i_volume,values=i_values,weights=weights,batch_size=training_config.batch_size,cache_dataset=runtime_config.cache_dataset)
@@ -210,18 +210,24 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     print("\n{:30}{:.2f} seconds".format("Training duration:",training_time))    
 
     #==========================================================================
+    # Quantise network parameters
+    
+    if (network_config.bits_per_neuron <= 32): 
+        print("{:30}{:}".format("Quantising Weights:","bits_per_neuron = {}".format(network_config.bits_per_neuron)))
+        quantised_weights = QuantiseParameters(ISONet.get_weights(),network_config.bits_per_neuron)
+        ISONet.set_weights(quantised_weights)
+    else: pass
+        
+    #==========================================================================
     # Finalise outputs    
 
     # Generate the output volume
-    o_values.flat = SquashNet.predict(o_volume.flat,batch_size=training_config.batch_size,verbose="1")
+    o_values.flat = ISONet.predict(o_volume.flat,batch_size=training_config.batch_size,verbose="1")
     o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(o_values.dimensions,)),order="C")
     
     # Calculate and report PSNR
     print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat)))
     training_data["psnr"].append(SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat))
-    
-    # Pack the configuration dictionaries into just one
-    combined_config_dict = (network_config | training_config | runtime_config | dataset_config)
 
     #==========================================================================
     # Save network
@@ -230,12 +236,16 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         print("-"*80,"\nSAVING NETWORK:")
         print("\n",end="")
         
-        # Save the parameters
+        # Save the architecture and parameters to JSON
+        full_network_path =  os.path.join(o_filepath,"network.json")
+        # TO BE ADDED
+        
+        # Encode the parameters to binary
         parameters_path = os.path.join(o_filepath,"parameters.bin")
-        EncodeParameters(network=SquashNet,parameters_path=parameters_path,values_bounds=(i_values.max,i_values.min))
+        EncodeParameters(network=ISONet,parameters_path=parameters_path,values_bounds=(i_values.max,i_values.min))
         print("{:30}{}".format("Saved parameters to:",parameters_path.split("/")[-1]))
         
-        # Save the architecture
+        # Encode the architecture to binary
         architecture_path = os.path.join(o_filepath,"architecture.bin")
         EncodeArchitecture(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies,architecture_path=architecture_path)
         print("{:30}{}".format("Saved architecture to:",architecture_path.split("/")[-1]))
@@ -280,6 +290,9 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     #==========================================================================
     # Save results
     
+    # Pack the configuration dictionaries into just one
+    combined_config_dict = (network_config | training_config | runtime_config | dataset_config)
+    
     if runtime_config.save_results_flag:
         print("-"*80,"\nSAVING RESULTS:")        
         print("\n",end="")
@@ -298,7 +311,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     #==========================================================================
     print("-"*80,"\n")
         
-    return SquashNet
+    return ISONet
        
 #==============================================================================
 # Define the main function to run when file is invoked from within the terminal
@@ -356,7 +369,7 @@ if __name__=="__main__":
         o_filepath      = sys.argv[5]
         
     #==========================================================================
-
+    
     # Construct the output filepath
     o_filepath = os.path.join(o_filepath,network_config.network_name)
     if not os.path.exists(o_filepath): os.makedirs(o_filepath)
