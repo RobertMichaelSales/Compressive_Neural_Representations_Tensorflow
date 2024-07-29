@@ -1,4 +1,4 @@
-""" Created: 15.11.2022  \\  Updated: 09.02.2023  \\   Author: Robert Sales """
+""" Created: 15.11.2022  \\  Updated: 29.07.2024  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -6,7 +6,7 @@
 import numpy as np
 
 #==============================================================================
-# Define a function to decode the network layer dimensions (architecture) from
+# Reads and decodes the network layer dimensions (architecture) from binary
 
 def DecodeArchitecture(architecture_path):
     
@@ -35,14 +35,16 @@ def DecodeArchitecture(architecture_path):
     
     return layer_dimensions,frequencies
 
+##
+
 #==============================================================================
-# Define a function to decode the weights/biases of each layer
+
+# Reads and decodes the weights/biases of each layer of a network from binary
 
 def DecodeParameters(network,parameters_path):
     
     # Extract a sorted list of the names of each layer in the network
-    layer_names = network.get_weight_paths().keys()
-    layer_names = sorted(list(layer_names),key=SortLayerNames)
+    layer_names = sorted(list(network.get_weight_paths().keys()),key=SortLayerNames)
     
     # Determine the number of bytes per value
     bytes_per_value = len(np.array([1.0]).astype('float32').tobytes())
@@ -85,8 +87,10 @@ def DecodeParameters(network,parameters_path):
     
     return parameters,original_values_bounds
 
+##
+
 #==============================================================================
-# Define a function to assign the weights/biases of each layer
+# Assign the weights/biases of each layer to the weights/biases of a network
 
 def AssignParameters(network,parameters):
         
@@ -101,10 +105,12 @@ def AssignParameters(network,parameters):
     ##
     
     return None
+
+##
     
 #==============================================================================
-# Define a function to sort the layer names alpha-numerically so that the saved
-# weights are always in the correct order
+
+# Sort layer names so that saved weights/biases are always in the correct order 
 
 def SortLayerNames(layer_name):
     
@@ -124,5 +130,6 @@ def SortLayerNames(layer_name):
     
     return layer_index
 
+##
+
 #==============================================================================
-    

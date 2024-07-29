@@ -3,8 +3,8 @@
     "print_verbose": true,
     "ensemble_flag": false,
     "shuffle_dataset": true,
-    "save_network_flag": true,
-    "save_outputs_flag": true,
-    "save_results_flag": true,
-    "save_spectra_flag": true
+    "save_network_flag": false,
+    "save_outputs_flag": false,
+    "save_results_flag": false,
+    "save_spectra_flag": false
 }

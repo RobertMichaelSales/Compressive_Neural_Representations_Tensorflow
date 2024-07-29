@@ -1,4 +1,4 @@
-""" Created: 10.11.2022  \\  Updated: 17.07.2023  \\   Author: Robert Sales """
+""" Created: 10.11.2022  \\  Updated: 29.07.2024  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries
@@ -71,7 +71,6 @@ if __name__=="__main__":
                                     "ensemble_flag"             : bool(False),
                                     "shuffle_dataset"           : bool(True),
                                     "save_network_flag"         : bool(True),
-                                    "encode_network_flag"       : bool(False),
                                     "save_outputs_flag"         : bool(True),
                                     "save_results_flag"         : bool(True),
                                     "save_spectra_flag"         : bool(True),

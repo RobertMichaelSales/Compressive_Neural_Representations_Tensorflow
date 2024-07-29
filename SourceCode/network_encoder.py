@@ -1,28 +1,27 @@
-""" Created: 15.11.2022  \\  Updated: 09.02.2023  \\   Author: Robert Sales """
+""" Created: 15.11.2022  \\  Updated: 29.07.2024  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
 
 import numpy as np
+import json
 
 #==============================================================================
-# Define a function to encode the network layer dimensions (or architecture) as
-# a binary file containing strings of bytes
+# Encodes the network layer dimensions as a binary file
+# Note: The np.method '.tobytes()' returns the same bytestring as 'struct.pack()'
 
-# Note: The np.method '.tobytes()' returns the same bytestring as 'struct.pack'
-
-def EncodeArchitecture(layer_dimensions,frequencies,architecture_path):
-
+def EncodeArchitecture(network,architecture_path):
+    
     # Extract the total number of layer dimensions to bytestrings
-    total_num_layers = np.array(len(layer_dimensions)).astype('uint16')    
+    total_num_layers = np.array(len(network.layer_dimensions)).astype('uint16')    
     total_num_layers_as_bytestring = total_num_layers.tobytes()
     
     # Extract the list of network layer dimensions to bytestrings
-    layer_dimensions = np.array(layer_dimensions).astype('uint16')
+    layer_dimensions = np.array(network.layer_dimensions).astype('uint16')
     layer_dimensions_as_bytestring = layer_dimensions.tobytes()
     
     # Extract the number of positional encoding frequencies to bytestrings
-    frequencies = np.array(frequencies).astype('uint16')
+    frequencies = np.array(network.frequencies).astype('uint16')
     frequencies_as_bytestring = frequencies.tobytes()
     
     # Open the architecture file in 'write as binary' mode
@@ -41,16 +40,13 @@ def EncodeArchitecture(layer_dimensions,frequencies,architecture_path):
     return None
 
 #==============================================================================
-# Define a function to encode the weights/biases of each layer as a binary file
-# containing strings of bytes
+# Encodes the weights and biases of each layer as a binary file
+# Note: The np.method '.tobytes()' returns the same bytestring as 'struct.pack()'
 
-# Note: The np.method '.tobytes()' returns the same bytestring as 'struct.pack'
-
-def EncodeParameters(network,parameters_path,original_values_bounds):
+def EncodeParameters(network,parameters_path):
     
     # Extract a sorted list of the names of each layer in the network
-    layer_names = network.get_weight_paths().keys()
-    layer_names = sorted(list(layer_names),key=SortLayerNames)
+    layer_names = sorted(list(network.get_weight_paths().keys()),key=SortLayerNames)
     
     # Open the parameters file in 'write as binary' mode
     with open(parameters_path,"wb") as file:
@@ -72,7 +68,7 @@ def EncodeParameters(network,parameters_path,original_values_bounds):
         ##
             
         # Convert original value bounds to a numpy array
-        original_values_bounds = np.array(original_values_bounds).astype('float32')
+        original_values_bounds = np.array(network.original_values_bounds).astype('float32')
         
         # Serialise original value bounds into a string of bytes
         original_bounds_as_bytestring = original_values_bounds.tobytes(order="C")
@@ -86,10 +82,48 @@ def EncodeParameters(network,parameters_path,original_values_bounds):
     ##
     
     return None
+
+##
+
+#==============================================================================
+
+def SaveNetworkJSON(network,network_data_path):
+    
+    # Create empty dictionary for storing network data
+    network_data = {"meta_data": {}, "parameters": {}}
+    
+    # Add architecture information
+    network_data["architecture"]["network_type"] = str(network.network_type)
+    network_data["architecture"]["layer_dimensions"] = list(network.layer_dimensions)
+    network_data["architecture"]["frequencies"] = int(network.frequencies)
+    network_data["architecture"]["original_values_bounds"] = list(np.array(network.original_values_bounds).tolist())
+    
+    # Extract a sorted list of the names of each layer in the network
+    layer_names = sorted(list(network.get_weight_paths().keys()),key=SortLayerNames)
+    
+    # Iterate through each of the network layers, in order 
+    for layer_name in layer_names: 
+        
+        # Extract the layer weights and biases
+        weights = network.get_weight_paths()[layer_name].numpy()
+        
+        # Flatten the layer weights and biases
+        weights = np.ravel(weights,order="C").astype('float32')
+        
+        # Add parameters information
+        network_data["parameters"]["layers"][layer_name] = weights.tolist()
+    
+    ##
+    
+    # Write to JSON file
+    with open(network_data_path,"w") as file: json.dump(network_data,file,indent=4,sort_keys=False)
+    
+    return None
+
+##
     
 #==============================================================================
-# Define a function to sort the layer names alpha-numerically so that the saved
-# weights are always in the same correct order (the as-constructed ordering)
+# Sort layer names so that saved weights/biases are always in the correct order 
 
 def SortLayerNames(layer_name):
     
@@ -109,4 +143,7 @@ def SortLayerNames(layer_name):
 
     return layer_index
 
+##
+
 #==============================================================================
+

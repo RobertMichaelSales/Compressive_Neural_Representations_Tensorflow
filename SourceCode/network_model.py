@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 02.06.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 29.07.2024  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -104,8 +104,13 @@ def ConstructNetwork(layer_dimensions,frequencies):
     ##
     
     # Create the network model
-    NeurComp = tf.keras.Model(inputs=input_layer,outputs=output_layer)
+    ISONet = tf.keras.Model(inputs=input_layer,outputs=output_layer)
     
-    return NeurComp
+    # Copy attributes to network properties
+    ISONet.network_type = "SIREN"
+    ISONet.layer_dimensions = layer_dimensions
+    ISONet.frequencies = frequencies    
+    
+    return ISONet
 
 #==============================================================================

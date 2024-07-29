@@ -1,4 +1,4 @@
-""" Created: 18.07.2022  \\  Updated: 19.04.2023  \\   Author: Robert Sales """
+""" Created: 18.07.2022  \\  Updated: 29.07.2024  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -14,7 +14,7 @@ import tensorflow as tf
 # Import user-defined libraries 
 
 from data_management         import DataClass,MakeDatasetFromTensorSlc,SaveData
-from network_encoder         import EncodeArchitecture,EncodeParameters
+from network_encoder         import EncodeArchitecture,EncodeParameters,SaveNetworkJSON
 from network_model           import ConstructNetwork
 from configuration_classes   import GenericConfigurationClass,NetworkConfigurationClass
 from compress_utilities      import TrainStep,GetLearningRate,MeanSquaredErrorMetric,Logger,SignalToNoise,QuantiseParameters
@@ -46,74 +46,47 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     # Check whether the input size exceeds available memory
     print("-"*80,"\nCHECKING MEMORY REQUIREMENTS:")
     
-    # Get and display available memory (hardware limit)
+    # Get and display available memory
     available_memory = psutil.virtual_memory().available
     print("\n{:30}{:.3f} GigaBytes".format("Available Memory:",(available_memory/1e9)))
-    
-    # Set and display threshold memory (software limit)
-    threshold_memory = int(16*1e9)
-    print("\n{:30}{:.3f} GigaBytes".format("Threshold Memory:",(threshold_memory/1e9)))
     
     # Get and display input file size
     input_file_size = os.path.getsize(dataset_config.i_filepath)
     print("\n{:30}{:06.3f} GigaBytes".format("Input File Size:",(input_file_size/1e9)))
     
-    # Determine whether data exceeds memory and choose how to load the dataset
-    dataset_exceeds_memory = (input_file_size > min(available_memory,threshold_memory))
-    print("\n{:30}{}".format("Dataset Exceeds Memory:",dataset_exceeds_memory))
-    if dataset_exceeds_memory: raise MemoryError("Dataset exceeds available/threshold memory: Compression has been halted to protect the user's OS.")
+    if (input_file_size > available_memory):
+        raise MemoryError("Dataset size exceeds available RAM. Execution was halted to prevent crashing.")
+    ##
 
     #==========================================================================
     # Initialise i/o 
     print("-"*80,"\nINITIALISING INPUTS:")
     
-    # Create 'DataClass' objects to store the input volume, load and normalise
+    # Create instance of 'DataClass' object to store the input volume, load and normalise
+    print("\n{:30}{}".format("Loading Volume:",dataset_config.i_filepath.split("/")[-1]))
+    print("{:30}{}".format("Fields:",dataset_config.columns[0]))
     i_volume = DataClass(data_type="volume",tabular=dataset_config.tabular)
     i_volume.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,shape=dataset_config.shape,dtype=dataset_config.dtype,normalise=dataset_config.normalise)
     
-    # Create 'DataClass' objects to store the input values, load and normalise
+    # Create instance of 'DataClass' object to store the input values, load and normalise
+    print("\n{:30}{}".format("Loading Volume:",dataset_config.i_filepath.split("/")[-1]))
+    print("{:30}{}".format("Fields:",dataset_config.columns[1]))
     i_values = DataClass(data_type="values",tabular=dataset_config.tabular)
     i_values.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,shape=dataset_config.shape,dtype=dataset_config.dtype,normalise=dataset_config.normalise)
 
-    # Create 'DataClass' objects to store the input weights, for training loss
+    # Create instance of 'DataClass' object to store the input weights, for training loss
+    print("\n{:30}{}".format("Loading Weights:",dataset_config.i_filepath.split("/")[-1]))
+    print("{:30}{}".format("Fields:",dataset_config.columns[2]))
     weights = DataClass(data_type="weights",tabular=dataset_config.tabular)
     weights.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,shape=dataset_config.shape,dtype=dataset_config.dtype,normalise=dataset_config.normalise )
 
-    # Create 'DataClass' objects to store the output volume, copy input data
+    # Create instance of 'DataClass' object to store the output volume, copies input data
     o_volume = DataClass(data_type="volume",tabular=dataset_config.tabular)
     o_volume.CopyData(DataClassObject=i_volume,exception_keys=[])
     
-    # Create 'DataClass' objects to store the output values, copy input data
+    # Create instance of 'DataClass' object to store the output values, copies input data
     o_values = DataClass(data_type="values",tabular=dataset_config.tabular)
     o_values.CopyData(DataClassObject=i_values,exception_keys=["flat","data"])  
-    
-    #==========================================================================
-    
-    # Calculate the standard deviation for the volume and values data
-    volume_standard_deviation = np.std(i_volume.flat,axis=0).tolist()
-    values_standard_deviation = np.std(i_values.flat,axis=0).tolist()
-              
-    #==========================================================================
-    # Configure network 
-    print("-"*80,"\nCONFIGURING NETWORK:")
-    
-    # Generate the network structure based on the input dimensions
-    network_config.GenerateStructure(i_dimensions=i_volume.dimensions,o_dimensions=i_values.dimensions,size=i_values.size)
-    
-    # Build ISONet from the config information
-    ISONet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
-                      
-    # Set a training optimiser
-    optimiser = tf.keras.optimizers.Adam()
-    
-    # Set a performance metric (custom weighted mean-squared error metric)
-    metric = MeanSquaredErrorMetric()
-        
-    # Load the training step function as a tf.function for speed increases
-    TrainStepTFF = tf.function(TrainStep)
-        
-    # Save an image of the network graph (helpful to check)
-    tf.keras.utils.plot_model(model=ISONet,to_file=os.path.join(o_filepath,"network_graph.png"))
                 
     #==========================================================================
     # Configure dataset
@@ -132,13 +105,38 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     
     # Generate a TF dataset to supply volume and values batches during training 
     dataset = MakeDatasetFromTensorSlc(volume=i_volume,values=i_values,weights=weights,batch_size=training_config.batch_size,cache_dataset=runtime_config.cache_dataset)
+                  
+    #==========================================================================
+    # Configure network 
+    print("-"*80,"\nCONFIGURING NETWORK:")
+    
+    # Generate the network structure based on the input dimensions
+    network_config.GenerateStructure(i_dimensions=i_volume.dimensions,o_dimensions=i_values.dimensions,size=i_values.size)
+    
+    # Build ISONet from the config information
+    ISONet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
+    
+    # Add original values bounds to network attributes
+    ISONet.original_values_bounds = [i_values.max,i_values.min]              
+    
+    # Set a training optimiser
+    optimiser = tf.keras.optimizers.Adam()
+    
+    # Set a performance metric (custom weighted mean-squared error metric)
+    metric = MeanSquaredErrorMetric()
+        
+    # Load the training step function as a tf.function for speed increases
+    TrainStepTFF = tf.function(TrainStep)
+        
+    # Save an image of the network graph (helpful to check)
+    tf.keras.utils.plot_model(model=ISONet,to_file=os.path.join(o_filepath,"network_graph.png"))
     
     #==========================================================================  
     # Training loop
-    print("-"*80,"\nCOMPRESSING DATA:")
+    print("-"*80,"\nCOMPRESSING ISO:")
         
     # Create a dictionary of lists to store training data
-    training_data = {"epoch":[],"error":[],"time":[],"learning_rate":[],"psnr":[],"vol_std":volume_standard_deviation,"val_std":values_standard_deviation}
+    training_data = {"epoch":[],"error":[],"time":[],"learning_rate":[],"psnr":[]}
 
     # Start the overall training timer
     training_time_tick = time.time()
@@ -190,7 +188,6 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         if np.isnan(error): 
             print("{:30}{:}".format("Early stopping:","Error has diverged")) 
             runtime_config.save_network_flag = False
-            runtime_config.encode_network_flag = False
             runtime_config.save_outputs_flag = False
             break
         else: pass
@@ -213,39 +210,45 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     #==========================================================================
     # Quantise network parameters
     
-    if (network_config.bits_per_neuron <= 32): 
+    if (network_config.bits_per_neuron < 32): 
         print("{:30}{:}".format("Quantising Weights:","bits_per_neuron = {}".format(network_config.bits_per_neuron)))
         quantised_weights = QuantiseParameters(ISONet.get_weights(),network_config.bits_per_neuron)
         ISONet.set_weights(quantised_weights)
     else: pass
         
     #==========================================================================
-    # Finalise outputs    
+    # Evaluate outputs    
 
-    # Generate the output volume
+    # Generate the predicted output volume
     o_values.flat = ISONet.predict(o_volume.flat,batch_size=training_config.batch_size,verbose="1")
     o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(o_values.dimensions,)),order="C")
     
-    # Calculate and report PSNR
+    # Calculate and report predicted PSNR
     print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat)))
     training_data["psnr"].append(SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat))
-
-    #==========================================================================
-    # Encode network
     
-    if runtime_config.encode_network_flag:
+    #==========================================================================
+    # save network
+    
+    if runtime_config.save_network_flag:
         print("-"*80,"\nSAVING NETWORK:")
         print("\n",end="")
                 
+        # Save the architecture and parameters to portable JSON file
+        network_data_path = os.path.join(o_filepath,"network_data.json")
+        SaveNetworkJSON(network=ISONet,network_data_path=network_data_path)
+        print("{:30}{}".format("Saved network data to:",network_data_path.split("/")[-1]))
+        
         # Encode the parameters to binary
         parameters_path = os.path.join(o_filepath,"parameters.bin")
-        EncodeParameters(network=ISONet,parameters_path=parameters_path,values_bounds=(i_values.max,i_values.min))
+        EncodeParameters(network=ISONet,parameters_path=parameters_path)
         print("{:30}{}".format("Saved parameters to:",parameters_path.split("/")[-1]))
         
         # Encode the architecture to binary
         architecture_path = os.path.join(o_filepath,"architecture.bin")
-        EncodeArchitecture(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies,architecture_path=architecture_path)
+        EncodeArchitecture(network=ISONet,architecture_path=architecture_path)
         print("{:30}{}".format("Saved architecture to:",architecture_path.split("/")[-1]))
+        
     else: pass
     
     #==========================================================================
@@ -264,6 +267,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         output_data_path = os.path.join(o_filepath,"o_volume")
         SaveData(output_data_path=output_data_path,volume=o_volume,values=o_values,reverse_normalise=True)
         print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1]))        
+        
     else: pass    
 
     #==========================================================================
@@ -285,6 +289,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         combined_config_path = os.path.join(o_filepath,"config.json")
         with open(combined_config_path,"w") as file: json.dump(combined_config_dict,file,indent=4)
         print("{:30}{}".format("Saved configuration to:",combined_config_path.split("/")[-1]))
+        
     else: pass
     
     #==========================================================================
@@ -302,35 +307,35 @@ if __name__=="__main__":
         #======================================================================
         # This block will run in the event that this script is called in an IDE
     
-        network_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/network_config.json"
+        network_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/AuxFiles/inputs/configs/network_config.json"
         
         with open(network_config_path) as network_config_file: 
             network_config_dictionary = json.load(network_config_file)
             network_config = NetworkConfigurationClass(network_config_dictionary)
         ##   
         
-        dataset_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/dataset_config.json"
+        dataset_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/AuxFiles/inputs/configs/dataset_config.json"
         
         with open(dataset_config_path) as dataset_config_file: 
             dataset_config_dictionary = json.load(dataset_config_file)
             dataset_config = GenericConfigurationClass(dataset_config_dictionary)
         ##  
             
-        runtime_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/runtime_config.json"
+        runtime_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/AuxFiles/inputs/configs/runtime_config.json"
         
         with open(runtime_config_path) as runtime_config_file: 
             runtime_config_dictionary = json.load(runtime_config_file)
             runtime_config = GenericConfigurationClass(runtime_config_dictionary)
         ##    
             
-        training_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/inputs/configs/training_config.json"
+        training_config_path = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/AuxFiles/inputs/configs/training_config.json"
         
         with open(training_config_path) as training_config_file: 
             training_config_dictionary = json.load(training_config_file)
             training_config = GenericConfigurationClass(training_config_dictionary)
         ##
         
-        o_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/NeurComp_AuxFiles/outputs"
+        o_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/AuxFiles/outputs"
         
     else: 
 
