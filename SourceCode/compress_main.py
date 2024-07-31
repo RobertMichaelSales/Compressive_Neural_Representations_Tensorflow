@@ -61,7 +61,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     #==========================================================================
     # Initialise i/o 
     print("-"*80,"\nINITIALISING INPUTS:")
-    
+       
     # Create instance of 'DataClass' object to store the input volume, load and normalise
     print("\n{:30}{}".format("Loading Volume:",dataset_config.i_filepath.split("/")[-1]))
     print("{:30}{}".format("Fields:",dataset_config.columns[0]))
@@ -116,9 +116,11 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     # Build ISONet from the config information
     ISONet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
     
-    # Add original values bounds to network attributes
-    ISONet.original_values_bounds = [i_values.max,i_values.min]              
-    
+    # Add original bounds to network attributes
+    ISONet.original_volume_centre = i_volume.original_centre                    # CAN BE REMOVED ONCE THIS IS CHECKED ALONGSIDE SDF NETWORK
+    ISONet.original_volume_radius = i_volume.original_radius                    # CAN BE REMOVED ONCE THIS IS CHECKED ALONGSIDE SDF NETWORK
+    ISONet.original_values_bounds = i_values.original_bounds       
+
     # Set a training optimiser
     optimiser = tf.keras.optimizers.Adam()
     
@@ -369,13 +371,14 @@ if __name__=="__main__":
         sys.stdout = Logger(stdout_log_filename)   
     
         # Execute compression
-        ISONet = compress(network_config=network_config,dataset_config=dataset_config,runtime_config=runtime_config,training_config=training_config,o_filepath=o_filepath)           
+        # ISONet = compress(network_config=network_config,dataset_config=dataset_config,runtime_config=runtime_config,training_config=training_config,o_filepath=o_filepath)           
+        values = compress(network_config=network_config,dataset_config=dataset_config,runtime_config=runtime_config,training_config=training_config,o_filepath=o_filepath)           
         
         # Save the model for JS conversion
         # tf.saved_model.save(ISONet,os.path.join(o_filepath,"SavedModel"))
         
         # Create a checkpoint file after successful execution
-        with open(checkpoint_filename, mode='w'): pass
+        # with open(checkpoint_filename, mode='w'): pass
 
     else: print("Checkpoint file '{}' already exists: skipping.".format(checkpoint_filename))
         

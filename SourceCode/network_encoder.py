@@ -90,7 +90,7 @@ def EncodeParameters(network,parameters_path):
 def SaveNetworkJSON(network,network_data_path):
     
     # Create empty dictionary for storing network data
-    network_data = {"meta_data": {}, "parameters": {}}
+    network_data = {"architecture": {}, "parameters": {}}
     
     # Add architecture information
     network_data["architecture"]["network_type"] = str(network.network_type)
@@ -111,7 +111,7 @@ def SaveNetworkJSON(network,network_data_path):
         weights = np.ravel(weights,order="C").astype('float32')
         
         # Add parameters information
-        network_data["parameters"]["layers"][layer_name] = weights.tolist()
+        network_data["parameters"][layer_name] = weights.tolist()
     
     ##
     

@@ -3,16 +3,17 @@
 #==============================================================================
 # Import libraries and set flags
 
+import trimesh
 import numpy as np
 import tensorflow as tf
 from pyevtk.hl import gridToVTK,pointsToVTK
 
 #==============================================================================
-# Define a class for managing datasets: i.e. loading, handling and storing data  
 
 class DataClass():
 
     #==========================================================================
+    
     # The constructor function for 'DataClass'   
 
     def __init__(self,data_type,tabular):
@@ -26,6 +27,7 @@ class DataClass():
     ##
     
     #==========================================================================
+   
     # Loads and returns pre-processed scalar fields for use creating Tensorflow DataSet objects
     # Note: The input filepath must refer to a file ending in '.npy' 
     # Note: Make sure the flattening takes place after normalisation
@@ -35,19 +37,31 @@ class DataClass():
         # Unpack the columns for the coordinate axes and scalar fields
         volume_columns,values_columns,weight_column = columns
                 
-        # Load the entire dataset then extract the desired tensor
+        # Load the volume data and normalise
         if (self.data_type=="volume"): 
             
             self.dimensions = len(volume_columns)
             self.data = np.load(input_data_path)[...,volume_columns].astype('float32')
+            self.original_centre, self.original_radius, self.original_bounds = self.GetVolumeBoundingSphere(self.data)
+            
+            if (normalise):
+                self.data = self.data - self.original_centre
+                self.data = self.data / self.original_radius
+            ##
             
         ##
             
-        # Load the entire dataset then extract the desired tensor
+        # Load the values data and normalise
         if (self.data_type=="values"): 
             
             self.dimensions = len(values_columns)
             self.data = np.load(input_data_path)[...,values_columns].astype('float32')
+            self.original_average, self.original_range, self.original_bounds = self.GetValuesBoundingValues(self.data)
+            
+            if (normalise):
+                self.data = self.data - self.original_average
+                self.data = self.data / (self.original_range / 2.0)
+            ##
             
         ##           
         
@@ -72,25 +86,6 @@ class DataClass():
         # Determine the field resolution and number of values
         self.resolution = self.data.shape[:-1] 
         self.size = self.data.size
-        
-        # Determine the maximum, minimum, average and range
-        self.max = np.array([self.data[...,i].max() for i in range(self.dimensions)])
-        self.min = np.array([self.data[...,i].min() for i in range(self.dimensions)])
-        self.avg = (self.max+self.min)/2.0
-        self.rng = abs(self.max-self.min)
-        
-        # Adjust zero-entries
-        self.rng[self.max==self.min] = 1.0        
-        
-        # Normalise each tensor field to the range [-1,+1] or [0,+1]
-        if normalise:
-            if self.data_type in ["volume","values"]:
-                self.data = 2.0*((self.data-self.avg)/(self.rng))  
-            else:pass
-            if self.data_type in ["weights"]:
-                self.data = 0.5+((self.data-self.avg)/(self.rng)) + 1e-9
-            else:pass
-        else: pass
     
         # Flatten each tensor fields into equal lists of vectors
         self.flat = np.reshape(np.ravel(self.data,order="C"),(-1,self.dimensions))
@@ -100,6 +95,61 @@ class DataClass():
     ##      
         
     #==========================================================================
+    
+    # Returns the bounding sphere centre and radius for a given set of points
+    # Note: Using the Trimesh package means these are the equal for SDFs/ISOs
+    # Note: 
+    
+    def GetVolumeBoundingSphere(self,points):
+           
+        # Create a trimesh PointCloud object for a set of points
+        point_cloud = trimesh.PointCloud(points.reshape(-1,3))
+                
+        # Extract sphere centre and radius
+        original_centre = np.array(point_cloud.bounding_sphere.center)
+        original_radius = np.cbrt((3.0*point_cloud.bounding_sphere.volume)/(4.0*np.pi))
+        original_bounds = np.array(point_cloud.bounding_sphere.bounds).T
+
+        return original_centre, original_radius, original_bounds
+        
+    #==========================================================================
+    
+    # Returns the bounding sphere centre and radius for a given set of points
+    # Note: Using the Trimesh package means these are the equal for SDFs/ISOs
+    
+    def GetVolumeBoundingCuboid(self,points):
+           
+        # Create a trimesh PointCloud object for a set of points
+        point_cloud = trimesh.PointCloud(points.reshape(-1,3))
+        
+        # Extract cuboid centre and bounds
+        original_centre = point_cloud.bounding_box.centroid
+        original_extent = point_cloud.bounding_box.extent
+        original_bounds = point_cloud.bounding_box.bounds.T
+           
+        return original_centre, original_extent, original_bounds
+        
+    #==========================================================================
+    
+    # Returns the bounding values average and range for a given set of points
+    # Note: bounds are transposed so bounds[0] returns the bounds for field 0
+    # Note: the transpose changes "axis=0" to "axis=-1"
+    
+    def GetValuesBoundingValues(self,points):
+        
+        # Determine the maximum and minimum values per axis
+        original_minimum = points.min(axis=(0,1,2))
+        original_maximum = points.max(axis=(0,1,2))
+        original_bounds = np.array([original_minimum,original_maximum]).T
+        
+        # Determine the average and range values per axis
+        original_average = np.mean(original_bounds,axis=-1)
+        original_range = np.ptp(original_bounds,axis=-1)
+        
+        return original_average, original_range, original_bounds
+    
+    #==========================================================================
+    
     # Indepenently copies / deep copies attributes from 'DataClassObject' without referencing
     # Note: 'getattr()' and 'setattr()' are used to copy without referencing 
     
@@ -121,6 +171,7 @@ class DataClass():
     ##
 
 #==============================================================================
+
 # Creates a 'tf.data.Dataset' object from input volume, input values and optional weight data
 # Note: 'AUTOTUNE' prompts 'tf.data' to tune the value  of 'buffer_size' dynamically at runtime
 # Note: Moving 'dataset.cache()' up or down will damage the runtime performance significantly
@@ -170,8 +221,10 @@ def SaveData(output_data_path,volume,values,reverse_normalise=True):
                     
     # Reverse normalise 'volume' and 'values' to the initial ranges
     if reverse_normalise:
-        volume.data = ((volume.rng*(volume.data/2.0))+volume.avg)
-        values.data = ((values.rng*(values.data/2.0))+values.avg)
+        volume.data = volume.data * volume.original_radius
+        volume.data = volume.data + volume.original_centre
+        values.data = values.data * (values.original_range / 2.0)
+        values.data = values.data + values.original_average
     else: pass
 
     # Save as Numpy file 

@@ -78,7 +78,7 @@ def DecodeParameters(network,parameters_path):
         original_bounds_as_bytestring = file.read(bytes_per_value+bytes_per_value)
         
         # Convert the bytestring into a 1-d array
-        original_values_bounds = np.frombuffer(original_bounds_as_bytestring,dtype='float32')
+        original_values_bounds = np.frombuffer(original_bounds_as_bytestring,dtype='float32').reshape(-1,2)
         
         # Flush the buffer and close the file 
         file.flush()

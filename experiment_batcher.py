@@ -1,4 +1,4 @@
-""" Created: 10.11.2022  \\  Updated: 29.07.2024  \\   Author: Robert Sales """
+""" Created: 10.11.2022  \\  Updated: 31.07.2024  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries
@@ -11,18 +11,18 @@ import numpy as np
 if __name__=="__main__": 
 
     # Set input data config options
-    input_dataset_config_paths = sorted(glob.glob("/Data/ISO_Compression_Datasets/sales_nodule/sales_nodule_config.json"))
+    input_dataset_config_paths = sorted(glob.glob("/Data/ISO_Compression_Datasets/sales_nodule/nodule_data_config.json"))
         
     # Filter configs
     input_dataset_config_paths = [x for x in input_dataset_config_paths  if "_config" in x or "_config" in x]
     
     # Set test option sweep
-    compression_ratios = np.array([10])
+    compression_ratios = np.array([100])
     bits_per_neurons = np.array([32])
     learning_rates = np.array([1e-3])
     batch_fractions = np.array([0])
     frequenciess = np.array([0])
-    hidden_layerss = np.array([14])
+    hidden_layerss = np.array([10])
     
     # Set experiment number
     experiment_num = 0
@@ -79,10 +79,10 @@ if __name__=="__main__":
                                 # Define the training config
                                 training_config = {
                                     "initial_lr"                : float(learning_rate),
-                                    "batch_size"                : 4096,
+                                    "batch_size"                : int(4096),
                                     "batch_fraction"            : float(batch_fraction),
-                                    "epochs"                    : 30,
-                                    "half_life"                 : 2,            
+                                    "epochs"                    : int(30),
+                                    "half_life"                 : int(2),            
                                     }            
                                 
                                 # Define the output directory
@@ -90,7 +90,7 @@ if __name__=="__main__":
                                 
                                 # Run the compression experiment
                                 runstring = "python SourceCode/compress_main.py " + "'" + json.dumps(network_config) + "' '" + json.dumps(dataset_config) + "' '" + json.dumps(runtime_config) + "' '" + json.dumps(training_config) + "' '" + o_filepath + "'"
-                                # os.system(runstring)
+                                os.system(runstring)
                                 
                                 # Define the plotting config
                                 plotting_config = {
@@ -102,7 +102,7 @@ if __name__=="__main__":
                                 
                                 # Render the results in ParaView
                                 runstring = "pvpython ParaView/plot_volumes.py " + "'" + json.dumps(plotting_config) + "'"
-                                # os.system(runstring)
+                                os.system(runstring)
                                 
                                 count = count + 1 
                                 
