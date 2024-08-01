@@ -117,9 +117,9 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     ISONet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
     
     # Add original bounds to network attributes
+    ISONet.original_values_bounds = i_values.original_bounds       
     ISONet.original_volume_centre = i_volume.original_centre                    # CAN BE REMOVED ONCE THIS IS CHECKED ALONGSIDE SDF NETWORK
     ISONet.original_volume_radius = i_volume.original_radius                    # CAN BE REMOVED ONCE THIS IS CHECKED ALONGSIDE SDF NETWORK
-    ISONet.original_values_bounds = i_values.original_bounds       
 
     # Set a training optimiser
     optimiser = tf.keras.optimizers.Adam()
@@ -372,7 +372,7 @@ if __name__=="__main__":
     
         # Execute compression
         # ISONet = compress(network_config=network_config,dataset_config=dataset_config,runtime_config=runtime_config,training_config=training_config,o_filepath=o_filepath)           
-        values = compress(network_config=network_config,dataset_config=dataset_config,runtime_config=runtime_config,training_config=training_config,o_filepath=o_filepath)           
+        network = compress(network_config=network_config,dataset_config=dataset_config,runtime_config=runtime_config,training_config=training_config,o_filepath=o_filepath)           
         
         # Save the model for JS conversion
         # tf.saved_model.save(ISONet,os.path.join(o_filepath,"SavedModel"))

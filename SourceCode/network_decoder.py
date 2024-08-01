@@ -49,6 +49,10 @@ def DecodeParameters(network,parameters_path):
     # Determine the number of bytes per value
     bytes_per_value = len(np.array([1.0]).astype('float32').tobytes())
     
+    # Determine input and output dimensions
+    i_dimensions = network.layer_dimensions[0 ]
+    o_dimensions = network.layer_dimensions[-1]
+    
     # Open the weights file in 'read as binary' mode
     with open(parameters_path,"rb") as file:
     
@@ -74,18 +78,34 @@ def DecodeParameters(network,parameters_path):
             parameters[layer_name] = weights
         ##
         
-        # Read the values bounds bytestring
-        original_bounds_as_bytestring = file.read(bytes_per_value+bytes_per_value)
+        # Read the original values bounds bytestring
+        original_values_bounds_as_bytestring = file.read(o_dimensions*bytes_per_value*2)
         
-        # Convert the bytestring into a 1-d array
-        original_values_bounds = np.frombuffer(original_bounds_as_bytestring,dtype='float32').reshape(-1,2)
+        # Convert the bytestring into a numpy array
+        original_values_bounds = np.frombuffer(original_values_bounds_as_bytestring,dtype='float32').reshape(o_dimensions,2)
+        
+        #============================= TEMPORARY? =============================            
+
+        # Read the original volume centre bytestring
+        original_volume_centre_as_bytestring = file.read(i_dimensions*bytes_per_value*1)
+
+        # Convert the bytestring into a numpy array
+        original_volume_centre = np.frombuffer(original_volume_centre_as_bytestring,dtype='float32')
+        
+        # Read the original volume radius bytestring
+        original_volume_radius_as_bytestring = file.read(bytes_per_value)
+
+        # Convert the bytestring into a numpy array
+        original_volume_radius = np.frombuffer(original_volume_radius_as_bytestring,dtype='float32')
+        
+        #============================= TEMPORARY? =============================
         
         # Flush the buffer and close the file 
         file.flush()
         file.close()   
     ##
     
-    return parameters,original_values_bounds
+    return parameters,original_values_bounds,original_volume_centre,original_volume_radius
 
 ##
 

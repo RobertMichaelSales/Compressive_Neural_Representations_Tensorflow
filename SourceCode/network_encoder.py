@@ -67,14 +67,36 @@ def EncodeParameters(network,parameters_path):
             file.write(weights_as_bytestring)
         ##
             
-        # Convert original value bounds to a numpy array
+        # Convert original values bounds to a numpy array
         original_values_bounds = np.array(network.original_values_bounds).astype('float32')
         
-        # Serialise original value bounds into a string of bytes
-        original_bounds_as_bytestring = original_values_bounds.tobytes(order="C")
+        # Serialise original values bounds into a string of bytes
+        original_values_bounds_as_bytestring = original_values_bounds.tobytes(order="C")
         
         # Write 'original_bounds_as_bytestring' to file
-        file.write(original_bounds_as_bytestring)
+        file.write(original_values_bounds_as_bytestring)
+
+        #============================= TEMPORARY? =============================            
+
+        # Convert original volume centre to a numpy array
+        original_volume_centre = np.array(network.original_volume_centre).astype('float32')
+        
+        # Serialise original volume centre into a string of bytes
+        original_volume_centre_as_bytestring = original_volume_centre.tobytes(order="C")
+        
+        # Write 'original_bounds_as_bytestring' to file
+        file.write(original_volume_centre_as_bytestring)
+        
+        # Convert original volume radius to a numpy array
+        original_volume_radius = np.array(network.original_volume_radius).astype('float32')
+        
+        # Serialise original volume radius into a string of bytes
+        original_volume_radius_as_bytestring = original_volume_radius.tobytes(order="C")
+        
+        # Write 'original_bounds_as_bytestring' to file
+        file.write(original_volume_radius_as_bytestring)
+        
+        #============================= TEMPORARY? =============================            
                 
         # Flush the buffer and close the file 
         file.flush()
