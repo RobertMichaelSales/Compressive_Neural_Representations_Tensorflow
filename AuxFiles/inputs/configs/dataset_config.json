@@ -11,12 +11,12 @@
         []
     ],
     "dtype": "float32",
-    "i_filepath": "/Data/ISO_Compression_Datasets/jhtdb_isotropic1024coarse_pressure/pools/jhtdb_isotropic1024coarse_pressure_pool8.npy",
+    "i_filepath": "/Data/ISO_Compression_Datasets/sales_nodule/nodule_data.npy",
     "normalise": true,
     "shape": [
-        128,
-        128,
-        128,
+        256,
+        256,
+        256,
         4
     ],
     "tabular": false

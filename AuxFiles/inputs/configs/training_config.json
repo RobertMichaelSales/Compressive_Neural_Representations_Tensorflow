@@ -1,7 +1,7 @@
 {
     "batch_fraction": 0.0000,
     "batch_size": 1024,
-    "epochs": 1,
+    "epochs": 30,
     "half_life": 2,
     "initial_lr": 0.001
 }

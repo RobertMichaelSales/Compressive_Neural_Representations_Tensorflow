@@ -371,14 +371,13 @@ if __name__=="__main__":
         sys.stdout = Logger(stdout_log_filename)   
     
         # Execute compression
-        # ISONet = compress(network_config=network_config,dataset_config=dataset_config,runtime_config=runtime_config,training_config=training_config,o_filepath=o_filepath)           
-        network = compress(network_config=network_config,dataset_config=dataset_config,runtime_config=runtime_config,training_config=training_config,o_filepath=o_filepath)           
+        ISONet = compress(network_config=network_config,dataset_config=dataset_config,runtime_config=runtime_config,training_config=training_config,o_filepath=o_filepath)           
         
         # Save the model for JS conversion
         # tf.saved_model.save(ISONet,os.path.join(o_filepath,"SavedModel"))
         
         # Create a checkpoint file after successful execution
-        # with open(checkpoint_filename, mode='w'): pass
+        with open(checkpoint_filename, mode='w'): pass
 
     else: print("Checkpoint file '{}' already exists: skipping.".format(checkpoint_filename))
         
