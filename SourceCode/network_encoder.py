@@ -1,4 +1,4 @@
-""" Created: 15.11.2022  \\  Updated: 29.07.2024  \\   Author: Robert Sales """
+""" Created: 15.11.2022  \\  Updated: 26.09.2024  \\   Author: Robert Sales """
 
 #==============================================================================
 # Import libraries and set flags
@@ -126,14 +126,24 @@ def SaveNetworkJSON(network,network_data_path):
     # Iterate through each of the network layers, in order 
     for layer_name in layer_names: 
         
-        # Extract the layer weights and biases
-        weights = network.get_weight_paths()[layer_name].numpy()
+        # Extract the layer
+        layer = network.get_weight_paths()[layer_name]
         
-        # Flatten the layer weights and biases
-        weights = np.ravel(weights,order="C").astype('float32')
+        # Extract type
+        layer_type = layer_name.split(".")[1]
+        
+        # Extract data
+        layer_data = layer.numpy().flatten(order="C").astype('float32').tolist()
+        
+        # Extract dims
+        if (layer_type == "kernel"):
+            layer_dims = list(layer.shape)
+        else:
+            layer_dims = list(layer.shape + (1,))
+        ##
         
         # Add parameters information
-        network_data["parameters"][layer_name] = weights.tolist()
+        network_data["parameters"][layer_name] = {"data": layer_data, "dims": layer_dims}
     
     ##
     

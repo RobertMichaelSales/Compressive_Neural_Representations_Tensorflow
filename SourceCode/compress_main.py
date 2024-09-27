@@ -237,7 +237,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         print("\n",end="")
                 
         # Save the architecture and parameters to portable JSON file
-        network_data_path = os.path.join(o_filepath,"network_data.json")
+        network_data_path = os.path.join(o_filepath,"network_data_iso.json")
         SaveNetworkJSON(network=ISONet,network_data_path=network_data_path)
         print("{:30}{}".format("Saved network data to:",network_data_path.split("/")[-1]))
         
