@@ -20,7 +20,7 @@ from network_model           import ConstructNetwork
 
 def decompress(architecture_path,parameters_path,input_data_path):
         
-    print("-"*80,"\nSQUASHNET: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
+    print("-"*80,"\nISONet: IMPLICIT NEURAL REPRESENTATIONS (by Rob Sales)")
     
     #==========================================================================
     # Check whether hardware acceleration is enabled
@@ -41,18 +41,18 @@ def decompress(architecture_path,parameters_path,input_data_path):
     layer_dimensions,frequencies = DecodeArchitecture(architecture_path=architecture_path)
     print("\n{:30}{}".format("Loaded architecture from:",architecture_path.split("/")[-1]))
     
-    SquashNet = ConstructNetwork(layer_dimensions=layer_dimensions,frequencies=frequencies)
+    ISONet = ConstructNetwork(layer_dimensions=layer_dimensions,frequencies=frequencies)
     print("\n{:30}{}".format("Network dimensions:",layer_dimensions))
     
     #==========================================================================
     # Assign parameters 
     print("-"*80,"\nSETTING PARAMETERS:") 
     
-    parameters,values_bounds = DecodeParameters(network=SquashNet,parameters_path=parameters_path)
+    parameters,values_bounds = DecodeParameters(network=ISONet,parameters_path=parameters_path)
     print("\n{:30}{}".format("Loaded parameters from:",parameters_path.split("/")[-1])) 
 
-    AssignParameters(network=SquashNet,parameters=parameters)  
-    print("\n{:30}{}".format("Total parameters:",np.sum([np.prod(x.shape) for x in SquashNet.get_weights()])))    
+    AssignParameters(network=ISONet,parameters=parameters)  
+    print("\n{:30}{}".format("Total parameters:",np.sum([np.prod(x.shape) for x in ISONet.get_weights()])))    
     
     #==========================================================================
     # Initialise i/o 
@@ -71,7 +71,7 @@ def decompress(architecture_path,parameters_path,input_data_path):
     print("-"*80,"\nCONSTRUCTING VALUES:")  
 
     # redict values from the input volume
-    o_values.flat = SquashNet.predict(i_volume.flat,batch_size=1024,verbose="1")
+    o_values.flat = ISONet.predict(i_volume.flat,batch_size=1024,verbose="1")
     o_values.data = np.reshape(o_values.flat,(i_volume.resolution+(1,)),order="C")
     
     # Determine the maximum, minimum, average and range of 'values'

@@ -2,7 +2,7 @@
     "frequencies": 0,
     "hidden_layers": 8,
     "minimum_neurons_per_layer": 1,
-    "network_name": "nodule_json",
-    "target_compression_ratio": 2000,
+    "network_name": "nodule_iso_json",
+    "target_compression_ratio": 10000,
     "bits_per_neuron": 32
 }
