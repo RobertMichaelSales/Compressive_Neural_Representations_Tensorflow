@@ -11,7 +11,7 @@
         []
     ],
     "dtype": "float32",
-    "i_filepath": "/Data/ISO_Compression_Datasets/sales_nodule/nodule_data.npy",
+    "i_filepath": "/Data/ISO_Compression_Datasets/jhtdb_isotropic1024coarse_pressure/crops/jhtdb_isotropic1024coarse_pressure_crop4.npy",
     "normalise": true,
     "shape": [
         256,
