@@ -138,8 +138,8 @@ class DataClass():
     def GetValuesBoundingValues(self,points):
         
         # Determine the maximum and minimum values per axis
-        original_minimum = points.min(axis=(0,1,2))
-        original_maximum = points.max(axis=(0,1,2))
+        original_minimum = points.min(axis=tuple(range(points.ndim - 1)))
+        original_maximum = points.max(axis=tuple(range(points.ndim - 1)))
         original_bounds = np.array([original_minimum,original_maximum]).T
         
         # Determine the average and range values per axis

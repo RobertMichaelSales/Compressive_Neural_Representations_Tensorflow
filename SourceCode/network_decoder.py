@@ -78,13 +78,13 @@ def DecodeParameters(network,parameters_path):
             parameters[layer_name] = weights
         ##
         
+        #============================= TEMPORARY? =============================            
+
         # Read the original values bounds bytestring
         original_values_bounds_as_bytestring = file.read(o_dimensions*bytes_per_value*2)
         
         # Convert the bytestring into a numpy array
         original_values_bounds = np.frombuffer(original_values_bounds_as_bytestring,dtype='float32').reshape(o_dimensions,2)
-        
-        #============================= TEMPORARY? =============================            
 
         # Read the original volume centre bytestring
         original_volume_centre_as_bytestring = file.read(i_dimensions*bytes_per_value*1)

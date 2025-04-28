@@ -2,7 +2,7 @@
     "frequencies": 0,
     "hidden_layers": 8,
     "minimum_neurons_per_layer": 1,
-    "network_name": "jhtdb_iso",
+    "network_name": "test",
     "target_compression_ratio": 100,
     "bits_per_neuron": 32
 }

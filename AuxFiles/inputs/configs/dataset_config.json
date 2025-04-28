@@ -11,13 +11,11 @@
         []
     ],
     "dtype": "float32",
-    "i_filepath": "/Data/ISO_Compression_Datasets/jhtdb_isotropic1024coarse_pressure/crops/jhtdb_isotropic1024coarse_pressure_crop4.npy",
+    "i_filepath": "/Data/ISO_Compression_Datasets/turbostream_domain_1/turbostream_domain_1_yaw.npy",
     "normalise": true,
     "shape": [
-        256,
-        256,
-        256,
+        490770,
         4
     ],
-    "tabular": false
+    "tabular": true
 }

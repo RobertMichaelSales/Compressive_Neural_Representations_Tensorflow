@@ -67,6 +67,8 @@ def EncodeParameters(network,parameters_path):
             file.write(weights_as_bytestring)
         ##
             
+        #============================= TEMPORARY? =============================            
+
         # Convert original values bounds to a numpy array
         original_values_bounds = np.array(network.original_values_bounds).astype('float32')
         
@@ -75,8 +77,6 @@ def EncodeParameters(network,parameters_path):
         
         # Write 'original_bounds_as_bytestring' to file
         file.write(original_values_bounds_as_bytestring)
-
-        #============================= TEMPORARY? =============================            
 
         # Convert original volume centre to a numpy array
         original_volume_centre = np.array(network.original_volume_centre).astype('float32')
