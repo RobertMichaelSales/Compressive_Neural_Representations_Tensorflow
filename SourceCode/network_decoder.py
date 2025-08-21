@@ -86,17 +86,17 @@ def DecodeParameters(network,parameters_path):
         # Convert the bytestring into a numpy array
         original_values_bounds = np.frombuffer(original_values_bounds_as_bytestring,dtype='float32').reshape(o_dimensions,2)
 
-        # Read the original volume centre bytestring
-        original_volume_centre_as_bytestring = file.read(i_dimensions*bytes_per_value*1)
+        # Read the original coords centre bytestring
+        original_coords_centre_as_bytestring = file.read(i_dimensions*bytes_per_value*1)
 
         # Convert the bytestring into a numpy array
-        original_volume_centre = np.frombuffer(original_volume_centre_as_bytestring,dtype='float32')
+        original_coords_centre = np.frombuffer(original_coords_centre_as_bytestring,dtype='float32')
         
-        # Read the original volume radius bytestring
-        original_volume_radius_as_bytestring = file.read(bytes_per_value)
+        # Read the original coords radius bytestring
+        original_coords_radius_as_bytestring = file.read(bytes_per_value)
 
         # Convert the bytestring into a numpy array
-        original_volume_radius = np.frombuffer(original_volume_radius_as_bytestring,dtype='float32')
+        original_coords_radius = np.frombuffer(original_coords_radius_as_bytestring,dtype='float32')
         
         #============================= TEMPORARY? =============================
         
@@ -105,7 +105,7 @@ def DecodeParameters(network,parameters_path):
         file.close()   
     ##
     
-    return parameters,original_values_bounds,original_volume_centre,original_volume_radius
+    return parameters,original_values_bounds,original_coords_centre,original_coords_radius
 
 ##
 

@@ -21,7 +21,7 @@ if __name__=="__main__":
     learning_rates = np.array([1e-3])
     frequenciess = np.array([0])
     hidden_layerss = np.array([10])
-    bits_per_neurons = np.array([32])
+    bits_per_weights = np.array([32])
     batch_sizes = np.array([1024])
     
     # Set experiment number
@@ -29,14 +29,14 @@ if __name__=="__main__":
     
     # Set counter and total
     count = 1
-    total = len(input_dataset_config_paths) * len(compression_ratios) * len(learning_rates) * len(frequenciess) * len(hidden_layerss) * len(bits_per_neurons) * len(batch_sizes) 
+    total = len(input_dataset_config_paths) * len(compression_ratios) * len(learning_rates) * len(frequenciess) * len(hidden_layerss) * len(bits_per_weights) * len(batch_sizes) 
         
     # Iterate through all inputs
     for input_dataset_config_path in input_dataset_config_paths:
     
         for compression_ratio in compression_ratios:
             
-            for bits_per_neuron in bits_per_neurons:
+            for bits_per_neuron in bits_per_weights:
             
                 for learning_rate in learning_rates:
                     

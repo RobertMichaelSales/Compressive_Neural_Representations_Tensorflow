@@ -10,6 +10,12 @@ gc.enable()
 import numpy as np
 import tensorflow as tf
 
+# Set python, numpy and tensorflow random seeds for the same initialisation
+import random; tf.random.set_seed(123); np.random.seed(123); random.seed(123)
+
+tf.keras.backend.set_floatx('float32')
+tf.keras.mixed_precision.set_global_policy('float32')
+
 #==============================================================================
 # Import user-defined libraries 
 
@@ -23,7 +29,7 @@ from compress_utilities      import TrainStep,GetLearningRate,MeanSquaredErrorMe
 
 def compress(network_config,dataset_config,runtime_config,training_config,o_filepath):
         
-    print("-"*80,"\nISONet: IMPLICIT NEURAL COMPRESSIVE VOLUME REPRESENTATIONS (by Rob Sales)")
+    print("-"*80,"\nISONet: IMPLICIT NEURAL COMPRESSION OF DATASET")
     
     print("\nDateTime: {}".format(datetime.datetime.now().strftime("%d %b %Y - %H:%M:%S")))
     
@@ -62,27 +68,27 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     # Initialise i/o 
     print("-"*80,"\nINITIALISING INPUTS:")
        
-    # Create instance of 'DataClass' object to store the input volume, load and normalise
-    print("\n{:30}{}".format("Loading Volume:",dataset_config.i_filepath.split("/")[-1]))
+    # Create instance of 'DataClass' object to store the input coords, load and normalise
+    print("\n{:30}{}".format("Loading Coords:",dataset_config.i_filepath.split("/")[-1]))
     print("{:30}{}".format("Fields:",dataset_config.columns[0]))
-    i_volume = DataClass(data_type="volume",tabular=dataset_config.tabular)
-    i_volume.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,shape=dataset_config.shape,dtype=dataset_config.dtype,normalise=dataset_config.normalise)
+    i_coords = DataClass(data_type="coords",tabular=dataset_config.tabular)
+    i_coords.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,normalise=runtime_config.normalise_inputs)
     
     # Create instance of 'DataClass' object to store the input values, load and normalise
-    print("\n{:30}{}".format("Loading Volume:",dataset_config.i_filepath.split("/")[-1]))
+    print("\n{:30}{}".format("Loading Coords:",dataset_config.i_filepath.split("/")[-1]))
     print("{:30}{}".format("Fields:",dataset_config.columns[1]))
     i_values = DataClass(data_type="values",tabular=dataset_config.tabular)
-    i_values.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,shape=dataset_config.shape,dtype=dataset_config.dtype,normalise=dataset_config.normalise)
+    i_values.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,normalise=runtime_config.normalise_inputs)
 
-    # Create instance of 'DataClass' object to store the input weights, for training loss
+    # Create instance of 'DataClass' object to store the input scales, for training loss
     print("\n{:30}{}".format("Loading Weights:",dataset_config.i_filepath.split("/")[-1]))
     print("{:30}{}".format("Fields:",dataset_config.columns[2]))
-    weights = DataClass(data_type="weights",tabular=dataset_config.tabular)
-    weights.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,shape=dataset_config.shape,dtype=dataset_config.dtype,normalise=dataset_config.normalise )
+    i_scales = DataClass(data_type="scales",tabular=dataset_config.tabular)
+    i_scales.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,normalise=runtime_config.normalise_inputs)
 
-    # Create instance of 'DataClass' object to store the output volume, copies input data
-    o_volume = DataClass(data_type="volume",tabular=dataset_config.tabular)
-    o_volume.CopyData(DataClassObject=i_volume,exception_keys=[])
+    # Create instance of 'DataClass' object to store the output coords, copies input data
+    o_coords = DataClass(data_type="coords",tabular=dataset_config.tabular)
+    o_coords.CopyData(DataClassObject=i_coords,exception_keys=[])
     
     # Create instance of 'DataClass' object to store the output values, copies input data
     o_values = DataClass(data_type="values",tabular=dataset_config.tabular)
@@ -92,34 +98,26 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     # Configure dataset
     print("-"*80,"\nCONFIGURING DATASET:")
     
-    # Choose between batch fraction and batch size & recalculate batch fraction
-    if (training_config.batch_fraction*i_values.size >= 1):
-        print("\n{:30}{:.6e}".format("Input batch fraction:",training_config.batch_fraction))
-        training_config.batch_size = math.floor(training_config.batch_fraction*i_values.size)
-        training_config.batch_fraction = (training_config.batch_size/i_values.size) 
-    else: pass  
-
     print("\n{:30}{}{}".format("Batch:","batch_size = ",training_config.batch_size))
-    print("\n{:30}{}{}".format("Cache:","cache_dataset = ",runtime_config.cache_dataset))
-    print("\n{:30}{}{}".format("Shuffle:","shuffle_dataset = ",runtime_config.shuffle_dataset))
+    print("\n{:30}{}{}".format("Cache:","cache_data = ",runtime_config.cache_dataset))
     
-    # Generate a TF dataset to supply volume and values batches during training 
-    dataset = MakeDatasetFromTensorSlc(volume=i_volume,values=i_values,weights=weights,batch_size=training_config.batch_size,cache_dataset=runtime_config.cache_dataset)
+    # Generate a TF dataset to supply coords and values batches during training 
+    dataset = MakeDatasetFromTensorSlc(coords=i_coords,values=i_values,scales=i_scales,batch_size=training_config.batch_size,cache_dataset=runtime_config.cache_dataset)
                   
     #==========================================================================
     # Configure network 
     print("-"*80,"\nCONFIGURING NETWORK:")
     
     # Generate the network structure based on the input dimensions
-    network_config.GenerateStructure(i_dimensions=i_volume.dimensions,o_dimensions=i_values.dimensions,size=i_values.size)
+    network_config.GenerateStructure(i_dimensions=i_coords.dimensions,o_dimensions=i_values.dimensions,size=i_values.size)
     
     # Build ISONet from the config information
-    ISONet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies)
+    ISONet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies,kernel_initializer=network_config.kernel_initializer,identity_mapping=network_config.identity_mapping)
     
     # Add original bounds to network attributes
     ISONet.original_values_bounds = i_values.original_bounds       
-    ISONet.original_volume_centre = i_volume.original_centre                    # CAN BE REMOVED ONCE THIS IS CHECKED ALONGSIDE SDF NETWORK
-    ISONet.original_volume_radius = i_volume.original_radius                    # CAN BE REMOVED ONCE THIS IS CHECKED ALONGSIDE SDF NETWORK
+    ISONet.original_coords_centre = i_coords.original_centre                    # CAN BE REMOVED ONCE THIS IS CHECKED ALONGSIDE SDF NETWORK
+    ISONet.original_coords_radius = i_coords.original_radius                    # CAN BE REMOVED ONCE THIS IS CHECKED ALONGSIDE SDF NETWORK
 
     # Set a training optimiser
     optimiser = tf.keras.optimizers.Adam()
@@ -138,7 +136,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     print("-"*80,"\nCOMPRESSING ISO:")
         
     # Create a dictionary of lists to store training data
-    training_data = {"epoch":[],"error":[],"time":[],"learning_rate":[],"psnr":[]}
+    training_data = {"epoch":[],"error":[],"time":[],"learning_rate":[],"unweighted_psnr":[],"weighted_psnr":[]}
 
     # Start the overall training timer
     training_time_tick = time.time()
@@ -162,12 +160,13 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         epoch_time_tick = time.time()
 
         # Iterate through each batch
-        for batch, (volume_batch,values_batch,weights_batch) in enumerate(dataset):
+        for batch, (coords_batch,values_batch,scales_batch) in enumerate(dataset):
             
             # Print the current batch number and run a training step
             if runtime_config.print_verbose: print("\r{:30}{:04}/{:04}".format("Batch number:",(batch+1),dataset.size),end="") 
-            TrainStepTFF(model=ISONet,optimiser=optimiser,metric=metric,volume_batch=volume_batch,values_batch=values_batch,weights_batch=weights_batch)
+            TrainStepTFF(model=ISONet,optimiser=optimiser,metric=metric,coords_batch=coords_batch,values_batch=values_batch,scales_batch=scales_batch)
 
+            ## Break training loop when a whole batch was trained on
             if batch >= dataset.size: break
             
         ##
@@ -192,51 +191,68 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
             runtime_config.save_network_flag = False
             runtime_config.save_outputs_flag = False
             break
-        else: pass
+        ##
     
-        # Make a new dataset instance, garbage collect
-        # This deals with memory leaking from shuffles
-        if runtime_config.shuffle_dataset and (epoch != (training_config.epochs-1)):
+        # Make a new shuffled dataset instance and garbage collect memory leaks
+        if (epoch != (training_config.epochs-1)):
             del(dataset); gc.collect()
-            dataset = MakeDatasetFromTensorSlc(volume=i_volume,values=i_values,weights=weights,batch_size=training_config.batch_size,cache_dataset=runtime_config.cache_dataset)
+            dataset = MakeDatasetFromTensorSlc(coords=i_coords,values=i_values,i_scales=i_scales,batch_size=training_config.batch_size,cache_dataset=runtime_config.cache_dataset)
             print("\n{:30}".format("Reshuffling dataset"))
-        else: pass
+        ##
    
     ##   
  
     # End the overall training timer
     training_time_tock = time.time()
     training_time = float(training_time_tock-training_time_tick)
-    print("\n{:30}{:.2f} seconds".format("Training duration:",training_time))    
-
-    #==========================================================================
-    # Quantise network parameters
+    print("\n{:30}{:.2f} seconds".format("Training duration:",training_time))  
     
-    if (network_config.bits_per_neuron < 32): 
-        print("{:30}{:}".format("Quantising Weights:","bits_per_neuron = {}".format(network_config.bits_per_neuron)))
-        quantised_weights = QuantiseParameters(ISONet.get_weights(),network_config.bits_per_neuron)
-        ISONet.set_weights(quantised_weights)
-    else: pass
+    # Generate the predicted output coords
+    o_values.flat = ISONet.predict(o_coords.flat,batch_size=training_config.batch_size,verbose="1")
+    o_values.data = np.reshape(o_values.flat,i_values.data.shape,order="F")
+    
+    # Calculate and report weighted PSNR
+    weighted_psnr = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=i_scales.flat)
+    training_data["weighted_psnr"].append(weighted_psnr)
+    print("{:30}{:.3f}".format("Output weighted PSNR:",weighted_psnr))
+
+    # Calculate and report unweighted PSNR
+    unweighted_psnr = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=None)
+    training_data["unweighted_psnr"].append(unweighted_psnr)
+    print("{:30}{:.3f}".format("Output unweighted PSNR:",weighted_psnr))
+    
+    #==========================================================================
+    # Quantise parameters and recompute output
+    
+    if (network_config.bits_per_weight != 32): 
         
-    #==========================================================================
-    # Evaluate outputs    
-
-    # Generate the predicted output volume
-    o_values.flat = ISONet.predict(o_volume.flat,batch_size=training_config.batch_size,verbose="1")
-    o_values.data = np.reshape(o_values.flat,(o_volume.data.shape[:-1]+(o_values.dimensions,)),order="C")
+        print("-"*80,"\nQUANTISING PARAMETERS:")
+        print("\n",end="")
+        
+        # Quantise network parameters according to bits per weight
+        print("{:30}{:}".format("Quantisation factor:","bits_per_weight = {}".format(network_config.bits_per_weight)))
+        quantised_parameters = QuantiseParameters(ISONet.get_weights(),network_config.bits_per_weight)
+        ISONet.set_weights(quantised_parameters)
     
-    # Calculate and report predicted PSNR
-    print("{:30}{:.3f}".format("Output volume PSNR:",SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat)))
-    training_data["psnr"].append(SignalToNoise(true=i_values.flat,pred=o_values.flat,weights=weights.flat))
+        # Regenerate the predicted output coords
+        o_values.flat = ISONet.predict(o_coords.flat,batch_size=training_config.batch_size,verbose="1")
+        o_values.data = np.reshape(o_values.flat,i_values.data.shape,order="F")
+        
+        # Recalculate and report predicted PSNR
+        peak_signal_to_noise_ratio = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=i_scales.flat)
+        training_data["psnr"].append(peak_signal_to_noise_ratio)
+        print("{:30}{:.3f}".format("Output coords PSNR:",peak_signal_to_noise_ratio))
+    ##    
     
     #==========================================================================
-    # save network
+    # Save network parameters and architecture
     
     if runtime_config.save_network_flag:
+        
         print("-"*80,"\nSAVING NETWORK:")
         print("\n",end="")
                 
-        # Save the architecture and parameters to portable JSON file
+        # Save both the architecture and parameters to JSON 
         network_data_path = os.path.join(o_filepath,"network_data_iso.json")
         SaveNetworkJSON(network=ISONet,network_data_path=network_data_path)
         print("{:30}{}".format("Saved network data to:",network_data_path.split("/")[-1]))
@@ -244,66 +260,71 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         # Encode the parameters to binary
         parameters_path = os.path.join(o_filepath,"parameters.bin")
         EncodeParameters(network=ISONet,parameters_path=parameters_path)
-        print("{:30}{}".format("Saved parameters to:",parameters_path.split("/")[-1]))
+        print("{:30}{}".format("Encoded parameters to:",parameters_path.split("/")[-1]))
         
         # Encode the architecture to binary
         architecture_path = os.path.join(o_filepath,"architecture.bin")
         EncodeArchitecture(network=ISONet,architecture_path=architecture_path)
-        print("{:30}{}".format("Saved architecture to:",architecture_path.split("/")[-1]))
+        print("{:30}{}".format("Encoded architecture to:",architecture_path.split("/")[-1]))
         
-    else: pass
+    ##
     
     #==========================================================================
-    # Save outputs
-    
-    if runtime_config.save_outputs_flag:
-        print("-"*80,"\nSAVING OUTPUTS:")
-        print("\n",end="")
-        
-        # Save i_volume and i_values to ".npy" and ".vtk" files
-        output_data_path = os.path.join(o_filepath,"i_volume")
-        SaveData(output_data_path=output_data_path,volume=i_volume,values=i_values,reverse_normalise=True)
-        print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1])) 
-        
-        # Save o_volume and o_values to ".npy" and ".vtk" files
-        output_data_path = os.path.join(o_filepath,"o_volume")
-        SaveData(output_data_path=output_data_path,volume=o_volume,values=o_values,reverse_normalise=True)
-        print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1]))        
-        
-    else: pass    
-
-    #==========================================================================
-    # Save results
-    
-    # Pack the configuration dictionaries into just one
-    combined_config_dict = (network_config | training_config | runtime_config | dataset_config)
+    # Save the compression results and configs
     
     if runtime_config.save_results_flag:
+        
         print("-"*80,"\nSAVING RESULTS:")        
         print("\n",end="")
+
+        # Pack all configuration dictionaries together
+        combined_config = (network_config | training_config | runtime_config | dataset_config)
         
         # Save the training data
-        training_data_path = os.path.join(o_filepath,"training_data.json")
+        training_data_path = os.path.join(o_filepath,"training_metadata.json")
         with open(training_data_path,"w") as file: json.dump(training_data,file,indent=4,sort_keys=True)
         print("{:30}{}".format("Saved training data to:",training_data_path.split("/")[-1]))
     
         # Save the configuration
         combined_config_path = os.path.join(o_filepath,"config.json")
-        with open(combined_config_path,"w") as file: json.dump(combined_config_dict,file,indent=4)
+        with open(combined_config_path,"w") as file: json.dump(combined_config,file,indent=4)
         print("{:30}{}".format("Saved configuration to:",combined_config_path.split("/")[-1]))
         
     else: pass
-    
+
     #==========================================================================
-    print("-"*80,"\n")
+    # Save input and predictions (.npy & .vtk)
+    
+    if runtime_config.save_outputs_flag:
         
+        print("-"*80,"\nSAVING OUTPUTS:")
+        print("\n",end="")
+                
+        # Save i_coords and i_values to ".npy" and ".vtk" files
+        output_data_path = os.path.join(o_filepath,"i_dataset")
+        SaveData(output_data_path=output_data_path,template_vtk_path=dataset_config.vtk_filepath,coords=i_coords,values=i_values,normalise=runtime_config.normalise_inputs)
+        print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1])) 
+        
+        # Save o_coords and o_values to ".npy" and ".vtk" files
+        output_data_path = os.path.join(o_filepath,"o_dataset")
+        SaveData(output_data_path=output_data_path,template_vtk_path=dataset_config.vtk_filepath,coords=o_coords,values=o_values,normalise=runtime_config.normalise_inputs)
+        print("{:30}{}.{{npy,vts}}".format("Saved output files as:",output_data_path.split("/")[-1]))        
+        
+    ##
+
+    #==========================================================================
+    
+    print("-"*80,"\n")
+    
     return ISONet
+
+##
        
 #==============================================================================
 # Define the main function to run when file is invoked from within the terminal
 
 if __name__=="__main__":
-    
+    aaaaaaaaaaaa
     if (len(sys.argv) == 1):
         
         #======================================================================
@@ -372,9 +393,6 @@ if __name__=="__main__":
     
         # Execute compression
         ISONet = compress(network_config=network_config,dataset_config=dataset_config,runtime_config=runtime_config,training_config=training_config,o_filepath=o_filepath)           
-        
-        # Save the model for JS conversion
-        # tf.saved_model.save(ISONet,os.path.join(o_filepath,"SavedModel"))
         
         # Create a checkpoint file after successful execution
         with open(checkpoint_filename, mode='w'): pass

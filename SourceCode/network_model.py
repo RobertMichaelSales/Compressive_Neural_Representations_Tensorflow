@@ -9,25 +9,29 @@ import tensorflow as tf
 #==============================================================================
 # Define a 'Sine Layer' 
 
-def SineLayer(inputs,units,name):
+def SineLayer(inputs,units,kernel_initializer,name):
     
     # Mathematically: x1 = sin(W1*x0 + b1)
             
-    x = tf.math.sin(tf.keras.layers.Dense(units=units,name=name+"_dense")(inputs)) # (s*inputs)
+    x = tf.math.sin(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer=kernel_initializer,name=name+"_dense")(inputs)) # (s*inputs) 
     
     return x
 
 #==============================================================================
 # Define a 'Sine Block'
 
-def SineBlock(inputs,units,name):
+def SineBlock(inputs,units,kernel_initializer,identity_mapping,name):
     
     # Mathematically: x1 = (1/2) * (x0 + sin(w12*sin(w11*x0 + b11) + b12))
             
-    sine_1 = tf.math.sin(tf.keras.layers.Dense(units=units,name=name+"_dense_a")(inputs)) # (s1*inputs)
-    sine_2 = tf.math.sin(tf.keras.layers.Dense(units=units,name=name+"_dense_b")(sine_1)) # (s2*sine_1)
+    sine_1 = tf.math.sin(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer=kernel_initializer,name=name+"_dense_a")(inputs)) # (s1*inputs)
+    sine_2 = tf.math.sin(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer=kernel_initializer,name=name+"_dense_b")(sine_1)) # (s2*sine_1)
     
-    x = tf.math.add(inputs,sine_2)
+    if identity_mapping:
+        x = tf.multiply(tf.math.add(inputs,sine_2),0.5)
+    else:
+        x = sine_2
+    ##
     
     return x
 
@@ -66,7 +70,7 @@ def PositionalEncoding(inputs,frequencies):
 #==============================================================================
 # Define a function that constructs the 'SIREN' network 
 
-def ConstructNetwork(layer_dimensions,frequencies):
+def ConstructNetwork(layer_dimensions,frequencies,kernel_initializer,identity_mapping):
     
     # Set python, numpy and tensorflow random seeds for the same initialisation
     import random; tf.random.set_seed(123);np.random.seed(123);random.seed(123)
@@ -84,20 +88,20 @@ def ConstructNetwork(layer_dimensions,frequencies):
             
             # Add positional encoding if 'frequencies' > 0
             if (frequencies > 0):
-                x = PositionalEncoding(inputs=input_layer,frequencies=frequencies)               
-                x = SineLayer(inputs=x          ,units=layer_dimensions[layer+1],name="l{}_sinelayer".format(layer))
+                inter_layer = PositionalEncoding(inputs=input_layer,frequencies=frequencies)               
+                inter_layer = SineLayer(inputs=inter_layer,units=layer_dimensions[layer+1],kernel_initializer=kernel_initializer,identity_mapping=identity_mapping,name="l{}_sinelayer".format(layer))
             else:
-                x = SineLayer(inputs=input_layer,units=layer_dimensions[layer+1],name="l{}_sinelayer".format(layer))
+                inter_layer = SineLayer(inputs=input_layer,units=layer_dimensions[layer+1],kernel_initializer=kernel_initializer,identity_mapping=identity_mapping,name="l{}_sinelayer".format(layer))
           
         # Add the final output layer
         elif (layer == (total_layers - 1)):
           
-            output_layer =  tf.keras.layers.Dense(units=layer_dimensions[layer],name="l{}_output".format(layer))(x)
+            output_layer =  tf.keras.layers.Dense(units=layer_dimensions[layer],kernel_initializer=kernel_initializer,name="l{}_output".format(layer))(inter_layer)
           
         # Add the intermediate sine blocks
         else:
             
-            x = SineBlock(inputs=x,units=layer_dimensions[layer],name="l{}_sineblock".format(layer))
+            inter_layer = SineBlock(inputs=inter_layer,units=layer_dimensions[layer],kernel_initializer=kernel_initializer,name="l{}_sineblock".format(layer))
             
         ##
     
@@ -107,9 +111,10 @@ def ConstructNetwork(layer_dimensions,frequencies):
     ISONet = tf.keras.Model(inputs=input_layer,outputs=output_layer)
     
     # Copy attributes to network properties
-    ISONet.network_type = "SIREN"
+    ISONet.network_type = "ISO Dataset Network"
     ISONet.layer_dimensions = layer_dimensions
     ISONet.frequencies = frequencies    
+    ISONet.identity_mapping = identity_mapping
     
     return ISONet
 

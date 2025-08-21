@@ -11,11 +11,12 @@
         []
     ],
     "dtype": "float32",
-    "i_filepath": "/Data/ISO_Compression_Datasets/turbostream_domain_1/turbostream_domain_1_yaw.npy",
+    "i_filepath": "/Data/Archive/Aorta_LoRes/extracts/aorta_pressure.npy",
     "normalise": true,
     "shape": [
-        490770,
+        64304,
         4
     ],
-    "tabular": true
+    "tabular": true,
+    "vtk_filepath": "/Data/Archive/Aorta_LoRes/extracts/aorta_pressure.vtu"
 }

@@ -1,8 +1,10 @@
 {
-    "frequencies": 0,
+    "network_name": "test8",
+    "target_compression_ratio": 10,
     "hidden_layers": 8,
-    "minimum_neurons_per_layer": 1,
-    "network_name": "test",
-    "target_compression_ratio": 100,
-    "bits_per_neuron": 32
+    "frequencies": 0,
+    "identity_mapping": true,
+    "kernel_initializer": "glorot_uniform",
+    "bits_per_weight": 32,
+    "minimum_neurons_per_layer": 1
 }

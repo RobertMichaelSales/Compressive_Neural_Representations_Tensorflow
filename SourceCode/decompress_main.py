@@ -27,7 +27,7 @@ layer_dimensions,frequencies = DecodeArchitecture(architecture_path=architecture
   
 SquashISO = ConstructNetwork(layer_dimensions=layer_dimensions,frequencies=frequencies) 
 
-parameters,original_values_bounds,original_volume_centre,original_volume_radius = DecodeParameters(network=SquashISO,parameters_path=parameters_path)
+parameters,original_values_bounds,original_coords_centre,original_coords_radius = DecodeParameters(network=SquashISO,parameters_path=parameters_path)
 
 AssignParameters(network=SquashISO,parameters=parameters)  
 

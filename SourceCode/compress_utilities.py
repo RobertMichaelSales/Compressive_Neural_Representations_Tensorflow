@@ -23,9 +23,9 @@ class MeanSquaredErrorMetric(tf.keras.metrics.Metric):
         return None
 
     # Define a method to update the state variables after each train minibatch 
-    def update_state(self,true,pred,weights):
+    def update_state(self,true,pred,scales):
                 
-        mse = tf.math.divide(tf.math.reduce_sum(tf.math.multiply(weights,tf.math.square(tf.math.subtract(pred,true)))),tf.reduce_sum(weights))
+        mse = tf.math.divide(tf.math.reduce_sum(tf.math.multiply(scales,tf.math.square(tf.math.subtract(pred,true)))),tf.reduce_sum(scales))
         self.error_sum.assign_add(mse)
         self.n_batches.assign_add(1.0)
         return None
@@ -78,16 +78,16 @@ class Logger():
 #==============================================================================
 # Define a function to perform training on batches of data within the main loop
 
-def TrainStep(model,optimiser,metric,volume_batch,values_batch,weights_batch):
+def TrainStep(model,optimiser,metric,coords_batch,values_batch,scales_batch):
             
     # Open 'GradientTape' to record the operations run in each forward pass
     with tf.GradientTape() as tape:
         
         # Compute a forward pass on the current mini-batch
-        values_predicted = model(volume_batch,training=True)
+        values_predicted = model(coords_batch,training=True)
         
         # Compute the mean-squared error for the current mini-batch
-        mse = MeanSquaredError(values_batch,values_predicted,weights_batch)
+        mse = MeanSquaredError(values_batch,values_predicted,scales_batch)
     ##
    
     # Determine the weight and bias gradients with respect to error
@@ -97,17 +97,17 @@ def TrainStep(model,optimiser,metric,volume_batch,values_batch,weights_batch):
     optimiser.apply_gradients(zip(gradients,model.trainable_variables))
             
     # Update the training metric
-    metric.update_state(values_batch,values_predicted,weights_batch)
+    metric.update_state(values_batch,values_predicted,scales_batch)
         
     return None
 
 #==============================================================================
 # Define a function that computes the mean squared loss on predictions 
 
-def MeanSquaredError(true,pred,weights):
+def MeanSquaredError(true,pred,scales):
         
     # Compute the weighted mean squared error between signals
-    mse = tf.math.divide(tf.math.reduce_sum(tf.math.multiply(weights,tf.math.square(tf.math.subtract(pred,true)))),tf.math.reduce_sum(weights))                             
+    mse = tf.math.divide(tf.math.reduce_sum(tf.math.multiply(scales,tf.math.square(tf.math.subtract(pred,true)))),tf.math.reduce_sum(scales))                             
     
     return mse
 
@@ -124,10 +124,13 @@ def GetLearningRate(initial_lr,half_life,epoch):
 #==============================================================================
 # Define a function that computes the peak signal-to-noise ratio (PSNR) 
 
-def SignalToNoise(true,pred,weights):
+def SignalToNoise(true,pred,scales):
+    
+    # If no scaling, then set the scales to all ones
+    if not scales: scales = np.ones_like(true)
     
     # Compute the mean squared error between signals
-    mse = MeanSquaredError(true,pred,weights)
+    mse = MeanSquaredError(true,pred,scales)
 
     # Compute the range of the true signal
     rng = abs(true.max()-true.min())

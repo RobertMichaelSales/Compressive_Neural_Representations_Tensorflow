@@ -1,10 +1,8 @@
 {
-    "cache_dataset": false,
+    "normalise_inputs": true,
     "print_verbose": true,
-    "ensemble_flag": false,
-    "shuffle_dataset": true,
+    "cache_dataset": false,
     "save_network_flag": false,
-    "save_outputs_flag": false,
-    "save_results_flag": false,
-    "save_spectra_flag": false
+    "save_outputs_flag": true,
+    "save_results_flag": true
 }

@@ -78,23 +78,23 @@ def EncodeParameters(network,parameters_path):
         # Write 'original_bounds_as_bytestring' to file
         file.write(original_values_bounds_as_bytestring)
 
-        # Convert original volume centre to a numpy array
-        original_volume_centre = np.array(network.original_volume_centre).astype('float32')
+        # Convert original coords centre to a numpy array
+        original_coords_centre = np.array(network.original_coords_centre).astype('float32')
         
-        # Serialise original volume centre into a string of bytes
-        original_volume_centre_as_bytestring = original_volume_centre.tobytes(order="C")
-        
-        # Write 'original_bounds_as_bytestring' to file
-        file.write(original_volume_centre_as_bytestring)
-        
-        # Convert original volume radius to a numpy array
-        original_volume_radius = np.array(network.original_volume_radius).astype('float32')
-        
-        # Serialise original volume radius into a string of bytes
-        original_volume_radius_as_bytestring = original_volume_radius.tobytes(order="C")
+        # Serialise original coords centre into a string of bytes
+        original_coords_centre_as_bytestring = original_coords_centre.tobytes(order="C")
         
         # Write 'original_bounds_as_bytestring' to file
-        file.write(original_volume_radius_as_bytestring)
+        file.write(original_coords_centre_as_bytestring)
+        
+        # Convert original coords radius to a numpy array
+        original_coords_radius = np.array(network.original_coords_radius).astype('float32')
+        
+        # Serialise original coords radius into a string of bytes
+        original_coords_radius_as_bytestring = original_coords_radius.tobytes(order="C")
+        
+        # Write 'original_bounds_as_bytestring' to file
+        file.write(original_coords_radius_as_bytestring)
         
         #============================= TEMPORARY? =============================            
                 
