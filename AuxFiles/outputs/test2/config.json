@@ -1,10 +1,13 @@
 {
-    "frequencies": 0,
-    "hidden_layers": 8,
-    "minimum_neurons_per_layer": 1,
     "network_name": "test2",
     "target_compression_ratio": 10,
-    "bits_per_neuron": 32,
+    "hidden_layers": 8,
+    "frequencies": 0,
+    "activation": "sine",
+    "identity_mapping": true,
+    "kernel_initializer": "glorot_uniform",
+    "bits_per_weight": 32,
+    "minimum_neurons_per_layer": 1,
     "i_dimensions": 3,
     "o_dimensions": 1,
     "size": 64304,
@@ -25,17 +28,16 @@
         19,
         1
     ],
-    "batch_fraction": 0.0,
     "batch_size": 128,
     "epochs": 30,
     "half_life": 2,
     "initial_lr": 0.001,
-    "cache_dataset": false,
+    "normalise_data": true,
+    "weighted_error": false,
     "print_verbose": true,
-    "ensemble_flag": false,
-    "shuffle_dataset": true,
+    "cache_dataset": false,
     "save_network_flag": false,
-    "save_outputs_flag": false,
+    "save_outputs_flag": true,
     "save_results_flag": true,
     "columns": [
         [
@@ -49,12 +51,12 @@
         []
     ],
     "dtype": "float32",
-    "i_filepath": "/Data/Archive/Aorta_LoRes/extracts/aorta_pressure.npy",
+    "i_filepath": "/Data/Archive/Aorta_LoRes/extracts/dataset/aorta_pressure.npy",
     "normalise": true,
     "shape": [
         64304,
-        4
+        5
     ],
     "tabular": true,
-    "vtk_filepath": "/Data/Archive/Aorta_LoRes/extracts/aorta_pressure.vtu"
+    "vtk_filepath": "/Data/Archive/Aorta_LoRes/extracts/dataset/aorta_pressure.vtu"
 }

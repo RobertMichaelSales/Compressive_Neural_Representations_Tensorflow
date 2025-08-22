@@ -9,23 +9,23 @@ import tensorflow as tf
 #==============================================================================
 # Define a 'Sine Layer' 
 
-def SineLayer(inputs,units,kernel_initializer,name):
+def SineLayer(inputs,units,activation,kernel_initializer,name):
     
     # Mathematically: x1 = sin(W1*x0 + b1)
             
-    x = tf.math.sin(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer=kernel_initializer,name=name+"_dense")(inputs)) # (s*inputs) 
+    x = activation(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer=kernel_initializer,name=name+"_dense")(inputs)) # (s*inputs) 
     
     return x
 
 #==============================================================================
 # Define a 'Sine Block'
 
-def SineBlock(inputs,units,kernel_initializer,identity_mapping,name):
+def SineBlock(inputs,units,activation,kernel_initializer,identity_mapping,name):
     
     # Mathematically: x1 = (1/2) * (x0 + sin(w12*sin(w11*x0 + b11) + b12))
             
-    sine_1 = tf.math.sin(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer=kernel_initializer,name=name+"_dense_a")(inputs)) # (s1*inputs)
-    sine_2 = tf.math.sin(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer=kernel_initializer,name=name+"_dense_b")(sine_1)) # (s2*sine_1)
+    sine_1 = activation(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer=kernel_initializer,name=name+"_dense_a")(inputs)) # (s1*inputs)
+    sine_2 = activation(tf.keras.layers.Dense(units=units,activation=None,use_bias=True,kernel_initializer=kernel_initializer,name=name+"_dense_b")(sine_1)) # (s2*sine_1)
     
     if identity_mapping:
         x = tf.multiply(tf.math.add(inputs,sine_2),0.5)
@@ -70,10 +70,16 @@ def PositionalEncoding(inputs,frequencies):
 #==============================================================================
 # Define a function that constructs the 'SIREN' network 
 
-def ConstructNetwork(layer_dimensions,frequencies,kernel_initializer,identity_mapping):
+def ConstructNetwork(layer_dimensions,frequencies,activation,kernel_initializer,identity_mapping):
     
     # Set python, numpy and tensorflow random seeds for the same initialisation
     import random; tf.random.set_seed(123);np.random.seed(123);random.seed(123)
+ 
+    # Set activation
+    if activation == "tanh": activation = tf.math.tanh
+    if activation == "sine": activation = tf.math.sin
+    if activation == "relu": activation = tf.nn.relu
+    if activation == "gelu": activation = tf.nn.gelu
  
     # Compute the number of total network layers
     total_layers = len(layer_dimensions)
@@ -89,19 +95,19 @@ def ConstructNetwork(layer_dimensions,frequencies,kernel_initializer,identity_ma
             # Add positional encoding if 'frequencies' > 0
             if (frequencies > 0):
                 inter_layer = PositionalEncoding(inputs=input_layer,frequencies=frequencies)               
-                inter_layer = SineLayer(inputs=inter_layer,units=layer_dimensions[layer+1],kernel_initializer=kernel_initializer,identity_mapping=identity_mapping,name="l{}_sinelayer".format(layer))
+                inter_layer = SineLayer(inputs=inter_layer,units=layer_dimensions[layer+1],activation=activation,kernel_initializer=kernel_initializer,name="l{}_sinelayer".format(layer))
             else:
-                inter_layer = SineLayer(inputs=input_layer,units=layer_dimensions[layer+1],kernel_initializer=kernel_initializer,identity_mapping=identity_mapping,name="l{}_sinelayer".format(layer))
+                inter_layer = SineLayer(inputs=input_layer,units=layer_dimensions[layer+1],activation=activation,kernel_initializer=kernel_initializer,name="l{}_sinelayer".format(layer))
           
         # Add the final output layer
         elif (layer == (total_layers - 1)):
           
-            output_layer =  tf.keras.layers.Dense(units=layer_dimensions[layer],kernel_initializer=kernel_initializer,name="l{}_output".format(layer))(inter_layer)
+            output_layer =  tf.keras.layers.Dense(units=layer_dimensions[layer],activation=activation,kernel_initializer=kernel_initializer,name="l{}_output".format(layer))(inter_layer)
           
         # Add the intermediate sine blocks
         else:
             
-            inter_layer = SineBlock(inputs=inter_layer,units=layer_dimensions[layer],kernel_initializer=kernel_initializer,name="l{}_sineblock".format(layer))
+            inter_layer = SineBlock(inputs=inter_layer,units=layer_dimensions[layer],activation=activation,kernel_initializer=kernel_initializer,identity_mapping=identity_mapping,name="l{}_sineblock".format(layer))
             
         ##
     

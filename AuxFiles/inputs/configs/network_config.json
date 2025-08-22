@@ -1,8 +1,9 @@
 {
-    "network_name": "test8",
+    "network_name": "test11 (activations relu)",
     "target_compression_ratio": 10,
     "hidden_layers": 8,
     "frequencies": 0,
+    "activation": "relu",
     "identity_mapping": true,
     "kernel_initializer": "glorot_uniform",
     "bits_per_weight": 32,

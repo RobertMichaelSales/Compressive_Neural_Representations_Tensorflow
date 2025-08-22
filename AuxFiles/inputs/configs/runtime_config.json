@@ -1,5 +1,4 @@
 {
-    "normalise_inputs": true,
     "print_verbose": true,
     "cache_dataset": false,
     "save_network_flag": false,

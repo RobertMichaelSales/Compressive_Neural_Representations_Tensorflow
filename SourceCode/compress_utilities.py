@@ -126,9 +126,6 @@ def GetLearningRate(initial_lr,half_life,epoch):
 
 def SignalToNoise(true,pred,scales):
     
-    # If no scaling, then set the scales to all ones
-    if not scales: scales = np.ones_like(true)
-    
     # Compute the mean squared error between signals
     mse = MeanSquaredError(true,pred,scales)
 

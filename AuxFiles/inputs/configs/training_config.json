@@ -1,6 +1,8 @@
 {
-    "batch_size": 32,
+    "batch_size": 128,
     "epochs": 30,
     "half_life": 2,
-    "initial_lr": 0.001
+    "initial_lr": 0.001,
+    "normalise_data": true,
+    "weighted_error": true
 }

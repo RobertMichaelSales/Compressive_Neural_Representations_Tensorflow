@@ -8,15 +8,17 @@
         [
             3
         ],
-        []
+        [
+            4
+        ]
     ],
     "dtype": "float32",
-    "i_filepath": "/Data/Archive/Aorta_LoRes/extracts/aorta_pressure.npy",
+    "i_filepath": "/Data/Archive/Aorta_LoRes/extracts/dataset/aorta_pressure_clamped.npy",
     "normalise": true,
     "shape": [
         64304,
-        4
+        5
     ],
     "tabular": true,
-    "vtk_filepath": "/Data/Archive/Aorta_LoRes/extracts/aorta_pressure.vtu"
+    "vtk_filepath": "/Data/Archive/Aorta_LoRes/extracts/dataset/aorta_pressure_clamped.vtu"
 }

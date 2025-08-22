@@ -36,7 +36,7 @@ class DataClass():
     def LoadData(self,input_data_path,columns,normalise):
                 
         # Unpack the columns for the coordinate axes and scalar fields
-        coords_columns,values_columns,weight_column = columns
+        coords_columns,values_columns,scales_column = columns
                 
         # Load the coords data and normalise
         if (self.data_type=="coords"): 
@@ -69,7 +69,7 @@ class DataClass():
         # Load the entire dataset then extract the desired tensor
         if (self.data_type=="scales"):
             
-            self.dimensions = len(weight_column)
+            self.dimensions = len(scales_column)
 
             if not self.dimensions: 
                 
@@ -79,7 +79,7 @@ class DataClass():
             
             else: 
         
-                self.data = np.load(input_data_path)[...,weight_column].astype('float32')
+                self.data = np.load(input_data_path)[...,scales_column].astype('float32')
                 self.data = np.maximum(self.data, np.finfo(np.float64).eps)
                 self.data = self.data / np.average(self.data)
                 
