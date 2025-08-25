@@ -132,5 +132,17 @@
     ],
     "weighted_psnr": [
         44.60155963897705
+    ],
+    "average_surface_nrms": [
+        0.013337363714405087
+    ],
+    "average_surface_ssim": [
+        0.9984504176908334
+    ],
+    "average_contour_nrms": [
+        0.32388857120354025
+    ],
+    "average_contour_ssim": [
+        0.9793565832715053
     ]
 }

@@ -897,3 +897,12 @@ Saved output files as:        i_dataset.{npy,vts}
 Saved output files as:        o_dataset.{npy,vts}
 -------------------------------------------------------------------------------- 
 
+HI
+/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/ParaView/temp_true_1_+x.png /home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/ParaView/temp_pred_1_+x.png
+/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/ParaView/temp_true_1_+x.png
+/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/ParaView/temp_pred_1_+x.png
+1.7354022893408456e-05
+0.0
+1.7354022893408456e-05
+1.12844525
+0.004425275490196078

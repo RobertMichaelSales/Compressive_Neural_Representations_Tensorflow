@@ -20,7 +20,7 @@ from vtk.numpy_interface import dataset_adapter
 
 #==============================================================================
 
-def RenderTrue(vtk_filename):
+def RenderOutput(vtk_filename,values_range,output_type):
     
     #==========================================================================
     ## Load the dataset
@@ -37,16 +37,21 @@ def RenderTrue(vtk_filename):
     if vtk_filename_ext == ".vts":
         vtk_data = XMLStructuredGridReader(FileName=[vtk_filename])
     ##
+    
+    #==========================================================================
+    
+    # Set output filepath
+    render_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/ParaView/renders"
 
     #==========================================================================
     ## Set the variable
         
-    # Get the data array
+    # Get the data array and values range
     dataset = servermanager.Fetch(vtk_data)
     variable_name = dataset.GetPointData().GetArray(0).GetName()
     vtk_data = PassArrays(Input=vtk_data)
     vtk_data.PointDataArrays = [variable_name]
-    values_range = vtk_data.PointData[variable_name].GetRange()
+    if not values_range: values_range = vtk_data.PointData[variable_name].GetRange()
     UpdatePipeline(time=0.0, proxy=vtk_data)
     
     #==========================================================================
@@ -64,9 +69,9 @@ def RenderTrue(vtk_filename):
     display.Representation = 'Surface'
     
     # Set lighting
-    display.SpecularPower = 100
-    display.Diffuse = 0.0
-    display.Ambient = 1.0
+    display.SpecularPower = 80
+    display.Diffuse = 0.5
+    display.Ambient = 0.8
     display.Specular = 0.0
     
     # Colour by variable
@@ -95,42 +100,42 @@ def RenderTrue(vtk_filename):
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot("temp1+x.png",view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_surface_+x.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
     
     # Set camera to -X
     view.CameraPosition = (np.array(centre) + np.array([-view_distance,0,0])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot("temp1-x.png",view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_surface_-x.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
     
     # Set camera to +Y
     view.CameraPosition = (np.array(centre) + np.array([0,+view_distance,0])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot("temp1+y.png",view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_surface_+y.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
     
     # Set camera to +X
     view.CameraPosition = (np.array(centre) + np.array([0,-view_distance,0])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot("temp1-y.png",view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_surface_-y.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
     
     # Set camera to +Z
     view.CameraPosition = (np.array(centre) + np.array([0,0,+view_distance])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,1,0]
     Render()    
-    SaveScreenshot("temp1+z.png",view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_surface_+z.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
     
     # Set camera to -Z
     view.CameraPosition = (np.array(centre) + np.array([0,0,-view_distance])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,1,0]
     Render()    
-    SaveScreenshot("temp1-z.png",view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_surface_-z.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
     
     display.Visibility = 0
     
@@ -147,9 +152,9 @@ def RenderTrue(vtk_filename):
     display.Representation = 'Surface'
     
     # Set lighting
-    display.SpecularPower = 100
-    display.Diffuse = 0.0
-    display.Ambient = 1.0
+    display.SpecularPower = 80
+    display.Diffuse = 0.5
+    display.Ambient = 0.8
     display.Specular = 0.0
     
     # Colour by variable
@@ -169,42 +174,42 @@ def RenderTrue(vtk_filename):
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot("temp2+x.png",view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_contour_+x.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
     
     # Set camera to -X
     view.CameraPosition = (np.array(centre) + np.array([-view_distance,0,0])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot("temp2-x.png",view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_contour_-x.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
     
     # Set camera to +Y
     view.CameraPosition = (np.array(centre) + np.array([0,+view_distance,0])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot("temp2+y.png",view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_contour_+y.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
     
     # Set camera to +X
     view.CameraPosition = (np.array(centre) + np.array([0,-view_distance,0])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot("temp2-y.png",view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_contour_-y.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
     
     # Set camera to +Z
     view.CameraPosition = (np.array(centre) + np.array([0,0,+view_distance])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,1,0]
     Render()    
-    SaveScreenshot("temp2+z.png",view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_contour_+z.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
     
     # Set camera to -Z
     view.CameraPosition = (np.array(centre) + np.array([0,0,-view_distance])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,1,0]
     Render()    
-    SaveScreenshot("temp2-z.png",view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_contour_-z.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
 
     #==========================================================================    
 
@@ -214,9 +219,30 @@ def RenderTrue(vtk_filename):
 
 #==============================================================================
 
-vtk_filename = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/AuxFiles/outputs/test10 (activations sine)/i_dataset.vtu"
+if __name__ == "__main__":
+    
+    # This block will run in the event that this script is called in an IDE
+    if (len(sys.argv) == 1):
+                
+        experiment_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/AuxFiles/outputs/test/"
+      
+    # This block will run in the event that this script is run via terminal        
+    else: 
 
-RenderTrue(vtk_filename)
+        experiment_filepath  = sys.argv[1]
 
+    ##
+        
+    values_range = None
+    
+    vtk_filename = os.path.join(experiment_filepath,"i_dataset.vtu")
+    if not os.path.isfile(vtk_filename): raise FileExistsError("File '{:}' does not exist!".format(vtk_filename))
+    values_range = RenderOutput(vtk_filename,values_range,"true")
+    
+    vtk_filename = os.path.join(experiment_filepath,"o_dataset.vtu")
+    if not os.path.isfile(vtk_filename): raise FileExistsError("File '{:}' does not exist!".format(vtk_filename))
+    values_range = RenderOutput(vtk_filename,values_range,"pred")
 
+else: pass
 
+#==============================================================================
