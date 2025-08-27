@@ -20,7 +20,7 @@ from vtk.numpy_interface import dataset_adapter
 
 #==============================================================================
 
-def RenderOutput(vtk_filename,values_range,output_type):
+def RenderOutput(vtk_filename,values_range,output_type,save_render_flag):
     
     #==========================================================================
     ## Load the dataset
@@ -37,12 +37,14 @@ def RenderOutput(vtk_filename,values_range,output_type):
     if vtk_filename_ext == ".vts":
         vtk_data = XMLStructuredGridReader(FileName=[vtk_filename])
     ##
-    
+            
     #==========================================================================
     
     # Set output filepath
-    render_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/ParaView/renders"
-
+    temp_render_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/ParaView/renders"
+    save_render_filepath = os.path.join(os.path.dirname(vtk_filename),"renders")
+    if not os.path.isdir(save_render_filepath): os.makedirs(save_render_filepath)
+    
     #==========================================================================
     ## Set the variable
         
@@ -94,49 +96,55 @@ def RenderOutput(vtk_filename,values_range,output_type):
          
     #==========================================================================
     ## Render surfaces
-    
+
     # Set camera to +X
     view.CameraPosition = (np.array(centre) + np.array([+view_distance,0,0])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_surface_+x.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(temp_render_filepath,"temp_{:}_surface_+x.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    if save_render_flag: SaveScreenshot(os.path.join(save_render_filepath,"{:}_surface_+x.png".format(output_type)),view,ImageResolution=[800,800],TransparentBackground=False,CompressionLevel=0)
     
     # Set camera to -X
     view.CameraPosition = (np.array(centre) + np.array([-view_distance,0,0])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_surface_-x.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
-    
+    SaveScreenshot(os.path.join(temp_render_filepath,"temp_{:}_surface_-x.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    if save_render_flag: SaveScreenshot(os.path.join(save_render_filepath,"{:}_surface_-x.png".format(output_type)),view,ImageResolution=[800,800],TransparentBackground=False,CompressionLevel=0)
+        
     # Set camera to +Y
     view.CameraPosition = (np.array(centre) + np.array([0,+view_distance,0])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_surface_+y.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
-    
+    SaveScreenshot(os.path.join(temp_render_filepath,"temp_{:}_surface_+y.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    if save_render_flag: SaveScreenshot(os.path.join(save_render_filepath,"{:}_surface_+y.png".format(output_type)),view,ImageResolution=[800,800],TransparentBackground=False,CompressionLevel=0)
+        
     # Set camera to +X
     view.CameraPosition = (np.array(centre) + np.array([0,-view_distance,0])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_surface_-y.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(temp_render_filepath,"temp_{:}_surface_-y.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    if save_render_flag: SaveScreenshot(os.path.join(save_render_filepath,"{:}_surface_-y.png".format(output_type)),view,ImageResolution=[800,800],TransparentBackground=False,CompressionLevel=0)
     
     # Set camera to +Z
     view.CameraPosition = (np.array(centre) + np.array([0,0,+view_distance])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,1,0]
     Render()    
-    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_surface_+z.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    SaveScreenshot(os.path.join(temp_render_filepath,"temp_{:}_surface_+z.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    if save_render_flag: SaveScreenshot(os.path.join(save_render_filepath,"{:}_surface_+z.png".format(output_type)),view,ImageResolution=[800,800],TransparentBackground=False,CompressionLevel=0)
     
     # Set camera to -Z
     view.CameraPosition = (np.array(centre) + np.array([0,0,-view_distance])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,1,0]
     Render()    
-    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_surface_-z.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
-    
+    SaveScreenshot(os.path.join(temp_render_filepath,"temp_{:}_surface_-z.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    if save_render_flag: SaveScreenshot(os.path.join(save_render_filepath,"{:}_surface_-z.png".format(output_type)),view,ImageResolution=[800,800],TransparentBackground=False,CompressionLevel=0)
+        
     display.Visibility = 0
     
     #==========================================================================
@@ -174,43 +182,51 @@ def RenderOutput(vtk_filename,values_range,output_type):
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_contour_+x.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
-    
+    SaveScreenshot(os.path.join(temp_render_filepath,"temp_{:}_contour_+x.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    if save_render_flag: SaveScreenshot(os.path.join(save_render_filepath,"{:}_contour_+x.png".format(output_type)),view,ImageResolution=[800,800],TransparentBackground=False,CompressionLevel=0)
+        
     # Set camera to -X
     view.CameraPosition = (np.array(centre) + np.array([-view_distance,0,0])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_contour_-x.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
-    
+    SaveScreenshot(os.path.join(temp_render_filepath,"temp_{:}_contour_-x.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    if save_render_flag: SaveScreenshot(os.path.join(save_render_filepath,"{:}_contour_-x.png".format(output_type)),view,ImageResolution=[800,800],TransparentBackground=False,CompressionLevel=0)
+        
     # Set camera to +Y
     view.CameraPosition = (np.array(centre) + np.array([0,+view_distance,0])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_contour_+y.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
-    
+    SaveScreenshot(os.path.join(temp_render_filepath,"temp_{:}_contour_+y.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    if save_render_flag: SaveScreenshot(os.path.join(save_render_filepath,"{:}_contour_+y.png".format(output_type)),view,ImageResolution=[800,800],TransparentBackground=False,CompressionLevel=0)
+        
     # Set camera to +X
     view.CameraPosition = (np.array(centre) + np.array([0,-view_distance,0])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,0,1]
     Render()    
-    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_contour_-y.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
-    
+    SaveScreenshot(os.path.join(temp_render_filepath,"temp_{:}_contour_-y.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    if save_render_flag: SaveScreenshot(os.path.join(save_render_filepath,"{:}_contour_-y.png".format(output_type)),view,ImageResolution=[800,800],TransparentBackground=False,CompressionLevel=0)
+        
     # Set camera to +Z
     view.CameraPosition = (np.array(centre) + np.array([0,0,+view_distance])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,1,0]
     Render()    
-    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_contour_+z.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
-    
+    SaveScreenshot(os.path.join(temp_render_filepath,"temp_{:}_contour_+z.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    if save_render_flag: SaveScreenshot(os.path.join(save_render_filepath,"{:}_contour_+z.png".format(output_type)),view,ImageResolution=[800,800],TransparentBackground=False,CompressionLevel=0)
+        
     # Set camera to -Z
     view.CameraPosition = (np.array(centre) + np.array([0,0,-view_distance])).tolist()
     view.CameraFocalPoint = centre
     view.CameraViewUp = [0,1,0]
     Render()    
-    SaveScreenshot(os.path.join(render_filepath,"temp_{:}_contour_-z.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
-
+    SaveScreenshot(os.path.join(temp_render_filepath,"temp_{:}_contour_-z.png".format(output_type)),view,ImageResolution=[2000,2000],TransparentBackground=True,CompressionLevel=0)
+    if save_render_flag: SaveScreenshot(os.path.join(save_render_filepath,"{:}_contour_-z.png".format(output_type)),view,ImageResolution=[800,800],TransparentBackground=False,CompressionLevel=0)
+        
+    display.Visibility = 0
+    
     #==========================================================================    
 
     return values_range
@@ -225,24 +241,39 @@ if __name__ == "__main__":
     if (len(sys.argv) == 1):
                 
         experiment_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/AuxFiles/outputs/test/"
+        
+        save_render_flag = False
       
     # This block will run in the event that this script is run via terminal        
     else: 
 
         experiment_filepath  = sys.argv[1]
+        
+        save_render_flag = (sys.argv[2].lower() in ["true"]) if len(sys.argv) > 2 else False
 
     ##
-        
+    
+    print("-"*80,"\nRENDERING IMAGES:\n") 
+                    
     values_range = None
     
-    vtk_filename = os.path.join(experiment_filepath,"i_dataset.vtu")
-    if not os.path.isfile(vtk_filename): raise FileExistsError("File '{:}' does not exist!".format(vtk_filename))
-    values_range = RenderOutput(vtk_filename,values_range,"true")
+    view = GetActiveViewOrCreate('RenderView')
+    del view
     
-    vtk_filename = os.path.join(experiment_filepath,"o_dataset.vtu")
+    vtk_filename = glob.glob(os.path.join(experiment_filepath,"i_dataset.v*"))[0]
     if not os.path.isfile(vtk_filename): raise FileExistsError("File '{:}' does not exist!".format(vtk_filename))
-    values_range = RenderOutput(vtk_filename,values_range,"pred")
-
+    print("\nRendering Outputs: '{}'".format(vtk_filename))
+    values_range = RenderOutput(vtk_filename,values_range,"true",save_render_flag)
+    
+    ResetSession()
+    
+    vtk_filename = glob.glob(os.path.join(experiment_filepath,"o_dataset.v*"))[0]
+    if not os.path.isfile(vtk_filename): raise FileExistsError("File '{:}' does not exist!".format(vtk_filename))
+    print("\nRendering Outputs: '{}'".format(vtk_filename))
+    values_range = RenderOutput(vtk_filename,values_range,"pred",save_render_flag)
+    
+    print("-"*80,"\n")
+    
 else: pass
 
 #==============================================================================

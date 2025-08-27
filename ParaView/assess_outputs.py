@@ -107,7 +107,13 @@ if __name__ == "__main__":
 
     ##
         
+    print("-"*80,"\nASSESSING IMAGES:\n") 
+    
+    print("Assessing Outputs: '{}'\n".format(experiment_filepath))
+    
     AssessRenders(experiment_filepath)
+    
+    print("-"*80,"\n")
 
 else: pass
 

@@ -360,8 +360,8 @@ if __name__=="__main__":
             training_config_dictionary = json.load(training_config_file)
             training_config = GenericConfigurationClass(training_config_dictionary)
         ##
-        
-        o_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/AuxFiles/outputs"
+
+        o_filepath = os.path.join("/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/AuxFiles/outputs",network_config.network_name)
         
     else: 
 
@@ -381,7 +381,6 @@ if __name__=="__main__":
     #==========================================================================
     
     # Construct the output filepath
-    o_filepath = os.path.join(o_filepath,network_config.network_name)
     if not os.path.exists(o_filepath): os.makedirs(o_filepath)
         
     # Create checkpoint and stdout logging files in case execution fails

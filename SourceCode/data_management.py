@@ -42,7 +42,7 @@ class DataClass():
         if (self.data_type=="coords"): 
             
             self.dimensions = len(coords_columns)
-            self.data = np.load(input_data_path)[...,coords_columns].astype('float32')
+            self.data = np.load(input_data_path)[...,coords_columns].astype(np.float32)
             self.original_centre, self.original_radius, self.original_bounds = self.GetVolumeBoundingSphere(self.data)
             
             if (normalise):
@@ -56,7 +56,7 @@ class DataClass():
         if (self.data_type=="values"): 
             
             self.dimensions = len(values_columns)
-            self.data = np.load(input_data_path)[...,values_columns].astype('float32')
+            self.data = np.load(input_data_path)[...,values_columns].astype(np.float32)
             self.original_average, self.original_range, self.original_bounds = self.GetValuesBoundingValues(self.data)
             
             if (normalise):
@@ -79,7 +79,7 @@ class DataClass():
             
             else: 
         
-                self.data = np.load(input_data_path)[...,scales_column].astype('float32')
+                self.data = np.load(input_data_path)[...,scales_column].astype(np.float32)
                 self.data = np.maximum(self.data, np.finfo(np.float64).eps)
                 self.data = self.data / np.average(self.data)
                 
@@ -182,7 +182,7 @@ class DataClass():
 def MakeDatasetFromTensorSlc(coords,values,scales,batch_size,cache_dataset):
         
     # Handle the case where there are no scales -> set them all to 1
-    if not scales.flat.any(): scales.flat = np.ones(shape=((np.prod(coords.resolution),)+(1,))).astype("float32")
+    if not scales.flat.any(): scales.flat = np.ones(shape=((np.prod(coords.resolution),)+(1,))).astype(np.float32)
     
     # Extend the scales to apply to each element of the output vector
     scales.flat = np.repeat(scales.flat,values.dimensions,axis=-1)     
@@ -267,16 +267,16 @@ def MakeDatasetFromTensorSlc(coords,values,scales,batch_size,cache_dataset):
 
 def SaveData(output_data_path,template_vtk_path,coords,values,normalise):
     
-    # Reverse normalise 'coords' and 'values'
+    # Reverse normalise coords and values
     if normalise:
         coords.data = coords.data * coords.original_radius
         coords.data = coords.data + coords.original_centre
         values.data = values.data * (values.original_range / 2.0)
         values.data = values.data + values.original_average
+    ##
     
-    # Save as npy file (coords + values concatenated)
-    np.save(output_data_path, np.concatenate((coords.data, values.data), axis=-1))
-
+    # Save coords and values concatenated as npy file 
+    np.save(output_data_path,np.concatenate((coords.data,values.data),axis=-1).astype(np.float32))
 
     # Read in template and clear existing data points
     vtk_file = pv.read(template_vtk_path)
