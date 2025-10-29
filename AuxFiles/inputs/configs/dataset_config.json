@@ -13,12 +13,14 @@
         ]
     ],
     "dtype": "float32",
-    "i_filepath": "/Data/Archive/Aorta_LoRes/extracts/dataset/aorta_pressure_clamped.npy",
+    "i_filepath": "/Data/ISO_Compression_Datasets/jhtdb_buoyancy/extracts/c/pressure/buoyancy_cropped_clamped.npy",
     "normalise": true,
     "shape": [
-        64304,
+        128,
+        128,
+        128,
         5
     ],
-    "tabular": true,
-    "vtk_filepath": "/Data/Archive/Aorta_LoRes/extracts/dataset/aorta_pressure_clamped.vtu"
+    "tabular": false,
+    "vtk_filepath": "/Data/ISO_Compression_Datasets/jhtdb_buoyancy/extracts/c/pressure/buoyancy_cropped_clamped.vts"
 }

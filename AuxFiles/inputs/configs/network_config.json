@@ -1,11 +1,11 @@
 {
-    "network_name": "test",
-    "description": "test",
-    "target_compression_ratio": 10,
-    "hidden_layers": 10,
+    "network_name": "turbulent - largest all 2",
+    "target_compression_ratio": 50,
+    "hidden_layers": 8,
     "frequencies": 0,
-    "activation": "relu",
+    "activation": "sine",
     "identity_mapping": true,
-    "kernel_initializer": "glorot_uniform",
+    "kernel_initializer": "siren",
+    "omega_0": 10.0,
     "bits_per_weight": 32
 }

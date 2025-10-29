@@ -19,11 +19,11 @@ tf.keras.mixed_precision.set_global_policy('float32')
 #==============================================================================
 # Import user-defined libraries 
 
-from data_management         import DataClass,MakeDatasetFromTensorSlc,SaveData
+from data_management         import DataClass,MakeDataset,SaveData
 from network_encoder         import EncodeArchitecture,EncodeParameters,SaveNetworkJSON
 from network_model           import ConstructNetwork
 from configuration_classes   import GenericConfigurationClass,NetworkConfigurationClass
-from compress_utilities      import TrainStep,GetLearningRate,MeanSquaredErrorMetric,Logger,SignalToNoise,QuantiseParameters
+from compress_utilities      import TrainStep,GetLearningRate,MAEMetric,MSEMetric,Logger,MeanAbsoluteError,MeanSquaredError,SignalToNoise,QuantiseParameters
 
 #==============================================================================
 
@@ -67,9 +67,6 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     #==========================================================================
     # Initialise i/o 
     print("-"*80,"\nINITIALISING INPUTS:")
-    
-    # Remove reference to scales column if "weighted_error" is not specified
-    if not training_config.weighted_error: dataset_config.columns[2].clear()
 
     # Create instance of 'DataClass' object to store the input coords, load and normalise
     print("\n{:30}{}".format("Loading Coords:",dataset_config.i_filepath.split("/")[-1]))
@@ -78,7 +75,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     i_coords.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,normalise=training_config.normalise_data)
     
     # Create instance of 'DataClass' object to store the input values, load and normalise
-    print("\n{:30}{}".format("Loading Coords:",dataset_config.i_filepath.split("/")[-1]))
+    print("\n{:30}{}".format("Loading Values:",dataset_config.i_filepath.split("/")[-1]))
     print("{:30}{}".format("Fields:",dataset_config.columns[1]))
     i_values = DataClass(data_type="values",tabular=dataset_config.tabular)
     i_values.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,normalise=training_config.normalise_data)
@@ -88,7 +85,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     print("{:30}{}".format("Fields:",dataset_config.columns[2]))
     i_scales = DataClass(data_type="scales",tabular=dataset_config.tabular)
     i_scales.LoadData(input_data_path=dataset_config.i_filepath,columns=dataset_config.columns,normalise=training_config.normalise_data)
-
+    
     # Create instance of 'DataClass' object to store the output coords, copies input data
     o_coords = DataClass(data_type="coords",tabular=dataset_config.tabular)
     o_coords.CopyData(DataClassObject=i_coords,exception_keys=[])
@@ -98,6 +95,30 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     o_values.CopyData(DataClassObject=i_values,exception_keys=["flat","data"])  
                 
     #==========================================================================
+    # Modify scales if needed
+    print("{:30}{}".format("Weighted Error:",training_config.weighted_error))
+    
+    if training_config.weighted_error == "none": 
+        i_scales.data = np.ones_like(i_scales.data).astype(np.float32)
+        i_scales.flat = np.ones_like(i_scales.flat).astype(np.float32)
+    ##
+    
+    if training_config.weighted_error == "full":
+        i_scales.data = i_scales.data.astype(np.float32)
+        i_scales.flat = i_scales.flat.astype(np.float32)
+    ##
+    
+    if training_config.weighted_error == "sqrt":
+        i_scales.data = np.sqrt(i_scales.data).astype(np.float32)
+        i_scales.flat = np.sqrt(i_scales.flat).astype(np.float32)
+    ##
+    
+    if training_config.weighted_error == "cbrt":
+        i_scales.data = np.cbrt(i_scales.data).astype(np.float32)
+        i_scales.flat = np.cbrt(i_scales.flat).astype(np.float32)
+    ##
+
+    #==========================================================================
     # Configure dataset
     print("-"*80,"\nCONFIGURING DATASET:")
     
@@ -105,7 +126,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     print("\n{:30}{}{}".format("Cache:","cache_data = ",runtime_config.cache_dataset))
     
     # Generate a TF dataset to supply coords and values batches during training 
-    dataset = MakeDatasetFromTensorSlc(coords=i_coords,values=i_values,scales=i_scales,batch_size=training_config.batch_size,cache_dataset=runtime_config.cache_dataset)
+    dataset = MakeDataset(coords=i_coords,values=i_values,scales=i_scales,batch_size=training_config.batch_size,cache_dataset=runtime_config.cache_dataset)
     
     #==========================================================================
     # Configure network 
@@ -115,18 +136,18 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     network_config.GenerateStructure(i_dimensions=i_coords.dimensions,o_dimensions=i_values.dimensions,size=i_values.size)
     
     # Build ISONet from the config information
-    ISONet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies,activation=network_config.activation,kernel_initializer=network_config.kernel_initializer,identity_mapping=network_config.identity_mapping)
+    ISONet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies,activation=network_config.activation,kernel_initializer=network_config.kernel_initializer,identity_mapping=network_config.identity_mapping,omega_0=network_config.omega_0)
     
-    # Add original bounds to network attributes
-    ISONet.original_values_bounds = i_values.original_bounds
+    # Add original coords centre and radius to network attributes
     ISONet.original_coords_centre = i_coords.original_centre
     ISONet.original_coords_radius = i_coords.original_radius
+    ISONet.original_values_bounds = i_values.original_bounds
 
     # Set a training optimiser
     optimiser = tf.keras.optimizers.Adam()
     
     # Set a performance metric (custom weighted mean-squared error metric)
-    metric = MeanSquaredErrorMetric()
+    metric = MSEMetric()
         
     # Load the training step function as a tf.function for speed increases
     TrainStepTFF = tf.function(TrainStep)
@@ -167,9 +188,12 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
             
             # Print the current batch number and run a training step
             if runtime_config.print_verbose: print("\r{:30}{:04}/{:04}".format("Batch number:",(batch+1),dataset.size),end="") 
-            TrainStepTFF(model=ISONet,optimiser=optimiser,metric=metric,coords_batch=coords_batch,values_batch=values_batch,scales_batch=scales_batch)
+            mse_batch = TrainStepTFF(model=ISONet,optimiser=optimiser,metric=metric,coords_batch=coords_batch,values_batch=values_batch,scales_batch=scales_batch)
 
-            ## Break training loop when a whole batch was trained on
+            # Break training loop if the minibatch mse has diverged
+            if np.isnan(mse_batch): break
+
+            # Break training loop when a whole batch was trained on
             if batch >= dataset.size: break
             
         ##
@@ -198,8 +222,8 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     
         # Make a new shuffled dataset instance and garbage collect memory leaks
         if (epoch != (training_config.epochs-1)):
-            del(dataset); gc.collect()
-            dataset = MakeDatasetFromTensorSlc(coords=i_coords,values=i_values,scales=i_scales,batch_size=training_config.batch_size,cache_dataset=runtime_config.cache_dataset)
+            del(dataset); gc.collect(); tf.keras.backend.clear_session()
+            dataset = MakeDataset(coords=i_coords,values=i_values,scales=i_scales,batch_size=training_config.batch_size,cache_dataset=runtime_config.cache_dataset)
             print("\n{:30}".format("Reshuffling dataset"))
         ##
    
@@ -210,19 +234,39 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     training_time = float(training_time_tock-training_time_tick)
     print("\n{:30}{:.2f} seconds".format("Training duration:",training_time))  
     
-    # Generate the predicted output coords
-    o_values.flat = ISONet.predict(o_coords.flat,batch_size=training_config.batch_size,verbose="1")
-    o_values.data = np.reshape(o_values.flat,i_values.data.shape,order="F")
+    if not np.isnan(error):
+        
+        # Generate the predicted output coords
+        o_values.flat = ISONet.predict(o_coords.flat,batch_size=65536,verbose="1")
+        o_values.data = np.reshape(o_values.flat,i_values.data.shape,order="F")
+        
+        # Calculate and report weighted PSNR
+        weighted_psnr = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=i_scales.flat)
+        training_data["weighted_psnr"].append(weighted_psnr)
+        print("{:30}{:.3f}".format("Output weighted PSNR:",weighted_psnr))
     
-    # Calculate and report weighted PSNR
-    weighted_psnr = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=i_scales.flat)
-    training_data["weighted_psnr"].append(weighted_psnr)
-    print("{:30}{:.3f}".format("Output weighted PSNR:",weighted_psnr))
-
-    # Calculate and report unweighted PSNR
-    unscaled_psnr = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=np.ones_like(o_values.flat))
-    training_data["unscaled_psnr"].append(unscaled_psnr)
-    print("{:30}{:.3f}".format("Output unscaled PSNR:",unscaled_psnr))
+        # Calculate and report unweighted PSNR
+        unscaled_psnr = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=np.ones_like(o_values.flat))
+        training_data["unscaled_psnr"].append(unscaled_psnr)
+        print("{:30}{:.3f}".format("Output unscaled PSNR:",unscaled_psnr))
+        
+    else:
+        
+        # Generate the predicted output coords
+        o_values.flat = np.array([],dtype=np.float32)
+        o_values.data = np.array([],dtype=np.float32)
+        
+        # Calculate and report weighted PSNR
+        weighted_psnr = np.NAN
+        training_data["weighted_psnr"].append(weighted_psnr)
+        print("{:30}{:.3f}".format("Output weighted PSNR:",weighted_psnr))
+    
+        # Calculate and report unweighted PSNR
+        unscaled_psnr = np.NAN
+        training_data["unscaled_psnr"].append(unscaled_psnr)
+        print("{:30}{:.3f}".format("Output unscaled PSNR:",unscaled_psnr))  
+        
+    ##
     
     #==========================================================================
     # Quantise parameters and recompute output
@@ -241,10 +285,15 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         o_values.flat = ISONet.predict(o_coords.flat,batch_size=training_config.batch_size,verbose="1")
         o_values.data = np.reshape(o_values.flat,i_values.data.shape,order="F")
         
-        # Recalculate and report predicted PSNR
-        peak_signal_to_noise_ratio = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=i_scales.flat)
-        training_data["psnr"].append(peak_signal_to_noise_ratio)
-        print("{:30}{:.3f}".format("Output coords PSNR:",peak_signal_to_noise_ratio))
+        # Calculate and report weighted PSNR
+        weighted_psnr = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=i_scales.flat)
+        training_data["weighted_psnr"].append(weighted_psnr)
+        print("{:30}{:.3f}".format("Output weighted PSNR:",weighted_psnr))
+
+        # Calculate and report unweighted PSNR
+        unscaled_psnr = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=np.ones_like(o_values.flat))
+        training_data["unscaled_psnr"].append(unscaled_psnr)
+        print("{:30}{:.3f}".format("Output unscaled PSNR:",unscaled_psnr))
     ##    
     
     #==========================================================================
@@ -260,15 +309,15 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         SaveNetworkJSON(network=ISONet,network_data_path=network_data_path)
         print("{:30}{}".format("Saved network data to:",network_data_path.split("/")[-1]))
         
-        # Encode the parameters to binary
-        parameters_path = os.path.join(o_filepath,"parameters.bin")
-        EncodeParameters(network=ISONet,parameters_path=parameters_path)
-        print("{:30}{}".format("Encoded parameters to:",parameters_path.split("/")[-1]))
+        # # Encode the parameters to binary
+        # parameters_path = os.path.join(o_filepath,"parameters.bin")
+        # EncodeParameters(network=ISONet,parameters_path=parameters_path)
+        # print("{:30}{}".format("Encoded parameters to:",parameters_path.split("/")[-1]))
         
-        # Encode the architecture to binary
-        architecture_path = os.path.join(o_filepath,"architecture.bin")
-        EncodeArchitecture(network=ISONet,architecture_path=architecture_path)
-        print("{:30}{}".format("Encoded architecture to:",architecture_path.split("/")[-1]))
+        # # Encode the architecture to binary
+        # architecture_path = os.path.join(o_filepath,"architecture.bin")
+        # EncodeArchitecture(network=ISONet,architecture_path=architecture_path)
+        # print("{:30}{}".format("Encoded architecture to:",architecture_path.split("/")[-1]))
         
     ##
     
@@ -379,8 +428,8 @@ if __name__=="__main__":
         o_filepath      = sys.argv[5]
         
     #==========================================================================
-    
-    # Construct the output filepath
+
+    # Check the output filepath
     if not os.path.exists(o_filepath): os.makedirs(o_filepath)
         
     # Create checkpoint and stdout logging files in case execution fails

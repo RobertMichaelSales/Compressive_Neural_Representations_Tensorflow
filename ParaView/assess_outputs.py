@@ -60,10 +60,16 @@ def AssessRenders(experiment_filepath):
     ## Compute average statistics
     
     average_surface_nrms = np.average(surface_nrmss)
+    print("Average surface NRMS: {:.6f}".format(average_surface_nrms))
+    
     average_surface_ssim = np.average(surface_ssims)
+    print("Average surface SSIM: {:.6f}".format(average_surface_ssim))
     
     average_contour_nrms = np.average(contour_nrmss)
+    print("Average contour NRMS: {:.6f}".format(average_contour_nrms))
+    
     average_contour_ssim = np.average(contour_ssims)
+    print("Average contour SSIM: {:.6f}".format(average_contour_ssim))
     
     #==========================================================================
     # Save to experiment filepath

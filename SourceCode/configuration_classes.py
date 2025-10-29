@@ -90,7 +90,7 @@ class NetworkConfigurationClass(GenericConfigurationClass):
         # Extract the useful internal parameters from the 'input_data' object
         self.i_dimensions = i_dimensions
         self.o_dimensions = o_dimensions
-        self.size = size
+        self.size = size * o_dimensions
                 
         # Compute the target network capacity
         self.target_size = int(self.size/self.target_compression_ratio)
@@ -212,16 +212,11 @@ class NetworkConfigurationClass(GenericConfigurationClass):
                 # Add parameters from the 2nd weight matrix and bias vector
                 self.num_of_parameters += (i_dimensions * o_dimensions) + o_dimensions 
                 
-            ##
-            
+            ## 
         ##
                   
         return self.num_of_parameters
-    
     ##
-    
-    #==========================================================================
-    
 ##   
     
 #==============================================================================   

@@ -2,6 +2,6 @@
     "print_verbose": true,
     "cache_dataset": false,
     "save_network_flag": false,
-    "save_outputs_flag": true,
+    "save_outputs_flag": false,
     "save_results_flag": true
 }

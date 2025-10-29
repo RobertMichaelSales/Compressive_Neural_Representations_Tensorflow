@@ -38,6 +38,7 @@ def EncodeArchitecture(network,architecture_path):
     ##
 
     return None
+##
 
 #==============================================================================
 # Encodes the weights and biases of each layer as a binary file
@@ -65,39 +66,36 @@ def EncodeParameters(network,parameters_path):
                  
             # Write 'weight_as_bytestring' to file
             file.write(weights_as_bytestring)
-        ##
             
-        #============================= TEMPORARY? =============================            
-
-        # Convert original values bounds to a numpy array
-        original_values_bounds = np.array(network.original_values_bounds).astype('float32')
-        
-        # Serialise original values bounds into a string of bytes
-        original_values_bounds_as_bytestring = original_values_bounds.tobytes(order="C")
-        
-        # Write 'original_bounds_as_bytestring' to file
-        file.write(original_values_bounds_as_bytestring)
-
-        # Convert original coords centre to a numpy array
+        ##
+         
+        # Convert original centre to a numpy array
         original_coords_centre = np.array(network.original_coords_centre).astype('float32')
         
-        # Serialise original coords centre into a string of bytes
+        # Serialise original centre into a string of bytes
         original_coords_centre_as_bytestring = original_coords_centre.tobytes(order="C")
         
-        # Write 'original_bounds_as_bytestring' to file
+        # Write 'original_coords_centre_as_bytestring' to file
         file.write(original_coords_centre_as_bytestring)
         
-        # Convert original coords radius to a numpy array
+        # Convert original radius to a numpy array
         original_coords_radius = np.array(network.original_coords_radius).astype('float32')
         
-        # Serialise original coords radius into a string of bytes
+        # Serialise original radius into a string of bytes
         original_coords_radius_as_bytestring = original_coords_radius.tobytes(order="C")
         
-        # Write 'original_bounds_as_bytestring' to file
+        # Write 'original_coords_radius_as_bytestring' to file
         file.write(original_coords_radius_as_bytestring)
         
-        #============================= TEMPORARY? =============================            
-                
+        # Convert original radius to a numpy array
+        original_values_bounds = np.array(network.original_values_bounds).astype('float32')
+        
+        # Serialise original radius into a string of bytes
+        original_values_bounds_as_bytestring = original_values_bounds.tobytes(order="C")
+        
+        # Write 'original_coords_radius_as_bytestring' to file
+        file.write(original_values_bounds_as_bytestring)
+        
         # Flush the buffer and close the file 
         file.flush()
         file.close()
@@ -118,7 +116,14 @@ def SaveNetworkJSON(network,network_data_path):
     network_data["architecture"]["network_type"] = str(network.network_type)
     network_data["architecture"]["layer_dimensions"] = list(network.layer_dimensions)
     network_data["architecture"]["frequencies"] = int(network.frequencies)
-    network_data["architecture"]["original_values_bounds"] = list(np.array(network.original_values_bounds).tolist())
+    network_data["architecture"]["activation"] = str(network.activation)
+    network_data["architecture"]["identity_mapping"] = bool(network.identity_mapping)
+    network_data["architecture"]["omega_0"] = float(network.omega_0)
+    
+    # Add normalisation parameters
+    network_data["architecture"]["original_coords_centre"] = list(network.original_coords_centre)
+    network_data["architecture"]["original_coords_radius"] = list(network.original_coords_radius)
+    network_data["architecture"]["original_values_bounds"] = list(network.original_values_bounds)
     
     # Extract a sorted list of the names of each layer in the network
     layer_names = sorted(list(network.get_weight_paths().keys()),key=SortLayerNames)
@@ -151,7 +156,6 @@ def SaveNetworkJSON(network,network_data_path):
     with open(network_data_path,"w") as file: json.dump(network_data,file,indent=4,sort_keys=False)
     
     return None
-
 ##
     
 #==============================================================================
@@ -178,4 +182,3 @@ def SortLayerNames(layer_name):
 ##
 
 #==============================================================================
-
