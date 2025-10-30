@@ -33,12 +33,10 @@ if __name__=="__main__":
     bits_per_weight_            = np.array([32])
         
     # Training config options
-    batch_size_                 = np.array(np.power(2.0,np.array([14,12,10,8,6,4,2])))
+    batch_size_                 = np.array([1024])
     epochs_                     = np.array([40])
     half_life_                  = np.array([3])
-    # initial_lr_                 = np.array(np.power(10.0,np.array([-1.0,-2.5,-4.0])))
-    # initial_lr_                 = np.array(np.power(10.0,np.array([-1.5,-3.0,-4.5])))
-    initial_lr_                 = np.array(np.power(10.0,np.array([-2.0,-3.5,-5.0])))
+    initial_lr_                 = np.array([0.001])
     normalise_data_             = np.array([True])
     weighted_error_             = np.array(["none"])
 
@@ -46,8 +44,8 @@ if __name__=="__main__":
     batch_number                = np.array([2048])
     
     # Set experiment number and description
-    campaign_number = 8
-    campaign_detail = "RESULTS_COMPRESS"        
+    campaign_number = 9
+    campaign_detail = ""        
     save_renders_flag = True
     
     # Compute experiment counter and totals

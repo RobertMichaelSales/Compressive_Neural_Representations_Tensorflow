@@ -121,10 +121,10 @@ def SaveNetworkJSON(network,network_data_path):
     network_data["architecture"]["omega_0"] = float(network.omega_0)
     
     # Add normalisation parameters
-    network_data["architecture"]["original_coords_centre"] = list(network.original_coords_centre)
-    network_data["architecture"]["original_coords_radius"] = list(network.original_coords_radius)
-    network_data["architecture"]["original_values_bounds"] = list(network.original_values_bounds)
-    
+    network_data["architecture"]["original_coords_centre"] = [network.original_coords_centre.astype(np.float32).tolist()]
+    network_data["architecture"]["original_coords_radius"] = [network.original_coords_radius.astype(np.float32)]
+    network_data["architecture"]["original_values_bounds"] = [network.original_values_bounds.astype(np.float32).tolist()]
+
     # Extract a sorted list of the names of each layer in the network
     layer_names = sorted(list(network.get_weight_paths().keys()),key=SortLayerNames)
     

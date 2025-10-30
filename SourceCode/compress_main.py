@@ -241,12 +241,12 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         o_values.data = np.reshape(o_values.flat,i_values.data.shape,order="F")
         
         # Calculate and report weighted PSNR
-        weighted_psnr = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=i_scales.flat)
+        weighted_psnr = float(SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=i_scales.flat))
         training_data["weighted_psnr"].append(weighted_psnr)
         print("{:30}{:.3f}".format("Output weighted PSNR:",weighted_psnr))
     
         # Calculate and report unweighted PSNR
-        unscaled_psnr = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=np.ones_like(o_values.flat))
+        unscaled_psnr = float(SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=np.ones_like(o_values.flat)))
         training_data["unscaled_psnr"].append(unscaled_psnr)
         print("{:30}{:.3f}".format("Output unscaled PSNR:",unscaled_psnr))
         
@@ -257,12 +257,12 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         o_values.data = np.array([],dtype=np.float32)
         
         # Calculate and report weighted PSNR
-        weighted_psnr = np.NAN
+        weighted_psnr = float(np.NAN)
         training_data["weighted_psnr"].append(weighted_psnr)
         print("{:30}{:.3f}".format("Output weighted PSNR:",weighted_psnr))
     
         # Calculate and report unweighted PSNR
-        unscaled_psnr = np.NAN
+        unscaled_psnr = float(np.NAN)
         training_data["unscaled_psnr"].append(unscaled_psnr)
         print("{:30}{:.3f}".format("Output unscaled PSNR:",unscaled_psnr))  
         
@@ -286,12 +286,12 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         o_values.data = np.reshape(o_values.flat,i_values.data.shape,order="F")
         
         # Calculate and report weighted PSNR
-        weighted_psnr = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=i_scales.flat)
+        weighted_psnr = float(SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=i_scales.flat))
         training_data["weighted_psnr"].append(weighted_psnr)
         print("{:30}{:.3f}".format("Output weighted PSNR:",weighted_psnr))
 
         # Calculate and report unweighted PSNR
-        unscaled_psnr = SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=np.ones_like(o_values.flat))
+        unscaled_psnr = float(SignalToNoise(true=i_values.flat,pred=o_values.flat,scales=np.ones_like(o_values.flat)))
         training_data["unscaled_psnr"].append(unscaled_psnr)
         print("{:30}{:.3f}".format("Output unscaled PSNR:",unscaled_psnr))
     ##    
