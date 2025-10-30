@@ -3,9 +3,59 @@
 #==============================================================================
 # Import libraries and set flags
 
-import numpy as np
 import json
+import numpy as np
 
+#==============================================================================
+
+def SaveNetworkJSON(network,network_data_filepath):
+    
+    # Create empty dictionary for storing network data
+    network_data = {"architecture": {}, "parameters": {}, "metadata": {}}
+    
+    # Add architecture information
+    network_data["architecture"]["network_type"] = str(network.network_type)
+    network_data["architecture"]["layer_dimensions"] = list(network.layer_dimensions)
+    network_data["architecture"]["frequencies"] = int(network.frequencies)
+    network_data["architecture"]["activation"] = str(network.activation)
+    network_data["architecture"]["identity_mapping"] = bool(network.identity_mapping)
+    network_data["architecture"]["omega_0"] = float(network.omega_0)
+    
+    # Add normalisation parameters
+    network_data["metadata"]["original_coords_centre"] = network.original_coords_centre.astype(np.float32).tolist()
+    network_data["metadata"]["original_coords_radius"] = float(network.original_coords_radius.astype(np.float32))
+    network_data["metadata"]["original_values_bounds"] = network.original_values_bounds.astype(np.float32).tolist()
+    
+    # Iterate through each of the network layers, in order 
+    for layer_name in sorted(list(network.get_weight_paths().keys()),key=SortLayerNames): 
+        
+        # Extract the layer
+        layer = network.get_weight_paths()[layer_name]
+        
+        # Extract type
+        layer_type = layer_name.split(".")[1]
+        
+        # Extract data
+        layer_data = layer.numpy().flatten(order="C").astype(np.float32).tolist()
+        
+        # Extract dims
+        if (layer_type == "kernel"):
+            layer_dims = list(layer.shape)
+        else:
+            layer_dims = list(layer.shape + (1,))
+        ##
+        
+        # Add parameters information
+        network_data["parameters"][layer_name] = {"data": layer_data, "dims": layer_dims}
+    
+    ##
+    
+    # Write to JSON file
+    with open(network_data_filepath,"w") as file: json.dump(network_data,file,indent=4,sort_keys=False)
+    
+    return None
+##
+    
 #==============================================================================
 # Encodes the network layer dimensions as a binary file
 # Note: The np.method '.tobytes()' returns the same bytestring as 'struct.pack()'
@@ -59,7 +109,7 @@ def EncodeParameters(network,parameters_path):
             weights = network.get_weight_paths()[layer_name].numpy()
             
             # Flatten the layer weights and biases
-            weights = np.ravel(weights,order="C").astype('float32')
+            weights = np.ravel(weights,order="C").astype(np.float32)
         
             # Serialise weights into a string of bytes
             weights_as_bytestring = weights.tobytes(order="C")
@@ -70,7 +120,7 @@ def EncodeParameters(network,parameters_path):
         ##
          
         # Convert original centre to a numpy array
-        original_coords_centre = np.array(network.original_coords_centre).astype('float32')
+        original_coords_centre = np.array(network.original_coords_centre).astype(np.float32)
         
         # Serialise original centre into a string of bytes
         original_coords_centre_as_bytestring = original_coords_centre.tobytes(order="C")
@@ -79,7 +129,7 @@ def EncodeParameters(network,parameters_path):
         file.write(original_coords_centre_as_bytestring)
         
         # Convert original radius to a numpy array
-        original_coords_radius = np.array(network.original_coords_radius).astype('float32')
+        original_coords_radius = np.array(network.original_coords_radius).astype(np.float32)
         
         # Serialise original radius into a string of bytes
         original_coords_radius_as_bytestring = original_coords_radius.tobytes(order="C")
@@ -88,7 +138,7 @@ def EncodeParameters(network,parameters_path):
         file.write(original_coords_radius_as_bytestring)
         
         # Convert original radius to a numpy array
-        original_values_bounds = np.array(network.original_values_bounds).astype('float32')
+        original_values_bounds = np.array(network.original_values_bounds).astype(np.float32)
         
         # Serialise original radius into a string of bytes
         original_values_bounds_as_bytestring = original_values_bounds.tobytes(order="C")
@@ -102,62 +152,8 @@ def EncodeParameters(network,parameters_path):
     ##
     
     return None
-
 ##
 
-#==============================================================================
-
-def SaveNetworkJSON(network,network_data_path):
-    
-    # Create empty dictionary for storing network data
-    network_data = {"architecture": {}, "parameters": {}}
-    
-    # Add architecture information
-    network_data["architecture"]["network_type"] = str(network.network_type)
-    network_data["architecture"]["layer_dimensions"] = list(network.layer_dimensions)
-    network_data["architecture"]["frequencies"] = int(network.frequencies)
-    network_data["architecture"]["activation"] = str(network.activation)
-    network_data["architecture"]["identity_mapping"] = bool(network.identity_mapping)
-    network_data["architecture"]["omega_0"] = float(network.omega_0)
-    
-    # Add normalisation parameters
-    network_data["architecture"]["original_coords_centre"] = [network.original_coords_centre.astype(np.float32).tolist()]
-    network_data["architecture"]["original_coords_radius"] = [network.original_coords_radius.astype(np.float32)]
-    network_data["architecture"]["original_values_bounds"] = [network.original_values_bounds.astype(np.float32).tolist()]
-
-    # Extract a sorted list of the names of each layer in the network
-    layer_names = sorted(list(network.get_weight_paths().keys()),key=SortLayerNames)
-    
-    # Iterate through each of the network layers, in order 
-    for layer_name in layer_names: 
-        
-        # Extract the layer
-        layer = network.get_weight_paths()[layer_name]
-        
-        # Extract type
-        layer_type = layer_name.split(".")[1]
-        
-        # Extract data
-        layer_data = layer.numpy().flatten(order="C").astype('float32').tolist()
-        
-        # Extract dims
-        if (layer_type == "kernel"):
-            layer_dims = list(layer.shape)
-        else:
-            layer_dims = list(layer.shape + (1,))
-        ##
-        
-        # Add parameters information
-        network_data["parameters"][layer_name] = {"data": layer_data, "dims": layer_dims}
-    
-    ##
-    
-    # Write to JSON file
-    with open(network_data_path,"w") as file: json.dump(network_data,file,indent=4,sort_keys=False)
-    
-    return None
-##
-    
 #==============================================================================
 # Sort layer names so that saved weights/biases are always in the correct order 
 

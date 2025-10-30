@@ -3,7 +3,33 @@
 #==============================================================================
 # Import libraries and set flags
 
+import json 
 import numpy as np
+
+#==============================================================================
+
+def LoadNetworkJSON(network_data_filepath):
+    
+    # Import the network model constructor
+    from network_model import ConstructNetwork
+        
+    # Load the network data file and extract the network data
+    with open(network_data_filepath,"r") as network_data_file: network_data = json.load(network_data_file)
+    
+    # Construct the network model using architecture **kwargs
+    network = ConstructNetwork(**network_data["architecture"],kernel_initializer="Zeros")
+
+    # Assign parameters to network layers
+    for layer_name in sorted(list(network.get_weight_paths().keys()),key=SortLayerNames):
+        layer = network.get_weight_paths()[layer_name]
+        layer.assign(np.array(network_data["parameters"][layer_name]["data"]).reshape(layer.shape))
+    ##   
+    
+    # Extract metadata
+    metadata = network_data["metadata"]
+    
+    return network, metadata
+##
 
 #==============================================================================
 # Reads and decodes the network layer dimensions (architecture) from binary
@@ -47,7 +73,7 @@ def DecodeParameters(network,parameters_path):
     layer_names = sorted(list(network.get_weight_paths().keys()),key=SortLayerNames)
     
     # Determine the number of bytes per value
-    bytes_per_value = len(np.array([1.0]).astype('float32').tobytes())
+    bytes_per_value = len(np.array([1.0]).astype(np.float32).tobytes())
     
     # Determine input and output dimensions
     i_dimensions = network.layer_dimensions[0 ]
@@ -69,7 +95,7 @@ def DecodeParameters(network,parameters_path):
             weights_as_bytestring = file.read(layer.size*bytes_per_value)    
             
             # Convert the bytestring into a 1-d array
-            weights = np.frombuffer(weights_as_bytestring,dtype='float32')
+            weights = np.frombuffer(weights_as_bytestring,dtype=np.float32)
             
             # Resize the 1-d array according to layer.shape
             weights = np.reshape(weights,layer.shape,order="C")
@@ -84,19 +110,19 @@ def DecodeParameters(network,parameters_path):
         original_values_bounds_as_bytestring = file.read(o_dimensions*bytes_per_value*2)
         
         # Convert the bytestring into a numpy array
-        original_values_bounds = np.frombuffer(original_values_bounds_as_bytestring,dtype='float32').reshape(o_dimensions,2)
+        original_values_bounds = np.frombuffer(original_values_bounds_as_bytestring,dtype=np.float32).reshape(o_dimensions,2)
 
         # Read the original coords centre bytestring
         original_coords_centre_as_bytestring = file.read(i_dimensions*bytes_per_value*1)
 
         # Convert the bytestring into a numpy array
-        original_coords_centre = np.frombuffer(original_coords_centre_as_bytestring,dtype='float32')
+        original_coords_centre = np.frombuffer(original_coords_centre_as_bytestring,dtype=np.float32)
         
         # Read the original coords radius bytestring
         original_coords_radius_as_bytestring = file.read(bytes_per_value)
 
         # Convert the bytestring into a numpy array
-        original_coords_radius = np.frombuffer(original_coords_radius_as_bytestring,dtype='float32')
+        original_coords_radius = np.frombuffer(original_coords_radius_as_bytestring,dtype=np.float32)
         
         #============================= TEMPORARY? =============================
         

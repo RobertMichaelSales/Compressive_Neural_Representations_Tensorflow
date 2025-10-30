@@ -7,9 +7,9 @@ import numpy as np
 import tensorflow as tf
 
 #==============================================================================
-# Define a 'Sine Layer' 
+# Define a 'Layer' 
 
-def SineLayer(inputs,units,activation_function,kernel_initializer,omega_0,name):
+def Layer(inputs,units,activation_function,kernel_initializer,omega_0,name):
         
     if kernel_initializer == "siren":
         w_std = 1 / inputs.shape[-1]
@@ -23,9 +23,9 @@ def SineLayer(inputs,units,activation_function,kernel_initializer,omega_0,name):
     return x
 
 #==============================================================================
-# Define a 'Sine Block'
+# Define a 'Block'
 
-def SineBlock(inputs,units,activation_function,kernel_initializer,identity_mapping,name):
+def Block(inputs,units,activation_function,kernel_initializer,identity_mapping,name):
     
     if kernel_initializer == "siren":
         w_std = np.sqrt(6 / units)
@@ -83,7 +83,7 @@ def PositionalEncoding(inputs,frequencies):
 #==============================================================================
 # Define a function that constructs the 'SIREN' network 
 
-def ConstructNetwork(layer_dimensions,frequencies,activation,kernel_initializer,identity_mapping,omega_0):
+def ConstructNetwork(layer_dimensions,frequencies,activation,kernel_initializer,identity_mapping,omega_0,**kwargs):
     
     # Set python, numpy and tensorflow random seeds for the same initialisation
     import random; tf.random.set_seed(123);np.random.seed(123);random.seed(123)
@@ -113,11 +113,11 @@ def ConstructNetwork(layer_dimensions,frequencies,activation,kernel_initializer,
                 
                 x = PositionalEncoding(inputs=inputs,frequencies=frequencies) 
                 
-                x = SineLayer(inputs=x,units=layer_dimensions[layer+1],activation_function=activation_function,kernel_initializer=kernel_initializer,omega_0=omega_0,name="l{}_sinelayer".format(layer))
+                x = Layer(inputs=x,units=layer_dimensions[layer+1],activation_function=activation_function,kernel_initializer=kernel_initializer,omega_0=omega_0,name="l{}_sinelayer".format(layer))
                 
             else:
                 
-                x = SineLayer(inputs=x,units=layer_dimensions[layer+1],activation_function=activation_function,kernel_initializer=kernel_initializer,omega_0=omega_0,name="l{}_sinelayer".format(layer))
+                x = Layer(inputs=x,units=layer_dimensions[layer+1],activation_function=activation_function,kernel_initializer=kernel_initializer,omega_0=omega_0,name="l{}_sinelayer".format(layer))
           
         # Add the final output layer
         elif (layer == (total_layers - 1)):
@@ -127,7 +127,7 @@ def ConstructNetwork(layer_dimensions,frequencies,activation,kernel_initializer,
         # Add the intermediate sine blocks
         else:
           
-            x = SineBlock(inputs=x,units=layer_dimensions[layer],activation_function=activation_function,kernel_initializer=kernel_initializer,identity_mapping=identity_mapping,name="l{}_sineblock".format(layer))
+            x = Block(inputs=x,units=layer_dimensions[layer],activation_function=activation_function,kernel_initializer=kernel_initializer,identity_mapping=identity_mapping,name="l{}_sineblock".format(layer))
             
         ##
     
