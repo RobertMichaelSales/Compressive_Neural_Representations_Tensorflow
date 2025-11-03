@@ -41,7 +41,7 @@ def RenderOutput(vtk_filename,values_range,output_type,save_render_flag):
     #==========================================================================
     
     # Set output filepath
-    temp_render_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/ParaView/renders"
+    temp_render_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/RenderCode/renders"
     save_render_filepath = os.path.join(os.path.dirname(vtk_filename),"renders")
     if not os.path.isdir(save_render_filepath): os.makedirs(save_render_filepath)
     

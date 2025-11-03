@@ -140,12 +140,14 @@ if __name__=="__main__":
                                                                 os.system(runstring)
                                                                 
                                                                 # Render outputs
-                                                                runstring = "pvpython --force-offscreen-rendering ParaView/render_outputs.py " + o_filepath + " " + str(save_renders_flag)
-                                                                print("TURN RENDERING BACK ON!") # os.system(runstring)
+                                                                runstring = "pvpython --force-offscreen-rendering RenderCode/render_outputs.py " + o_filepath + " " + str(save_renders_flag)
+                                                                print("TURN RENDERING BACK ON!") 
+                                                                # os.system(runstring)
                                                                 
                                                                 # Assess outputs
-                                                                runstring = "python ParaView/assess_outputs.py " + o_filepath                                                           
-                                                                print("TURN RENDERING BACK ON!") # os.system(runstring)
+                                                                runstring = "python RenderCode/assess_outputs.py " + o_filepath                                                           
+                                                                print("TURN RENDERING BACK ON!") 
+                                                                # os.system(runstring)
                                                                 
                                                                 # Iterate counter
                                                                 count = count + 1 

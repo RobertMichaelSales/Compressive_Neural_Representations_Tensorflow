@@ -12,7 +12,13 @@ def AssessRenders(experiment_filepath):
     #==========================================================================
     
     # Set output filepath
-    render_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/ParaView/renders"
+    render_filepath = os.path.join(experiment_filepath,"renders")
+    
+    if os.path.exists(render_filepath): 
+        if (not len(os.listdir(render_filepath))): 
+            render_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/RenderCode/renders"
+        ##
+    ##
     
     #==========================================================================
     ## Assess surface renderings
@@ -88,6 +94,7 @@ def AssessRenders(experiment_filepath):
     #==========================================================================
     ## Remove temporary image files
     
+    render_filepath = "/home/rms221/Documents/Compressive_Neural_Representations_Tensorflow/RenderCode/renders"
     all_img_filepaths = sorted(glob.glob(os.path.join(render_filepath,"*.png")))
     for img_filepath in all_img_filepaths: os.remove(img_filepath)
     
