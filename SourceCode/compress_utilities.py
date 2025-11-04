@@ -57,14 +57,16 @@ class MAEMetric(tf.keras.metrics.Metric):
         super().__init__(name=name, **kwargs)
         self.error_sum = self.add_weight(name='error_sum',initializer='zeros')
         self.n_batches = self.add_weight(name='n_batches',initializer='zeros')
+        return None
     ##
 
     # Define a method to update the state variables after each train minibatch 
-    def update_state(self,true,pred):
+    def update_state(self,true,pred,scales):
         
-        mae = tf.math.reduce_mean(tf.math.abs(tf.math.subtract(pred,true)))
+        mae = tf.math.divide(tf.math.reduce_sum(tf.math.multiply(scales,tf.math.abs(tf.math.subtract(pred,true)))),tf.reduce_sum(scales))
         self.error_sum.assign_add(mae)
         self.n_batches.assign_add(1.0)
+        return None
     ##
     
     # Define a method to reset the state variables after each terminated epoch
@@ -72,6 +74,7 @@ class MAEMetric(tf.keras.metrics.Metric):
         
         self.error_sum.assign(0.0)
         self.n_batches.assign(0.0)
+        return None
     ##
     
     # Define a method to evaluate and return the mean squared error metric
@@ -82,7 +85,6 @@ class MAEMetric(tf.keras.metrics.Metric):
     ##
 ##
 
-    
 #==============================================================================
 # Define a console logger class to simultaneously log and print stdout messages
 
@@ -130,12 +132,12 @@ def TrainStep(model,optimiser,metric,coords_batch,values_batch,scales_batch):
         values_predicted_batch = model(coords_batch,training=True)
         
         # Compute the mean-squared error for the current mini-batch
-        mse_batch = MeanSquaredError(values_batch,values_predicted_batch,scales_batch)
+        error_batch = MeanSquaredError(values_batch,values_predicted_batch,scales_batch)
         
     ##
    
     # Determine the weight and bias gradients with respect to error
-    gradients_batch = tape.gradient(mse_batch,model.trainable_variables)
+    gradients_batch = tape.gradient(error_batch,model.trainable_variables)
     
     # Update the weight and bias values to minimise the total error
     optimiser.apply_gradients(zip(gradients_batch,model.trainable_variables))
@@ -143,7 +145,7 @@ def TrainStep(model,optimiser,metric,coords_batch,values_batch,scales_batch):
     # Update the training metric
     metric.update_state(values_batch,values_predicted_batch,scales_batch)
         
-    return mse_batch
+    return error_batch
 
 ##
 
@@ -162,10 +164,10 @@ def MeanSquaredError(true,pred,scales):
 #==============================================================================
 # Define a function that computes the mean squared loss on predictions 
 
-def MeanAbsoluteError(true,pred):
+def MeanAbsoluteError(true,pred,scales):
         
     # Compute the weighted mean squared error between signals
-    mae = tf.math.reduce_mean(tf.math.abs(tf.math.subtract(pred,true)))                           
+    mae = tf.math.divide(tf.math.reduce_sum(tf.math.multiply(scales,tf.math.abs(tf.math.subtract(pred,true)))),tf.math.reduce_sum(scales))                            
     
     return mae
 ##

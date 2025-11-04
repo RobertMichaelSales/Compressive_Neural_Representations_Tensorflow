@@ -188,10 +188,10 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
             
             # Print the current batch number and run a training step
             if runtime_config.print_verbose: print("\r{:30}{:04}/{:04}".format("Batch number:",(batch+1),dataset.size),end="") 
-            mse_batch = TrainStepTFF(model=ISONet,optimiser=optimiser,metric=metric,coords_batch=coords_batch,values_batch=values_batch,scales_batch=scales_batch)
+            error_batch = TrainStepTFF(model=ISONet,optimiser=optimiser,metric=metric,coords_batch=coords_batch,values_batch=values_batch,scales_batch=scales_batch)
 
             # Break training loop if the minibatch mse has diverged
-            if np.isnan(mse_batch): break
+            if np.isnan(error_batch): break
 
             # Break training loop when a whole batch was trained on
             if batch >= dataset.size: break
@@ -210,7 +210,7 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
         error = float(metric.result().numpy())
         metric.reset_states()
         training_data["error"].append(error)
-        print("{:30}{:.7f}".format("Mean squared error:",error))     
+        print("{:30}{:.7f}".format("Error:",error))     
         
         # Early stopping for diverging training results
         if np.isnan(error): 
