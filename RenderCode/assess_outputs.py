@@ -23,8 +23,8 @@ def AssessRenders(experiment_filepath):
     #==========================================================================
     ## Assess surface renderings
     
-    true_surface_img_filepaths = sorted(glob.glob(os.path.join(render_filepath,"temp_true_surface_*.png")))
-    pred_surface_img_filepaths = sorted(glob.glob(os.path.join(render_filepath,"temp_pred_surface_*.png")))
+    true_surface_img_filepaths = sorted(glob.glob(os.path.join(render_filepath,"true_surface_*.png")))
+    pred_surface_img_filepaths = sorted(glob.glob(os.path.join(render_filepath,"pred_surface_*.png")))
     
     surface_nrmss, surface_ssims = [], []
     
@@ -44,8 +44,8 @@ def AssessRenders(experiment_filepath):
     #==========================================================================
     ## Assess contour renderings
     
-    true_contour_img_filepaths = sorted(glob.glob(os.path.join(render_filepath,"temp_true_contour_*.png")))
-    pred_contour_img_filepaths = sorted(glob.glob(os.path.join(render_filepath,"temp_pred_contour_*.png")))
+    true_contour_img_filepaths = sorted(glob.glob(os.path.join(render_filepath,"true_contour_*.png")))
+    pred_contour_img_filepaths = sorted(glob.glob(os.path.join(render_filepath,"pred_contour_*.png")))
     
     contour_nrmss, contour_ssims = [], []
     
@@ -101,7 +101,6 @@ def AssessRenders(experiment_filepath):
     #==========================================================================
     
     return None
-    
 ##
 
 #==============================================================================

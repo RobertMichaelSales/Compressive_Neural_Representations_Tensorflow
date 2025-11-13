@@ -54,8 +54,8 @@ class DataClass():
             # Load data
             self.dimensions = len(values_columns)
             self.data = np.load(input_data_path)[...,values_columns].astype(np.float32)           
-            self.original_bounds = np.array([self.data.min(),self.data.max()])
-            
+            self.original_average, self.original_range, self.original_bounds = self.GetValuesBoundingValues(self.data)
+ 
             # Normalise
             self.data = self.data - self.original_average
             self.data = self.data / (self.original_range / 2.0)            
@@ -99,6 +99,20 @@ class DataClass():
                           
         return original_centre, original_radius
     ##
+    
+    #==========================================================================
+    
+    # Returns the bounding values average and range for a given set of points
+    
+    def GetValuesBoundingValues(self,points):
+        
+        # Determine the original bounds, average and range
+        original_bounds = np.array([points.min(),points.max()])
+        original_average = np.mean(original_bounds)
+        original_range = np.ptp(original_bounds)
+        
+        return original_average, original_range, original_bounds
+    ##   
             
     #==========================================================================
     

@@ -12,18 +12,18 @@ if __name__=="__main__":
 
     # Set input data config options
     input_dataset_config_paths = []
-    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/jhtdb_isotropic/extracts/c/pressure/isotropic_cropped_config_clamped.json"))
-    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/jhtdb_buoyancy/extracts/m/pressure/buoyancy_cropped_config_clamped.json"))
-    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/wheeler_dns/extracts/*/mach/block_6_config_clamped.json"))
-    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/turbostream_rotor67/extracts/ar_0.900/entropy/domain_1_config_clamped.json"))
-    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/owais_aorta/extracts/average_pressure/aorta_config_clamped.json"))
+    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/jhtdb_isotropic/extracts/m/pressure/isotropic_cropped_config_clamped.json"))
+    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/jhtdb_buoyancy/extracts/m/pressure/buoyancy_cropped_config_clamped.json"))
+    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/wheeler_dns/extracts/m/mach/block_6_config_clamped.json"))
+    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/turbostream_rotor67/extracts/ar_0.900/entropy/domain_1_config_clamped.json"))
+    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/owais_aorta/extracts/average_pressure/aorta_config_clamped.json"))
     # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/nasa_ucrm/extracts/ro/ucrm_config_clamped.json"))
         
     # Filter configs
     input_dataset_config_paths  = [x for x in input_dataset_config_paths  if "_config" in x]
     
     # Network config options
-    target_compression_ratio_   = np.array([100])
+    target_compression_ratio_   = np.array([25,100])
     hidden_layers_              = np.array([8])
     frequencies_                = np.array([10])
     activation_                 = np.array(["sine"])
@@ -41,11 +41,11 @@ if __name__=="__main__":
     weighted_error_             = np.array(["none"])
 
     # Additional batch number
-    batch_number                = np.array([2048])
+    batch_number                = 4096
     
     # Set experiment number and description
-    campaign_number = 9
-    campaign_detail = ""        
+    campaign_number = 0
+    campaign_detail = "SCITECH_RESULTS"        
     save_renders_flag = True
     
     # Compute experiment counter and totals
@@ -88,17 +88,18 @@ if __name__=="__main__":
                                                                 print("\n"); print("*"*80); print(experiment_name + " ({:03d}/{:03d})".format(count+1,total)); print("*"*80)
                                                                 
                                                                 # Set network name
-                                                                network_name = "BS_{:05d}_LR_{:05f}".format(int(batch_size),initial_lr)
+                                                                network_name = "CR_{:03d}".format(target_compression_ratio)
                                                                 print(network_name)
-                                                                # break
+                                                                # continue
 
                                                                 # Define the dataset config
                                                                 with open(input_dataset_config_path) as input_dataset_config_file: dataset_config = json.load(input_dataset_config_file)
                                                                 print(input_dataset_config_path)
     
                                                                 # Overwrite the batch sizes
-                                                                # if batch_number: batch_size = min(int(np.ceil(np.prod(dataset_config["shape"][:-1]) / batch_number)), batch_size)
-                                                                # print(batch_size, initial_lr); break
+                                                                if batch_number: batch_size = int(np.ceil(np.prod(dataset_config["shape"][:-1])/batch_number))
+                                                                # print(batch_size)
+                                                                # continue
                                                                 
                                                                 # Define the network config
                                                                 network_config = {
@@ -141,17 +142,16 @@ if __name__=="__main__":
                                                                 
                                                                 # Render outputs
                                                                 runstring = "pvpython --force-offscreen-rendering RenderCode/render_outputs.py " + o_filepath + " " + str(save_renders_flag)
-                                                                print("TURN RENDERING BACK ON!") 
-                                                                # os.system(runstring)
+                                                                # print("TURN RENDERING BACK ON!") 
+                                                                os.system(runstring)
                                                                 
                                                                 # Assess outputs
                                                                 runstring = "python RenderCode/assess_outputs.py " + o_filepath                                                           
-                                                                print("TURN RENDERING BACK ON!") 
-                                                                # os.system(runstring)
+                                                                # print("TURN RENDERING BACK ON!") 
+                                                                os.system(runstring)
                                                                 
                                                                 # Iterate counter
                                                                 count = count + 1 
-                                                                                                                            
                                                             ##  
                                                         ##
                                                     ##
