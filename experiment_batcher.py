@@ -13,17 +13,18 @@ if __name__=="__main__":
     # Set input data config options
     input_dataset_config_paths = []
     # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/jhtdb_isotropic/extracts/m/pressure/isotropic_cropped_config_clamped.json"))
-    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/jhtdb_buoyancy/extracts/m/pressure/buoyancy_cropped_config_clamped.json"))
-    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/wheeler_dns/extracts/m/mach/block_6_config_clamped.json"))
-    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/turbostream_rotor67/extracts/ar_0.900/entropy/domain_1_config_clamped.json"))
-    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/owais_aorta/extracts/average_pressure/aorta_config_clamped.json"))
-    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/nasa_ucrm/extracts/ro/ucrm_config_clamped.json"))
+    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/jhtdb_buoyancy/extracts/m/pressure/buoyancy_cropped_config_clamped.json"))
+    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/wheeler_dns/extracts/m/mach/block_6_config_clamped.json"))
+    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/wheeler_dns/extracts/m/mach/block_2_config_clamped.json")) 
+    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/turbostream_rotor67/extracts/ar_0.900/entropy/domain_1_config_clamped.json"))
+    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/owais_aorta/extracts/average_pressure/aorta_config_clamped.json"))
+    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/nasa_ucrm/extracts/ro/ucrm_config_clamped.json"))
         
     # Filter configs
     input_dataset_config_paths  = [x for x in input_dataset_config_paths  if "_config" in x]
     
     # Network config options
-    target_compression_ratio_   = np.array([25,100])
+    target_compression_ratio_   = np.array([25,50,100,200])
     hidden_layers_              = np.array([8])
     frequencies_                = np.array([10])
     activation_                 = np.array(["sine"])
