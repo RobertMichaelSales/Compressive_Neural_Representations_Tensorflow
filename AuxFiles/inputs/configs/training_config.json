@@ -1,6 +1,6 @@
 {
     "batch_size": 256,
-    "epochs": 40,
+    "epochs": 1,
     "half_life": 3,
     "initial_lr": 0.001,
     "normalise_data": true,
