@@ -1,6 +1,6 @@
 {
-    "network_name": "turbulent - largest all 2",
-    "target_compression_ratio": 50,
+    "network_name": "Render Test",
+    "target_compression_ratio": 100,
     "hidden_layers": 8,
     "frequencies": 0,
     "activation": "sine",

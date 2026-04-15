@@ -8,19 +8,17 @@
         [
             3
         ],
-        [
-            4
-        ]
+        []
     ],
     "dtype": "float32",
-    "i_filepath": "/Data/ISO_Compression_Datasets/jhtdb_buoyancy/extracts/c/pressure/buoyancy_cropped_clamped.npy",
+    "i_filepath": "/Data/ISO_Compression_Datasets/sales_tanglecube/tanglecube_data.npy",
     "normalise": true,
     "shape": [
-        128,
-        128,
-        128,
-        5
+        256,
+        256,
+        256,
+        4
     ],
     "tabular": false,
-    "vtk_filepath": "/Data/ISO_Compression_Datasets/jhtdb_buoyancy/extracts/c/pressure/buoyancy_cropped_clamped.vts"
+    "vtk_filepath": "/Data/ISO_Compression_Datasets/sales_tanglecube/tanglecube_data.vts"
 }
