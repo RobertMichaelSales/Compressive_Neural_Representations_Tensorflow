@@ -15,26 +15,33 @@ if __name__=="__main__":
     # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/jhtdb_isotropic/extracts/m/pressure/isotropic_cropped_config_clamped.json"))
     # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/jhtdb_buoyancy/extracts/m/pressure/buoyancy_cropped_config_clamped.json"))
     # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/wheeler_dns/extracts/m/mach/block_6_config_clamped.json"))
-    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/wheeler_dns/extracts/m/mach/block_2_config_clamped.json")) 
     # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/turbostream_rotor67/extracts/ar_0.900/entropy/domain_1_config_clamped.json"))
     # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/owais_aorta/extracts/average_pressure/aorta_config_clamped.json"))
-    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/nasa_ucrm/extracts/ro/ucrm_config_clamped.json"))
-        
+    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/nasa_ucrm/extracts/ro/ucrm_config_clamped.json"))
+    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/sales_tanglecube/tanglecube_config.json"))
+    
+    # input_dataset_config_paths += sorted(glob.glob("/Data/Complexity_And_Compressibility_Datasets/Gaussian_Frequency/Linear_*/sigma_*/gaussian_config.json"))
+    
+    input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/jhtdb_isotropic/extracts/c/pressure/isotropic_cropped_config_clamped.json"))
+    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/jhtdb_buoyancy/extracts/c/pressure/buoyancy_cropped_config_clamped.json"))
+    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/owais_aorta/extracts/average_pressure/aorta_config_clamped.json"))
+    # input_dataset_config_paths += sorted(glob.glob("/Data/ISO_Compression_Datasets/wheeler_dns/extracts/m/mach/block_6_config_clamped.json"))
+
     # Filter configs
     input_dataset_config_paths  = [x for x in input_dataset_config_paths  if "_config" in x]
     
     # Network config options
-    target_compression_ratio_   = np.array([25,50,100,200])
+    target_compression_ratio_   = np.array([100,200,300,400,500,600,700,800,900,1000])
     hidden_layers_              = np.array([8])
-    frequencies_                = np.array([10])
+    frequencies_                = np.array([0])                                 ## THIS WAS 10 BEFORE CHANGED FOR THE RENDERING CASE
     activation_                 = np.array(["sine"])
     identity_mapping_           = np.array([True])
     kernel_initializer_         = np.array(["siren"])
-    omega_0_                    = np.array([10])
+    omega_0_                    = np.array([10])                                ## THIS WAS 10 BEFORE CHANGED FOR THE RENDERING CASE 
     bits_per_weight_            = np.array([32])
         
     # Training config options
-    batch_size_                 = np.array([1024])
+    batch_size_                 = np.array([512])                               ## THIS WAS 1024 BEFORE CHANGED FOR THE RENDERING CASE     
     epochs_                     = np.array([40])
     half_life_                  = np.array([3])
     initial_lr_                 = np.array([0.001])
@@ -42,12 +49,12 @@ if __name__=="__main__":
     weighted_error_             = np.array(["none"])
 
     # Additional batch number
-    batch_number                = 4096
+    batch_number                = 2048
     
     # Set experiment number and description
-    campaign_number = 0
-    campaign_detail = "SCITECH_RESULTS"        
-    save_renders_flag = True
+    campaign_number = 4
+    campaign_detail = "SPECTRAL_BIAS"        
+    save_renders_flag = False
     
     # Compute experiment counter and totals
     count = 0
@@ -89,7 +96,7 @@ if __name__=="__main__":
                                                                 print("\n"); print("*"*80); print(experiment_name + " ({:03d}/{:03d})".format(count+1,total)); print("*"*80)
                                                                 
                                                                 # Set network name
-                                                                network_name = "CR_{:03d}".format(target_compression_ratio)
+                                                                network_name = "CR_{:04d}".format(target_compression_ratio)
                                                                 print(network_name)
                                                                 # continue
 
@@ -99,7 +106,7 @@ if __name__=="__main__":
     
                                                                 # Overwrite the batch sizes
                                                                 if batch_number: batch_size = int(np.ceil(np.prod(dataset_config["shape"][:-1])/batch_number))
-                                                                # print(batch_size)
+                                                                print(batch_size)
                                                                 # continue
                                                                 
                                                                 # Define the network config
@@ -135,21 +142,22 @@ if __name__=="__main__":
                                                                     }            
                                                                 
                                                                 # Define the output directory
-                                                                o_filepath = os.path.join("/Data/ISO_Compression_Experiments/",experiment_name,os.path.join(*dataset_config["i_filepath"].split("/")[3:]).replace(".npy",""),network_name)
-                                                                
+                                                                # o_filepath = os.path.join("/Data/ISO_Compression_Experiments/",experiment_name,os.path.join(*dataset_config["i_filepath"].split("/")[3:]).replace(".npy",""),network_name)
+                                                                o_filepath = os.path.join("/Data/Complexity_And_Compressibility_Experiments",experiment_name,os.path.join(*dataset_config["i_filepath"].split("/")[3:-1]).replace(".npy",""),network_name)
+                                                            
                                                                 # Run the compression experiment
                                                                 runstring = "python SourceCode/compress_main.py " + "'" + json.dumps(network_config) + "' '" + json.dumps(dataset_config) + "' '" + json.dumps(runtime_config) + "' '" + json.dumps(training_config) + "' '" + o_filepath + "'"
                                                                 os.system(runstring)
                                                                 
                                                                 # Render outputs
-                                                                runstring = "pvpython --force-offscreen-rendering RenderCode/render_outputs.py " + o_filepath + " " + str(save_renders_flag)
+                                                                # runstring = "pvpython --force-offscreen-rendering RenderCode/render_outputs.py " + o_filepath + " " + str(save_renders_flag)
                                                                 # print("TURN RENDERING BACK ON!") 
-                                                                os.system(runstring)
+                                                                # os.system(runstring)
                                                                 
                                                                 # Assess outputs
-                                                                runstring = "python RenderCode/assess_outputs.py " + o_filepath                                                           
+                                                                # runstring = "python RenderCode/assess_outputs.py " + o_filepath                                                           
                                                                 # print("TURN RENDERING BACK ON!") 
-                                                                os.system(runstring)
+                                                                # os.system(runstring)
                                                                 
                                                                 # Iterate counter
                                                                 count = count + 1 

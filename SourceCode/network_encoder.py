@@ -22,8 +22,8 @@ def SaveNetworkJSON(network,network_data_filepath):
     network_data["architecture"]["omega_0"] = float(network.omega_0)
     
     # Add normalisation parameters
-    network_data["metadata"]["original_coords_centre"] = network.original_coords_centre.astype(np.float32).tolist()
-    network_data["metadata"]["original_coords_radius"] = float(network.original_coords_radius.astype(np.float32))
+    network_data["metadata"]["bounding_sphere_centre"] = network.bounding_sphere_centre.astype(np.float32).tolist()
+    network_data["metadata"]["bounding_sphere_radius"] = float(network.bounding_sphere_radius.astype(np.float32))
     network_data["metadata"]["original_values_bounds"] = network.original_values_bounds.astype(np.float32).tolist()
     
     # Iterate through each of the network layers, in order 

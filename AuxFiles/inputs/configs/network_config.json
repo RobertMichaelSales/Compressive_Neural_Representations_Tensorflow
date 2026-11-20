@@ -1,11 +1,11 @@
 {
-    "network_name": "Render Test",
-    "target_compression_ratio": 100,
+    "network_name": "Render Test Small",
+    "target_compression_ratio": 1000,
     "hidden_layers": 8,
     "frequencies": 0,
     "activation": "sine",
     "identity_mapping": true,
     "kernel_initializer": "siren",
-    "omega_0": 10.0,
+    "omega_0": 1.0,
     "bits_per_weight": 32
 }

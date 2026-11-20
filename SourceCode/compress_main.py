@@ -139,8 +139,8 @@ def compress(network_config,dataset_config,runtime_config,training_config,o_file
     ISONet = ConstructNetwork(layer_dimensions=network_config.layer_dimensions,frequencies=network_config.frequencies,activation=network_config.activation,kernel_initializer=network_config.kernel_initializer,identity_mapping=network_config.identity_mapping,omega_0=network_config.omega_0)
     
     # Add original coords centre and radius to network attributes
-    ISONet.original_coords_centre = i_coords.original_centre
-    ISONet.original_coords_radius = i_coords.original_radius
+    ISONet.bounding_sphere_centre = i_coords.original_centre
+    ISONet.bounding_sphere_radius = i_coords.original_radius
     ISONet.original_values_bounds = i_values.original_bounds
 
     # Set a training optimiser

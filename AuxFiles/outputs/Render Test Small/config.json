@@ -1,0 +1,66 @@
+{
+    "network_name": "Render Test Small",
+    "target_compression_ratio": 1000,
+    "hidden_layers": 8,
+    "frequencies": 0,
+    "activation": "sine",
+    "identity_mapping": true,
+    "kernel_initializer": "siren",
+    "omega_0": 1.0,
+    "bits_per_weight": 32,
+    "i_dimensions": 3,
+    "o_dimensions": 1,
+    "size": 2097152,
+    "target_size": 2097,
+    "neurons_per_layer": 10,
+    "total_layers": 10,
+    "num_of_parameters": 1811,
+    "actual_compression_ratio": 1158.0077305356158,
+    "layer_dimensions": [
+        3,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        1
+    ],
+    "batch_size": 1024,
+    "epochs": 40,
+    "half_life": 3,
+    "initial_lr": 0.001,
+    "normalise_data": true,
+    "weighted_error": "none",
+    "print_verbose": true,
+    "cache_dataset": false,
+    "save_network_flag": true,
+    "save_outputs_flag": true,
+    "save_results_flag": true,
+    "columns": [
+        [
+            0,
+            1,
+            2
+        ],
+        [
+            3
+        ],
+        [
+            4
+        ]
+    ],
+    "dtype": "float32",
+    "i_filepath": "/Data/ISO_Compression_Datasets/sales_tanglecube/tanglecube.npy",
+    "normalise": true,
+    "shape": [
+        128,
+        128,
+        128,
+        5
+    ],
+    "tabular": false,
+    "vtk_filepath": "/Data/ISO_Compression_Datasets/sales_tanglecube/tanglecube.vtk"
+}

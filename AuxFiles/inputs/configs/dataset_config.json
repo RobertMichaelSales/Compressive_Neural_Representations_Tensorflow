@@ -13,7 +13,7 @@
         ]
     ],
     "dtype": "float32",
-    "i_filepath": "/Data/ISO_Compression_Datasets/jhtdb_isotropic/extracts/c/pressure/isotropic_cropped_clamped.npy",
+    "i_filepath": "/Data/ISO_Compression_Datasets/sales_tanglecube/tanglecube.npy",
     "normalise": true,
     "shape": [
         128,
@@ -22,5 +22,5 @@
         5
     ],
     "tabular": false,
-    "vtk_filepath": "/Data/ISO_Compression_Datasets/jhtdb_isotropic/extracts/c/pressure/isotropic_cropped_clamped.vts"
+    "vtk_filepath": "/Data/ISO_Compression_Datasets/sales_tanglecube/tanglecube.vtk"
 }
